@@ -40,6 +40,16 @@ pub trait Tags {
             crate::world::phase::LoadAccess::Metadata,
         )
     }
+    /// The item tags `item` is in (`ItemStack.getTags`, `Holder.tags`), sorted by id: the
+    /// merged tags, vanilla's and data packs'. Empty for an item no tag names; unavailable
+    /// authoritative tags or item mappings answer None.
+    fn item_tags(&self, _item: ItemKey) -> Option<Vec<Identifier>> {
+        crate::world::phase::unprovided(
+            "Tags::item_tags",
+            "tags_item_tags",
+            crate::world::phase::LoadAccess::Metadata,
+        )
+    }
     /// Item members in vanilla's order, including unrequested vanilla items.
     /// Unknown tags are empty; unavailable authoritative tags or item mappings answer None.
     fn items(&self, _tag: TagKey) -> Option<Vec<ItemKey>> {
