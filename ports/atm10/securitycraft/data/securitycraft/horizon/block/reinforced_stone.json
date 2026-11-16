@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:stone",
+  "properties": { "hardness": 1.5, "explosion_resistance": 3600000.0 },
+  "item": true
+}

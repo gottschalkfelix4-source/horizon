@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:glass",
+  "properties": { "hardness": 0.3, "explosion_resistance": 3600000.0 },
+  "item": true
+}
