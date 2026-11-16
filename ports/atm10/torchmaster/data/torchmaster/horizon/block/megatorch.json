@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:torch",
+  "properties": { "hardness": 1.0, "explosion_resistance": 1.0, "light": 15 },
+  "item": true
+}
