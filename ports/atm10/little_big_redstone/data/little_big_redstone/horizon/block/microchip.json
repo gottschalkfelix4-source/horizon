@@ -1,0 +1,11 @@
+{
+  "template": "minecraft:smooth_stone",
+  "properties": { "hardness": 0.5, "explosion_resistance": 0.5 },
+  "state_properties": {
+    "out_north": { "type": "boolean" },
+    "out_east": { "type": "boolean" },
+    "out_south": { "type": "boolean" },
+    "out_west": { "type": "boolean" }
+  },
+  "item": true
+}
