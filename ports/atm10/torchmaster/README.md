@@ -7,7 +7,7 @@ Horizon mod. Written from the mod's observed behaviour and public description, n
 
 | Block | Effect | Status |
 |---|---|---|
-| `torchmaster:megatorch` | Refuses natural spawns of `MobCategory::Monster` within 64 blocks on each axis (a cube), and a village siege's zombies | ported, not yet checked against the original |
+| `torchmaster:megatorch` | Refuses natural, patrol and chunk-generation spawns of `MobCategory::Monster` in a 64-block cube (one block more upwards), as observed on the original | ported, not yet checked against the original |
 | `torchmaster:dreadlamp` | Refuses natural spawns of `MobCategory::Creature` within 64 blocks on each axis | ported, not yet checked against the original |
 | `torchmaster:feral_flare_lantern` | Places invisible light blocks around it | not yet |
 | Config (radius, entity block/allow lists, which spawn reasons) | | not yet: fixed to the defaults below |
@@ -40,3 +40,11 @@ chunk generation are left alone.
 cargo test                                    # in this folder, against the checkout's mod API
 horizon-launcher native-build . --instance <instance> --trust-native-code
 ```
+
+## Measured on 2026-11-16 (Mac, NeoForge 21.1.259 original vs this port in game)
+
+- Mega Torch in game: 0 of 288 new hostile mobs inside the 64-block cube; without it 25 of 281 (9 in the cube's corners, so it is a cube, not a sphere).
+- Original, by firing NeoForge's spawn checks at fixed offsets: a cube; 60/60/0, 64/0/64, 64/64/64 blocked, 65/0/0 and 65/0/65 not. One block more upwards. Blocks NATURAL, PATROL and CHUNK_GENERATION, not EVENT. This port now does the same.
+- Still different: the original also protects a torch set with `/setblock`; this port records only torches placed from the item. The Dread Lamp is untested.
+- Engine gaps: the game refuses `side = "server"` for a mod with block data (now `both`); `horizon-port-pack carry` drops both blocks ("no vanilla Block with properties [waterlogged]"), so the `data/` files here are placeholders; real values: hardness 1, light 15, a narrow column shape.
+- A game built straight from a checkout does not load native mods; the test used a local crate that links the port in. Mod loading goes through the launcher and an SDK build.
