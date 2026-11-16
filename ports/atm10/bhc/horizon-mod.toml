@@ -1,0 +1,8 @@
+id = "bhc"
+name = "Baubley Heart Canisters"
+version = "1.21.1-1.4.3-horizon.1"
+description = "Heart canisters from mob hearts, held in a Heart Amulet, raise your maximum health. A Horizon port of Baubley Heart Canisters (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: traverse_joe"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
