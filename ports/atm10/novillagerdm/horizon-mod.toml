@@ -1,0 +1,8 @@
+id = "novillagerdm"
+name = "No Villager Death Messages"
+version = "6.0.0-horizon.1"
+description = "Keeps the server log free of a line for every villager that dies. A Horizon port of No Villager Death Messages (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: Serilum"]
+api = "0.2"
+side = "server"
+capabilities = []
