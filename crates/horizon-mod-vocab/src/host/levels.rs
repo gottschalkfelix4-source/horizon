@@ -324,6 +324,19 @@ pub trait LevelsBackend {
     #[access(WorldOnly)]
     fn level_block(&self, level: LevelRef, pos: [i32; 3]) -> Option<BlockKey>;
     /// Side: both.
+    /// The blocks of the box between `min` and `max` (both corners inclusive, in any order),
+    /// without properties, as `level_block` names them: x outermost, then z, then y innermost.
+    /// One call for a whole search volume instead of one per position. None for a stale handle,
+    /// when any column of the box isn't loaded, or when the box holds more than
+    /// `BLOCKS_IN_BOX_MAX` positions.
+    #[access(WorldOnly)]
+    fn level_blocks_in_box(
+        &self,
+        level: LevelRef,
+        min: [i32; 3],
+        max: [i32; 3],
+    ) -> Option<Vec<BlockKey>>;
+    /// Side: both.
     /// Property `key` of the block state at `pos` (`BlockState.getValue`):
     /// `east` for `facing`. None for a block without it, or as for
     /// `block_state`. API 381.
@@ -345,9 +358,11 @@ pub trait LevelsBackend {
     /// (`ClientLevel.hasChunkAt`). API 381.
     #[access(WorldOnly)]
     fn level_is_loaded(&self, level: LevelRef, pos: [i32; 3]) -> bool;
-    /// Side: server.
+    /// Side: both.
     /// The stored light of one layer at `pos` (`BlockAndLightGetter.getBrightness`), 0 to 15.
-    /// None as for `block_state`: a position that isn't loaded has no light to read.
+    /// None as for `block_state`: a position that isn't loaded has no light to read. On a client
+    /// it reads the light the server sent for a chunk the client holds, in the level it shows
+    /// (`ClientLevel.getBrightness`).
     #[access(WorldOnly)]
     fn level_brightness(&self, level: LevelRef, layer: LightLayer, pos: [i32; 3]) -> Option<i32>;
     /// Side: both.
