@@ -1,0 +1,7 @@
+{
+  "template": "minecraft:oak_planks",
+  "properties": { "hardness": 2.0, "explosion_resistance": 6.0, "sounds": "minecraft:wood" },
+  "state_properties": { "glowing": { "type": "boolean" } },
+  "state_light": { "properties": ["glowing"], "values": { "true": 15 }, "default": 0 },
+  "item": true
+}
