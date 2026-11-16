@@ -1,0 +1,15 @@
+{
+  "message.theurgy.divination_rod.linked": "The rod is attuned to %s",
+  "message.theurgy.divination_rod.no_link": "The rod is not attuned: sneak and use it on a block",
+  "message.theurgy.divination_rod.found": "Found, %s blocks away, %s",
+  "message.theurgy.divination_rod.not_found": "Nothing found in range",
+  "message.theurgy.direction.here": "right here",
+  "message.theurgy.direction.north": "to the north",
+  "message.theurgy.direction.north_east": "to the north-east",
+  "message.theurgy.direction.east": "to the east",
+  "message.theurgy.direction.south_east": "to the south-east",
+  "message.theurgy.direction.south": "to the south",
+  "message.theurgy.direction.south_west": "to the south-west",
+  "message.theurgy.direction.west": "to the west",
+  "message.theurgy.direction.north_west": "to the north-west"
+}

@@ -1,0 +1,8 @@
+id = "iceandfire"
+name = "Ice and Fire: Community Edition"
+version = "2.0-beta.17-horizon.1"
+description = "The flamed, iced and lightning dragonbone swords: fire, freezing, lightning and knockback on hit, extra damage to the opposite dragon. A first slice of a Horizon port of Ice and Fire CE (LGPL-3.0-or-later), written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Alexthe666, Raptorfarian and the Ice and Fire Community Edition team"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

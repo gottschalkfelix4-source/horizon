@@ -1,0 +1,11 @@
+{
+  "minecolonies.horizon.colony.founded": "Colony %s founded",
+  "minecolonies.horizon.colony.already_owner": "You already own a colony in this world",
+  "minecolonies.horizon.colony.too_close": "Too close to colony %s",
+  "minecolonies.horizon.colony.protected": "This land belongs to colony %s",
+  "minecolonies.horizon.command.no_colony": "There is no colony %s",
+  "minecolonies.horizon.command.not_owner": "Only the colony's owner may do that",
+  "minecolonies.horizon.command.officer_added": "Officer added to colony %s",
+  "minecolonies.horizon.command.officer_removed": "Officer removed from colony %s",
+  "minecolonies.horizon.command.deleted": "Colony %s deleted"
+}

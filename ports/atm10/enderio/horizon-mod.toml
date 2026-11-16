@@ -1,0 +1,8 @@
+id = "enderio"
+name = "Ender IO"
+version = "8.2.12-beta-horizon.1"
+description = "The Alloy Smelter: an energy-powered machine that turns three inputs into Ender IO's alloys, sped up by its capacitor. A Horizon port of Ender IO (Unlicense) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Team Ender IO (CrazyPants, HenryLoenwind, Rover656 and contributors)"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]

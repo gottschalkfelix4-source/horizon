@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:structure_void",
+  "properties": { "hardness": 0.0, "explosion_resistance": 0.0, "light": 12 },
+  "item": false
+}

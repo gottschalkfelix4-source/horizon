@@ -1,0 +1,8 @@
+{
+  "item.gateways.gate_pearl": "Gate Pearl",
+  "gateways.boss_bar.setup": "Gateway opening",
+  "gateways.boss_bar.wave": "Gateway: wave %s of %s",
+  "gateways.fail.timeout": "The gateway closed: the wave took too long.",
+  "gateways.fail.left_leash": "The gateway closed: a mob strayed too far from it.",
+  "gateways.complete": "Gateway defeated!"
+}

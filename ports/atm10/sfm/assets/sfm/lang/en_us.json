@@ -1,0 +1,18 @@
+{
+  "sfm.horizon.command.no_manager": "There is no Factory Manager there",
+  "sfm.horizon.command.program_saved": "Program saved",
+  "sfm.horizon.command.labelled": "Label added",
+  "sfm.horizon.command.unlabelled": "Label removed",
+  "sfm.horizon.error.expected_name": "Expected a name at word %s",
+  "sfm.horizon.error.expected_string": "Expected a quoted name at word %s",
+  "sfm.horizon.error.expected_every": "Expected EVERY at word %s",
+  "sfm.horizon.error.expected_number": "Expected a number at word %s",
+  "sfm.horizon.error.expected_unit": "Expected TICKS or SECONDS at word %s",
+  "sfm.horizon.error.interval_too_short": "A trigger runs at most every 20 ticks (word %s)",
+  "sfm.horizon.error.expected_do": "Expected DO at word %s",
+  "sfm.horizon.error.expected_end": "Expected END at word %s",
+  "sfm.horizon.error.expected_statement": "Expected INPUT or OUTPUT at word %s",
+  "sfm.horizon.error.expected_from": "Expected FROM at word %s",
+  "sfm.horizon.error.expected_to": "Expected TO at word %s",
+  "sfm.horizon.error.expected_side": "Expected SIDE at word %s"
+}

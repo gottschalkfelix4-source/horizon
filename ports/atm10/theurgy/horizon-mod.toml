@@ -1,0 +1,8 @@
+id = "theurgy"
+name = "Theurgy"
+version = "1.78.0-horizon.1"
+description = "Divination Rods: attune one to a block, then find the nearest one around you. A Horizon port of Theurgy (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: klikli-dev"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

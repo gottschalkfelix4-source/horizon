@@ -1,0 +1,1 @@
+{ "template": "minecraft:iron_bars", "properties": { "hardness": 0.35, "explosion_resistance": 0.35 }, "item": true }

@@ -1,0 +1,8 @@
+id = "refinedstorage"
+name = "Refined Storage"
+version = "2.0.9-horizon.1"
+description = "The storage network: a Controller joins every Storage Block it reaches through Cables into one inventory that counts items, not stacks. A Horizon port of Refined Storage (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: raoulvdberge"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
