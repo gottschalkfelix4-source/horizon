@@ -1,0 +1,1 @@
+{ "template": "minecraft:iron_block", "properties": { "hardness": 1.9, "explosion_resistance": 1.9 }, "item": true }
