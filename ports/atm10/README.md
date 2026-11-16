@@ -15,3 +15,4 @@ Rules followed here:
 | Mod | ATM10 version | Licence | Tier | Status |
 |---|---|---|---|---|
 | [Torchmaster](torchmaster/) | 21.1.13 | MIT | logic | Mega Torch and Dread Lamp ported; Feral Flare Lantern and config to do; not yet checked against the original |
+| [Iron Furnaces](ironfurnaces/) | 4.3.2 | Apache-2.0 | machines | 13 tiers smelt with vanilla's furnace tick and menu; augments, upgrades and XP to do; not yet checked against the original |
