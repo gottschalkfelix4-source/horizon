@@ -1,0 +1,8 @@
+id = "enchdesc"
+name = "Enchantment Descriptions"
+version = "21.1.11-horizon.1"
+description = "A line under each enchantment in item tooltips saying what it does, by default while Shift is held. A Horizon port of Enchantment Descriptions (LGPL-2.1-only), under the same licence, written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Darkhax"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

@@ -1,0 +1,8 @@
+id = "polymorph"
+name = "Polymorph"
+version = "1.2.0-horizon.1"
+description = "When several crafting recipes match the same grid, a button by the result lets the player choose which one to craft; the server honours the choice. A Horizon port of Polymorph (LGPL-3.0-or-later) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: TheIllusiveC4"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]

@@ -1,0 +1,8 @@
+id = "keybindspurger"
+name = "KeybindsPurger"
+version = "1.4.0-horizon.1"
+description = "Pick the key bindings you never use, or let it pick the conflicting ones, and they stop acting on their keys. A Horizon port of KeybindsPurger (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: the KeybindsPurger authors"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

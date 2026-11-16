@@ -1,0 +1,5 @@
+{
+  "betteradvancedtooltips.food": "Hunger: %s, Saturation: %s",
+  "betteradvancedtooltips.burn_time": "Burn time: %s ticks",
+  "betteradvancedtooltips.nbt_size": "Data: %s bytes"
+}

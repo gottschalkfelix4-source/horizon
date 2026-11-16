@@ -1,0 +1,13 @@
+{
+  "key.categories.keybindbundles": "KeyBind Bundles",
+  "key.keybindbundles.bundle_1": "Bundle 1",
+  "key.keybindbundles.bundle_2": "Bundle 2",
+  "key.keybindbundles.bundle_3": "Bundle 3",
+  "key.keybindbundles.bundle_4": "Bundle 4",
+  "key.keybindbundles.bundle_5": "Bundle 5",
+  "key.keybindbundles.bundle_6": "Bundle 6",
+  "key.keybindbundles.bundle_7": "Bundle 7",
+  "key.keybindbundles.bundle_8": "Bundle 8",
+  "key.keybindbundles.edit": "Edit Bundles",
+  "keybindbundles.editor": "%s: click a binding to add or remove it"
+}

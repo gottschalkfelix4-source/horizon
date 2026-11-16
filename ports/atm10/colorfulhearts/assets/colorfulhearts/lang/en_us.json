@@ -1,0 +1,4 @@
+{
+  "colorfulhearts.config.absorption_over_health": "Absorption over health",
+  "colorfulhearts.config.absorption_over_health.tooltip": "Draw absorption hearts over the health row instead of in a row of their own above it."
+}

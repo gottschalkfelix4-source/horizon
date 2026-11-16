@@ -1,0 +1,9 @@
+{
+  "key.categories.keybindspurger": "KeybindsPurger",
+  "key.keybindspurger.open": "Purge Key Binds",
+  "keybindspurger.open": "Purge keys",
+  "keybindspurger.title": "Purge Key Binds: click a binding to purge or keep it",
+  "keybindspurger.purged": "Purged",
+  "keybindspurger.purge_conflicts": "Purge conflicts",
+  "keybindspurger.clear": "Keep all"
+}

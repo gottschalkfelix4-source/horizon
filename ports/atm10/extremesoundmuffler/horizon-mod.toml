@@ -1,0 +1,8 @@
+id = "extremesoundmuffler"
+name = "Extreme Sound Muffler"
+version = "3.57-horizon.1"
+description = "Turn down or mute any sound, everywhere or only inside anchors you place, from a list of the sounds you just heard. A Horizon port of Extreme Sound Muffler (LGPL-3.0-only) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: LeoBeliik"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

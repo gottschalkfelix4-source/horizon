@@ -1,0 +1,8 @@
+id = "auroras"
+name = "Auroras"
+version = "1.6.2-horizon.1"
+description = "Aurora ribbons over the clouds on clear nights in cold biomes. A Horizon port of Auroras (BSD-2-Clause) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: Verph"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

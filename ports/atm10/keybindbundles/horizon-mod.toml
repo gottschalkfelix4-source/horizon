@@ -1,0 +1,8 @@
+id = "keybindbundles"
+name = "KeyBind Bundles"
+version = "1.4.0-horizon.1"
+description = "Group several key bindings under one key: holding it opens a radial menu, and the binding you point at fires when you let go. A Horizon port of KeyBind Bundles (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: the KeyBind Bundles authors"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]
