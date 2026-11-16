@@ -1,0 +1,8 @@
+{
+  "dimstorage.locked": "This storage is locked to its owner",
+  "dimstorage.unbound": "This tablet is not bound to a frequency",
+  "dimstorage.frequency": "Frequency %s",
+  "dimstorage.locked_on": "Locked to you",
+  "dimstorage.locked_off": "Unlocked",
+  "item.dimstorage.dimensional_tablet": "Dimensional Tablet"
+}

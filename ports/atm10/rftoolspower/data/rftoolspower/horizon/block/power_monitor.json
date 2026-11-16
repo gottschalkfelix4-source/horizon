@@ -1,0 +1,7 @@
+{ "template": "minecraft:stone",
+  "properties": { "hardness": 2.0 },
+  "state_properties": {
+    "powered": { "type": "boolean" },
+    "level": { "type": "enum", "values": ["0", "1", "2", "3", "4", "5"] } },
+  "default_state": { "powered": "false", "level": "0" },
+  "item": true }

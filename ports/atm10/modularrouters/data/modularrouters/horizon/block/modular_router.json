@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:furnace",
+  "properties": { "hardness": 1.5, "explosion_resistance": 6.0 },
+  "item": true
+}

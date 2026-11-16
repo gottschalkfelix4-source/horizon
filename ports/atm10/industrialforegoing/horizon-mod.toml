@@ -1,0 +1,8 @@
+id = "industrialforegoing"
+name = "Industrial Foregoing"
+version = "1.21-3.6.39-horizon.1"
+description = "Machines, generators, Black Hole storage and addons. A Horizon port of Industrial Foregoing (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Buuz135"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

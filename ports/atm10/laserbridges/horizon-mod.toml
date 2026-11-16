@@ -1,0 +1,8 @@
+id = "laserbridges"
+name = "Laser Bridges"
+version = "6.2-horizon.1"
+description = "Laser emitters that project a walkable bridge of light across gaps. A Horizon port of Laser Bridges (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: the Laser Bridges authors"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

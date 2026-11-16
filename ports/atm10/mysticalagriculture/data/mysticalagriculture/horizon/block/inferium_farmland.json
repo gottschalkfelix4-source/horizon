@@ -1,0 +1,6 @@
+{
+  "template": "minecraft:farmland",
+  "base_block": "minecraft:dirt",
+  "item": false,
+  "pick_item": "minecraft:dirt"
+}

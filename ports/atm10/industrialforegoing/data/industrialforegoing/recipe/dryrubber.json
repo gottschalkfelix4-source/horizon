@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber",
+    "industrialforegoing:tinydryrubber"
+  ],
+  "result": {
+    "id": "industrialforegoing:dryrubber",
+    "count": 1
+  }
+}
