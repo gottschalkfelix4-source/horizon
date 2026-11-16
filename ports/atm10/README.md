@@ -14,4 +14,5 @@ Rules followed here:
 
 | Mod | ATM10 version | Licence | Tier | Status |
 |---|---|---|---|---|
+| [Libraries](libs/) | | LGPL-3.0-or-later | libs | config, geo (GeckoLib), accessories (Curios), guidebook (Patchouli): data sides done, see libs/README.md |
 | [Torchmaster](torchmaster/) | 21.1.13 | MIT | logic | Mega Torch and Dread Lamp ported; Feral Flare Lantern and config to do; not yet checked against the original |
