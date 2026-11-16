@@ -1,0 +1,8 @@
+id = "apothic_spawners"
+name = "Apothic Spawners"
+version = "1.4.0-horizon.1"
+description = "Spawner modifiers: right-click a monster spawner with an item to change its delay, count, range and behaviour. A Horizon port of Apothic Spawners (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: Shadows_of_Fire"]
+api = "0.2"
+side = "server"
+capabilities = []

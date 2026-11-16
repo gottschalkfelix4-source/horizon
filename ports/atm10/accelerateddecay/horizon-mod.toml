@@ -1,0 +1,8 @@
+id = "accelerateddecay"
+name = "Accelerated Decay"
+version = "21.0.0-horizon.1"
+description = "Leaves cut off from their logs decay within moments instead of minutes. A Horizon port of Accelerated Decay (LGPL-3.0-only) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: ErrorMikey"]
+api = "0.2"
+side = "server"
+capabilities = []

@@ -1,0 +1,9 @@
+{
+  "template": "minecraft:blue_bed",
+  "properties": { "hardness": 0.1, "explosion_resistance": 0.1 },
+  "shapes": { "properties": ["part"], "values": {
+    "head": [[0, 0, 0, 1, 0.1875, 1]],
+    "foot": [[0, 0, 0, 1, 0.1875, 1]]
+  } },
+  "item": true
+}

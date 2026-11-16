@@ -1,0 +1,7 @@
+id = "simplebackups"
+name = "Simple Backups"
+version = "1.21-4.0.30-horizon.1"
+description = "Scheduled world backups as zip files, kept within a count and a disk budget; /backup start, pause and unpause. A Horizon port of Simple Backups (Apache-2.0) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: ChaosTheDude, MelanX"]
+api = "0.2"
+side = "server"

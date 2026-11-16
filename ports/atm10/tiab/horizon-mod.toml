@@ -1,0 +1,8 @@
+id = "tiab"
+name = "Time in a Bottle"
+version = "6.5.4-horizon.1"
+description = "A bottle that stores time while you carry it and spends it to make crops and other randomly ticking blocks grow up to 256 times faster. A Horizon port of Time in a Bottle (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: haoict"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

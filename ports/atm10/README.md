@@ -37,3 +37,29 @@ Rules followed here:
 | [Just Enough Mekanism Multiblocks](jei_mekanism_multiblocks/) | 7.23 | MIT | client | README only: waits for the Mekanism port |
 | [Refined Storage - JEI Integration](refinedstorage_jei_integration/) | 1.0.0 | MIT | client | README only: waits for the Refined Storage port |
 | [Mouse Tweaks](mousetweaks/) | 2.26.1 | BSD-3-Clause | client | covered by Horizon's built-in extras; gaps listed |
+| [Accelerated Decay](accelerateddecay/) | 21.0.0 | LGPL-3.0-only | logic | leaves decay a few per tick; queue not saved |
+| [Apothic Spawners](apothic_spawners/) | | MIT | logic | modifier items on vanilla spawners; needs a spawner tick hook for some switches |
+| [Baubley Heart Canisters](bhc/) | | MIT | logic | hearts, canisters, amulet; no accessory slot in the API, first amulet in the inventory counts |
+| [Bridging Mod](bridgingmod/) | | MIT | logic | outline only; placing needs a client use-item call |
+| [Bad Wither No Cookie Reloaded](bwncr/) | | MIT | logic | sound cancelling and commands; world-event sounds need a hook |
+| [Comforts](comforts/) | | LGPL-3.0-or-later | logic | sleeping bags and hammocks; hammock pairing not yet |
+| [Construction Sticks](constructionstick/) | | MIT | logic | five sticks, grow-surface mode; other modes not yet |
+| [Crash Utilities](crashutilities/) | | MIT | logic | `/cu` commands; block entity and offline inventory features need API |
+| [ElevatorMod](elevatorid/) | | MIT | logic | 16 elevators; disguise not yet |
+| [I'm Fast](imfast/) | | MIT | logic | movement checks off through game rules |
+| [InControl](incontrol/) | | MIT | logic | spawn and experience rules; loot, despawn and actions not yet |
+| [Iron Jetpacks](ironjetpacks/) | | MIT | logic | jetpack with tiers, hover, energy; recipes and HUD not yet |
+| [Measurements](measurements/) | | MIT | logic | tape measure; edge labels need world text |
+| [Mama's MerryMaking](merrymaking/) | | MIT | logic | menorah and kinara only; public docs describe little else |
+| [More Red](morered/) | | MIT | logic | red alloy wire and 14 gates; weak power only, bundled cables not yet |
+| [No Villager Death Messages](novillagerdm/) | | MIT | logic | nothing to suppress in Horizon's server |
+| [Redstone Pen](redstonepen/) | | MIT | logic | pen, quill, track and four relays |
+| [Repeatable Trial Vaults](repeatable_trial_vaults/) | | MIT | logic | key items reset a vault for a rewarded player |
+| [Restrictions](restrictions/) | | MIT | logic | Attractor, Pusher, One Way |
+| [Silent's Gems](silentgems/) | | MIT | logic | gems, teleporters, linker, charm; worldgen and recipes from the jar |
+| [Simple Backups](simplebackups/) | | Apache-2.0 | logic | timed zip backups and `/backup` |
+| [Time In A Bottle](tiab/) | | MIT | logic | stored time and block acceleration; block entities need a tick call |
+| [WITS](wits/) | | MIT | logic | `/wits` and `/witsop` for vanilla structures |
+| [Wither Skeleton Tweaks](wstweaks/) | | MIT | logic | Nether skeleton conversion, fragments, Immolation Blade |
+
+All of these were built and unit-tested only (`cargo test`, clippy, fmt); none has run in the game or been checked against the original. Each README lists what is assumed and what Horizon's API still lacks.

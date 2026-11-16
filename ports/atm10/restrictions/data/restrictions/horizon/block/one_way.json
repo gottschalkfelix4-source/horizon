@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:glass",
+  "state_properties": { "facing": { "type": "enum", "values": ["down", "up", "north", "south", "west", "east"] } },
+  "default_state": { "facing": "up" },
+  "properties": { "hardness": 0.5, "explosion_resistance": 0.5 },
+  "collision_shapes": { "default": [] },
+  "item": true
+}

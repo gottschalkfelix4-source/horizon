@@ -1,0 +1,8 @@
+id = "morered"
+name = "More Red"
+version = "6.0.0.3-horizon.1"
+description = "Red alloy wire that sits on any face of a block, and logic gates. A Horizon port of More Red (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Commoble"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]
