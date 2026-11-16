@@ -1,0 +1,19 @@
+{
+  "key.jei.showRecipe": "Show Recipe",
+  "key.jei.showUses": "Show Uses",
+  "key.jei.bookmark": "Add/Remove Bookmark",
+  "key.jei.toggleCheatMode": "Toggle Cheat Item Mode",
+  "gui.jei.category.craftingTable": "Crafting",
+  "gui.jei.category.stoneCutter": "Stonecutting",
+  "gui.jei.category.smelting": "Smelting",
+  "gui.jei.category.smoking": "Smoking",
+  "gui.jei.category.blasting": "Blasting",
+  "gui.jei.category.campfire": "Campfire Cooking",
+  "gui.jei.category.smithing": "Smithing",
+  "gui.jei.category.compostable": "Composting",
+  "gui.jei.category.fuel": "Fuel",
+  "gui.jei.category.smelting.time.seconds": "%ss",
+  "gui.jei.category.smelting.experience": "%s XP",
+  "gui.jei.category.fuel.smeltCount": "Smelts %s items",
+  "gui.jei.category.compostable.chance": "Chance: %s%%"
+}

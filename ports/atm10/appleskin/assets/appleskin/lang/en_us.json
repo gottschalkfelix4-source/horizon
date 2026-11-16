@@ -1,0 +1,14 @@
+{
+  "appleskin.tooltip.times": "x%s",
+  "appleskin.tooltip.saturation": "%s saturation",
+  "appleskin.config.tooltip": "Food values in tooltips",
+  "appleskin.config.tooltip.tooltip": "Show hunger and saturation under every food item's name.",
+  "appleskin.config.saturation": "Saturation overlay",
+  "appleskin.config.saturation.tooltip": "Outline the hunger bar's shanks with the saturation you have.",
+  "appleskin.config.held_food": "Held food preview",
+  "appleskin.config.held_food.tooltip": "Flash the hunger and saturation the food in your hand will restore.",
+  "appleskin.config.health": "Health restore preview",
+  "appleskin.config.health.tooltip": "Flash the health natural regeneration will give back once you eat the held food.",
+  "appleskin.config.exhaustion": "Exhaustion underlay",
+  "appleskin.config.exhaustion.tooltip": "Show how close the next point of saturation or hunger is to being spent."
+}

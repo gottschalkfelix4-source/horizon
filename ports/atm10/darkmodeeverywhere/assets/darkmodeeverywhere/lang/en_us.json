@@ -1,0 +1,12 @@
+{
+  "darkmodeeverywhere.preset.off": "Off",
+  "darkmodeeverywhere.preset.dim": "Dim",
+  "darkmodeeverywhere.preset.dark": "Dark",
+  "darkmodeeverywhere.preset.darkest": "Darkest",
+  "darkmodeeverywhere.button": "Dark mode: %s (click to change)",
+  "darkmodeeverywhere.button.blacklist": "Shift-click: never darken %s",
+  "darkmodeeverywhere.button.unblacklist": "Shift-click: darken %s again",
+  "darkmodeeverywhere.setting.button": "Corner button",
+  "darkmodeeverywhere.setting.light_labels": "Light container labels",
+  "darkmodeeverywhere.setting.light_labels.tooltip": "Redraws a darkened chest's title and \"Inventory\" in a light colour."
+}

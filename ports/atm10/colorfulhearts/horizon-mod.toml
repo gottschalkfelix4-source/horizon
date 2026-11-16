@@ -1,0 +1,8 @@
+id = "colorfulhearts"
+name = "Colorful Hearts"
+version = "10.5.9-horizon.1"
+description = "Health and absorption past 20 drawn as one row of hearts, each further 20 points in another colour, instead of stacked rows. A Horizon port of Colorful Hearts (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Terrails"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

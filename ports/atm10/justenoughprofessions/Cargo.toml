@@ -1,0 +1,20 @@
+[package]
+name = "mod-justenoughprofessions"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# In a launcher build this is the pinned SDK's copy (.horizon/sdk/api/crates/horizon-mod-api);
+# in this checkout it is the workspace crate, so `cargo check` runs against the current API.
+horizon-mod-api = { path = "../../../crates/horizon-mod-api" }
+# The JEI port, for `cargo check` and tests in this checkout. The launcher adds this
+# dependency itself from `[dependencies]` in horizon-mod.toml (docs/modding: "Dependencies
+# between mods"), under the same `jei` name; drop this line when packaging if it refuses it.
+jei = { package = "mod-jei", path = "../jei" }
+
+[workspace]

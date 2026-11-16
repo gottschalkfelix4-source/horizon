@@ -1,0 +1,11 @@
+id = "justenoughbreeding"
+name = "Just Enough Breeding"
+version = "1.0.0-horizon.1"
+description = "A JEI category showing what each animal is bred with and what comes of it. A Horizon port of Just Enough Breeding (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: see LICENSE-ORIGINAL.md"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]
+
+[dependencies]
+jei = "^19"

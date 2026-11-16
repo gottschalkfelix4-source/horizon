@@ -1,0 +1,20 @@
+{
+  "key.categories.extremesoundmuffler": "Extreme Sound Muffler",
+  "key.extremesoundmuffler.open": "Open Sound Muffler",
+  "extremesoundmuffler.title": "Sound Muffler",
+  "extremesoundmuffler.list": "List: %s",
+  "extremesoundmuffler.list.recent": "Recent",
+  "extremesoundmuffler.list.all": "All sounds",
+  "extremesoundmuffler.list.muffled": "Muffled",
+  "extremesoundmuffler.target.global": "Target: Everywhere",
+  "extremesoundmuffler.target.anchor": "Target: Anchor %s",
+  "extremesoundmuffler.enabled.on": "Muffling: On",
+  "extremesoundmuffler.enabled.off": "Muffling: Off",
+  "extremesoundmuffler.anchor.set": "Set anchor here",
+  "extremesoundmuffler.anchor.clear": "Clear anchor",
+  "extremesoundmuffler.anchor.info": "At %s, radius %s",
+  "extremesoundmuffler.anchor.unset": "Not set",
+  "extremesoundmuffler.setting.default_volume": "Muffle volume",
+  "extremesoundmuffler.setting.default_volume.tooltip": "How loud a sound plays once muffled; 0 mutes it.",
+  "extremesoundmuffler.setting.inventory_button": "Button over the inventory"
+}

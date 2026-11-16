@@ -1,0 +1,7 @@
+{
+  "key.categories.moreoverlays": "More Overlays",
+  "key.moreoverlays.lightoverlay": "Toggle Light Overlay",
+  "key.moreoverlays.chunkbounds": "Toggle Chunk Bounds",
+  "key.moreoverlays.invsearch": "Search Inventory",
+  "gui.moreoverlays.search.message": "Search"
+}

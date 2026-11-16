@@ -1,0 +1,8 @@
+id = "betteradvancedtooltips"
+name = "Better Advanced Tooltips"
+version = "2101.1.0-horizon.1"
+description = "More in advanced tooltips (F3+H): durability of undamaged items, food values, burn time and the size of the item's data. A Horizon port of Better Advanced Tooltips (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: see LICENSE-ORIGINAL.md"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

@@ -1,0 +1,8 @@
+id = "appleskin"
+name = "AppleSkin"
+version = "3.0.9-horizon.1"
+description = "Food values in tooltips, saturation and exhaustion on the hunger bar, and what the held food will restore. A Horizon port of AppleSkin (Unlicense) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: squeek502"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

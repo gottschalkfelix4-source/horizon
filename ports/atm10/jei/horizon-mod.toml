@@ -1,0 +1,8 @@
+id = "jei"
+name = "Just Enough Items"
+version = "19.64.0-horizon.1"
+description = "Item list beside container screens with search, recipes (R) and uses (U) on a recipe screen, bookmarks, \"+\" transfer and cheat mode, and a plugin interface for other ports. A Horizon port of Just Enough Items (MIT) written from its documentation and observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: mezz"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

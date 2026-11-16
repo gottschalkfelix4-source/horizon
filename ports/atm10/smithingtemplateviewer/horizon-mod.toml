@@ -1,0 +1,8 @@
+id = "smithingtemplateviewer"
+name = "Smithing Template Viewer"
+version = "1.0.4-horizon.1"
+description = "Previews the armour trim a smithing template applies in its tooltip: armour on an armour stand with the trim, cycling through the trim materials. A Horizon port of Smithing Template Viewer (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: see LICENSE-ORIGINAL.md"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]

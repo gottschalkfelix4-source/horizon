@@ -1,0 +1,16 @@
+{
+  "toastcontrol.config.global_disable": "Block all toasts",
+  "toastcontrol.config.global_disable.tooltip": "No toast of any kind is shown.",
+  "toastcontrol.config.block_advancements": "Block advancement toasts",
+  "toastcontrol.config.block_advancements.tooltip": "Hide the toast of every completed advancement.",
+  "toastcontrol.config.block_challenges": "Block challenge toasts",
+  "toastcontrol.config.block_challenges.tooltip": "Hide the toast of completed challenges (the purple ones) even when other advancements show.",
+  "toastcontrol.config.block_recipes": "Block recipe toasts",
+  "toastcontrol.config.block_recipes.tooltip": "Hide \"New recipes unlocked\".",
+  "toastcontrol.config.block_tutorial": "Block tutorial toasts",
+  "toastcontrol.config.block_tutorial.tooltip": "Hide the tutorial hints (move, punch a tree, open your inventory...).",
+  "toastcontrol.config.block_system": "Block system toasts",
+  "toastcontrol.config.block_system.tooltip": "Hide system notices such as narrator status, world backups and pack downloads.",
+  "toastcontrol.config.block_other": "Block other toasts",
+  "toastcontrol.config.block_other.tooltip": "Hide toasts of no other kind, including now-playing music and mods' own toasts."
+}

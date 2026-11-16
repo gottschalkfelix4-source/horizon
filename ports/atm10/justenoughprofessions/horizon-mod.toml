@@ -1,0 +1,11 @@
+id = "justenoughprofessions"
+name = "Just Enough Professions"
+version = "1.0.0-horizon.1"
+description = "A JEI category showing each villager profession's workstation block. A Horizon port of Just Enough Professions (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: see LICENSE-ORIGINAL.md"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]
+
+[dependencies]
+jei = "^19"
