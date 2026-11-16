@@ -230,6 +230,24 @@ pub struct ModFluidTanks {
     /// The tanks a drain may take from (`canTakeItemThroughFace`).
     pub outputs: Vec<usize>,
 }
+impl ModFluidTanks {
+    /// Tanks of `tanks` millibuckets each, the tanks each face reaches (`faces`, by `Direction`
+    /// number), and the tanks a fill (`inputs`) and a drain (`outputs`) may reach. The struct is
+    /// `#[non_exhaustive]`, so a mod builds it here rather than by a literal.
+    pub fn new(
+        tanks: Vec<i32>,
+        faces: [Vec<usize>; 6],
+        inputs: Vec<usize>,
+        outputs: Vec<usize>,
+    ) -> Self {
+        Self {
+            tanks,
+            faces,
+            inputs,
+            outputs,
+        }
+    }
+}
 /// The energy buffer of a mod block's block entity (NeoForge's
 /// `SimpleEnergyHandler`): its capacity, the most one insert and one extract
 /// moves, and the faces a fill may come through and a drain may leave by.
