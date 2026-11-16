@@ -1,0 +1,6 @@
+{
+  "rftoolsbuilder.horizon.command.no_builder": "There is no Builder there",
+  "rftoolsbuilder.horizon.command.bad_card": "Unknown card or shape, or a size outside 1 to 256",
+  "rftoolsbuilder.horizon.command.card_set": "Shape card set: %s blocks to go through",
+  "rftoolsbuilder.horizon.command.stopped": "Builder stopped"
+}
