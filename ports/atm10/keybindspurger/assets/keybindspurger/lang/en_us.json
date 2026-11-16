@@ -5,5 +5,6 @@
   "keybindspurger.title": "Purge Key Binds: click a binding to purge or keep it",
   "keybindspurger.purged": "Purged",
   "keybindspurger.purge_conflicts": "Purge conflicts",
-  "keybindspurger.clear": "Keep all"
+  "keybindspurger.clear": "Keep all",
+  "keybindspurger.purge_modded": "Purge modded"
 }

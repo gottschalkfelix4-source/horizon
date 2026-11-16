@@ -1,35 +1,22 @@
 //! KeyBind Bundles' model, apart from the game: the bundles (saved as text), which bindings a
 //! bundle may hold, and which slice of the radial menu the pointer is on.
 
-/// How many bundles there are; each has its own key in Controls (`bundle_1`...).
+/// How many bundles there are to start with, registered at startup; each has its own key in
+/// Controls (`bundle_1`...).
 pub const BUNDLES: usize = 8;
+/// The most bundles the editor's `+` adds up to: their keys are registered when they are added.
+pub const MAX_BUNDLES: usize = 16;
+/// The prefix of this mod's own bindings (`keybindbundles:bundle_1`): a bundle can't hold them.
+pub const OWN_PREFIX: &str = "keybindbundles:";
 /// The most bindings one bundle holds.
 pub const MAX_ENTRIES: usize = 12;
 /// Inside this radius, in GUI pixels, the pointer picks nothing: a release there fires nothing.
 pub const DEAD_ZONE: f32 = 16.0;
 
-/// The vanilla bindings a bundle can fire: Horizon's mod API clicks the movement, gameplay and
-/// inventory ones (`ClientHost::click_mapping`), in Controls' order.
-pub const CLICKABLE: &[&str] = &[
-    "key.attack",
-    "key.use",
-    "key.pickItem",
-    "key.jump",
-    "key.sneak",
-    "key.sprint",
-    "key.drop",
-    "key.inventory",
-    "key.swapOffhand",
-    "key.hotbar.1",
-    "key.hotbar.2",
-    "key.hotbar.3",
-    "key.hotbar.4",
-    "key.hotbar.5",
-    "key.hotbar.6",
-    "key.hotbar.7",
-    "key.hotbar.8",
-    "key.hotbar.9",
-];
+/// Whether a bundle can hold binding `id` (a `KeyBindingView::id`): any but this mod's own.
+pub fn holdable(id: &str) -> bool {
+    !id.is_empty() && !id.starts_with(OWN_PREFIX)
+}
 
 /// Every bundle's bindings, by bundle index.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -42,10 +29,21 @@ impl Default for Bundles {
 }
 
 impl Bundles {
-    /// Reads the saved form: `<bundle number> = <id>, <id>...`, one bundle a line, numbered from
-    /// 1. Unknown bindings, numbers out of range and entries past `MAX_ENTRIES` are dropped.
+    /// Reads the saved form: `bundles = <count>` when more than the first eight, then
+    /// `<bundle number> = <id>, <id>...`, one bundle a line, numbered from 1. Numbers out of range,
+    /// this mod's own bindings, repeats and entries past `MAX_ENTRIES` are dropped; a binding no
+    /// mod provides now is kept, as its mod may be absent only for this session.
     pub fn parse(text: &str) -> Self {
         let mut bundles = Bundles::default();
+        let count = text
+            .lines()
+            .filter_map(|l| l.split_once('='))
+            .find(|(k, _)| k.trim() == "bundles")
+            .and_then(|(_, v)| v.trim().parse::<usize>().ok())
+            .unwrap_or(BUNDLES);
+        bundles
+            .0
+            .resize(count.clamp(BUNDLES, MAX_BUNDLES), Vec::new());
         for line in text.lines() {
             let line = line.trim();
             if line.starts_with('#') {
@@ -66,10 +64,7 @@ impl Bundles {
                 continue;
             };
             for id in ids.split(',').map(str::trim) {
-                if CLICKABLE.contains(&id)
-                    && !bundle.iter().any(|e| e == id)
-                    && bundle.len() < MAX_ENTRIES
-                {
+                if holdable(id) && !bundle.iter().any(|e| e == id) && bundle.len() < MAX_ENTRIES {
                     bundle.push(id.to_owned());
                 }
             }
@@ -80,6 +75,9 @@ impl Bundles {
     /// The saved form.
     pub fn write(&self) -> String {
         let mut out = String::from("# KeyBind Bundles: <bundle> = <binding>, <binding>...\n");
+        if self.0.len() > BUNDLES {
+            out.push_str(&format!("bundles = {}\n", self.0.len()));
+        }
         for (i, bundle) in self.0.iter().enumerate() {
             if !bundle.is_empty() {
                 out.push_str(&format!("{} = {}\n", i + 1, bundle.join(", ")));
@@ -88,8 +86,17 @@ impl Bundles {
         out
     }
 
+    /// Adds one more bundle, up to `MAX_BUNDLES`; false when there are that many.
+    pub fn add_bundle(&mut self) -> bool {
+        if self.0.len() >= MAX_BUNDLES {
+            return false;
+        }
+        self.0.push(Vec::new());
+        true
+    }
+
     /// Adds `id` to bundle `index`, or takes it out. False when the bundle is full or the
-    /// binding can't be fired.
+    /// binding can't be held.
     pub fn toggle(&mut self, index: usize, id: &str) -> bool {
         let Some(bundle) = self.0.get_mut(index) else {
             return false;
@@ -98,7 +105,7 @@ impl Bundles {
             bundle.remove(at);
             return true;
         }
-        if bundle.len() >= MAX_ENTRIES || !CLICKABLE.contains(&id) {
+        if bundle.len() >= MAX_ENTRIES || !holdable(id) {
             return false;
         }
         bundle.push(id.to_owned());
@@ -158,26 +165,41 @@ mod tests {
     }
 
     #[test]
-    fn the_saved_form_drops_what_a_bundle_cannot_hold() {
-        let text =
-            "1 = key.drop, key.chat, key.drop, nonsense\n9 = key.jump\n0 = key.jump\nhello\n";
+    fn the_saved_form_keeps_any_other_binding_and_drops_repeats_and_its_own() {
+        let text = "1 = key.drop, key.chat, key.drop, zoom:in, keybindbundles:bundle_2\n9 = key.jump\n0 = key.jump\nhello\n";
         let bundles = Bundles::parse(text);
-        assert_eq!(bundles.0[0], ["key.drop"]);
+        assert_eq!(bundles.0[0], ["key.drop", "key.chat", "zoom:in"]);
+        assert_eq!(bundles.0.len(), BUNDLES);
         assert!(bundles.0[1..].iter().all(Vec::is_empty));
+    }
+
+    #[test]
+    fn more_bundles_are_saved_and_read_back_up_to_the_limit() {
+        let mut bundles = Bundles::default();
+        assert!(bundles.add_bundle() && bundles.add_bundle());
+        assert!(bundles.toggle(9, "key.screenshot"));
+        let back = Bundles::parse(&bundles.write());
+        assert_eq!(back, bundles);
+        assert_eq!(back.0.len(), 10);
+        while bundles.add_bundle() {}
+        assert_eq!(bundles.0.len(), 16);
+        assert_eq!(Bundles::parse("bundles = 99").0.len(), 16);
+        assert_eq!(Bundles::parse("bundles = 2").0.len(), 8);
     }
 
     #[test]
     fn a_full_bundle_takes_no_more_and_a_second_toggle_removes() {
         let mut bundles = Bundles::default();
-        for id in &CLICKABLE[..MAX_ENTRIES] {
+        let ids: Vec<String> = (0..=MAX_ENTRIES).map(|i| format!("mod:k{i}")).collect();
+        for id in &ids[..MAX_ENTRIES] {
             assert!(bundles.toggle(1, id));
         }
-        assert!(!bundles.toggle(1, CLICKABLE[MAX_ENTRIES]));
-        assert!(bundles.toggle(1, CLICKABLE[0]));
+        assert!(!bundles.toggle(1, &ids[MAX_ENTRIES]));
+        assert!(bundles.toggle(1, &ids[0]));
         assert_eq!(bundles.0[1].len(), MAX_ENTRIES - 1);
         assert!(
-            !bundles.toggle(1, "key.chat"),
-            "chat can't be clicked by a mod"
+            !bundles.toggle(1, "keybindbundles:edit"),
+            "not its own keys"
         );
     }
 }
