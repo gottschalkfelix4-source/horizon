@@ -1,0 +1,9 @@
+{
+  "simplebackups.backup_started": "Backup started...",
+  "simplebackups.backup_finished": "Backup finished in %s s (%s MB)",
+  "simplebackups.backup_failed": "Backup failed: %s",
+  "simplebackups.already_running": "A backup is already running",
+  "simplebackups.paused": "Backups are paused",
+  "simplebackups.unpaused": "Backups are running again",
+  "simplebackups.disabled": "Backups are turned off in the config"
+}
