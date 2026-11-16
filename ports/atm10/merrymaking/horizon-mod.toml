@@ -1,0 +1,8 @@
+id = "merrymaking"
+name = "Mama's MerryMaking"
+version = "1.21.1-17-horizon.1"
+description = "Holiday candle holders (menorah, kinara) you light one candle at a time. A partial Horizon port of Mama's MerryMaking (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: Mama_Michelle"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]
