@@ -1,0 +1,8 @@
+id = "rangedpumps"
+name = "Ranged Pumps"
+version = "1.3.0-horizon.1"
+description = "A pump that drains the fluid sources in an area below it into its tank, for energy. A Horizon port of Ranged Pumps (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: unknown (see the mod's page)"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

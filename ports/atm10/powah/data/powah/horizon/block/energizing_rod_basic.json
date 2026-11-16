@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:end_rod",
+  "properties": {
+    "hardness": 2.0,
+    "explosion_resistance": 5.0
+  },
+  "item": true
+}

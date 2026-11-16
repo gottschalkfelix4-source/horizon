@@ -1,0 +1,6 @@
+{
+  "template": "minecraft:stone_sword",
+  "components": {
+    "minecraft:max_damage": 131
+  }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "mod-quarryplus"
+version = "0.1.0"
+edition = "2024"
+license = "LGPL-3.0-only"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# In a launcher build this is the pinned SDK's copy (.horizon/sdk/api/crates/horizon-mod-api);
+# in this checkout it is the workspace crate, so `cargo check` runs against the current API.
+horizon-mod-api = { path = "../../../crates/horizon-mod-api" }
+
+[workspace]

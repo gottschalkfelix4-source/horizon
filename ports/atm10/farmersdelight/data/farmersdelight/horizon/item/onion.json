@@ -1,0 +1,10 @@
+{
+  "template": "minecraft:carrot",
+  "block": "farmersdelight:onions",
+  "components": {
+    "minecraft:food": {
+      "nutrition": 2,
+      "saturation": 1.6
+    }
+  }
+}

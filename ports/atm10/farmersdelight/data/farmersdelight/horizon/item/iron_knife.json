@@ -1,0 +1,6 @@
+{
+  "template": "minecraft:iron_sword",
+  "components": {
+    "minecraft:max_damage": 250
+  }
+}

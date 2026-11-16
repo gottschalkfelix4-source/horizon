@@ -1,0 +1,10 @@
+{
+  "template": "minecraft:mushroom_stew",
+  "max_stack_size": 16,
+  "components": {
+    "minecraft:food": {
+      "nutrition": 14,
+      "saturation": 21.0
+    }
+  }
+}

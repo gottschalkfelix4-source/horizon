@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:barrel",
+  "properties": { "hardness": 2.5, "explosion_resistance": 3600000.0 },
+  "item": true
+}

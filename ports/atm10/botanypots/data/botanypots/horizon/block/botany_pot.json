@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:flower_pot",
+  "properties": { "hardness": 1.25, "explosion_resistance": 4.2 },
+  "item": true
+}

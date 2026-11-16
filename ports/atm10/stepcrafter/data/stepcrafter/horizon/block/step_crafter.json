@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:dropper",
+  "properties": { "hardness": 3.5, "explosion_resistance": 3.5 },
+  "item": true
+}

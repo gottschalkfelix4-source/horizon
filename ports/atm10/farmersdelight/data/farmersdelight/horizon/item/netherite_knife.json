@@ -1,0 +1,6 @@
+{
+  "template": "minecraft:netherite_sword",
+  "components": {
+    "minecraft:max_damage": 2031
+  }
+}

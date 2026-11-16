@@ -1,0 +1,8 @@
+id = "botanypots"
+name = "BotanyPots"
+version = "21.1.44-horizon.1"
+description = "Pots that grow crops from a soil and a seed and hand out the harvest. A Horizon port of BotanyPots (LGPL-2.1-only) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Darkhax"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]

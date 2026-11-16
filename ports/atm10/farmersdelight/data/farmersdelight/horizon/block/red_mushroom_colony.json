@@ -1,0 +1,16 @@
+{
+  "template": "minecraft:red_mushroom",
+  "random_ticks": true,
+  "item": true,
+  "state_properties": {
+    "age": {
+      "type": "enum",
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ]
+    }
+  }
+}

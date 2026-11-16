@@ -1,0 +1,20 @@
+{
+  "template": "minecraft:dirt",
+  "random_ticks": true,
+  "item": true,
+  "state_properties": {
+    "composting": {
+      "type": "enum",
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    }
+  }
+}

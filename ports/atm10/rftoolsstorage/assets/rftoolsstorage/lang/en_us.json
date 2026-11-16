@@ -1,0 +1,8 @@
+{
+  "rftoolsstorage.selected": "Showing %s",
+  "rftoolsstorage.empty": "The storage is empty",
+  "item.rftoolsstorage.storage_module0": "Storage Module",
+  "item.rftoolsstorage.storage_module1": "Storage Module (tier 2)",
+  "item.rftoolsstorage.storage_module2": "Storage Module (tier 3)",
+  "block.rftoolsstorage.modular_storage": "Modular Storage"
+}

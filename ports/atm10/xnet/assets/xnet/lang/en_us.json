@@ -1,0 +1,12 @@
+{
+  "xnet.kind.0": "Connector: items",
+  "xnet.kind.1": "Connector: fluids",
+  "xnet.kind.2": "Connector: energy",
+  "xnet.mode.0": "Connector: off",
+  "xnet.mode.1": "Connector: extracts",
+  "xnet.mode.2": "Connector: inserts",
+  "xnet.channel": "Channel %s",
+  "block.xnet.netcable": "Net Cable",
+  "block.xnet.connector": "Connector",
+  "block.xnet.controller": "Controller"
+}
