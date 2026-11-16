@@ -1,0 +1,18 @@
+{
+  "block.morered.red_alloy_wire": "Red Alloy Wire",
+  "block.morered.not_gate": "NOT Gate",
+  "block.morered.diode": "Diode",
+  "block.morered.and_gate": "AND Gate",
+  "block.morered.and_2_gate": "Two-Input AND Gate",
+  "block.morered.nand_gate": "NAND Gate",
+  "block.morered.nand_2_gate": "Two-Input NAND Gate",
+  "block.morered.or_gate": "OR Gate",
+  "block.morered.nor_gate": "NOR Gate",
+  "block.morered.xor_gate": "XOR Gate",
+  "block.morered.xnor_gate": "XNOR Gate",
+  "block.morered.multiplexer": "Multiplexer",
+  "block.morered.latch": "Latch",
+  "block.morered.t_flip_flop": "T Flip-Flop",
+  "block.morered.pulse_gate": "Pulse Gate",
+  "item.morered.red_alloy_ingot": "Red Alloy Ingot"
+}
