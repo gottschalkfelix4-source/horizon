@@ -1,0 +1,8 @@
+id = "auroral"
+name = "Auroral"
+version = "1.21.1-1.1.3-horizon.1"
+description = "Auroras over cold biomes on clear nights, drawn behind the world. A Horizon port of Auroral (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: the Auroral authors (name to confirm from the mod page)"]
+api = "0.2"
+side = "client"
+capabilities = []
