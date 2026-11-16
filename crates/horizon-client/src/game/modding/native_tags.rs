@@ -14,6 +14,18 @@ pub(super) fn is_in_tag(items: Option<&Items>, item: ItemKey, tag: TagKey) -> Op
         )
     })
 }
+pub(super) fn item_tags(items: Option<&Items>, item: ItemKey) -> Option<Vec<mod_api::Identifier>> {
+    let items = items?;
+    let item = mod_api::__private::item_key_id(item)?;
+    let mut tags: Vec<mod_api::Identifier> = items
+        .item_tags
+        .iter()
+        .filter(|(_, members)| members.contains(item))
+        .filter_map(|(name, _)| mod_api::Identifier::parse(name).ok())
+        .collect();
+    tags.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
+    Some(tags)
+}
 pub(super) fn items(items: Option<&Items>, tag: TagKey) -> Option<Vec<ItemKey>> {
     let items = items?;
     mod_api::__private::with_tag_name(tag, |name| {
@@ -69,6 +81,10 @@ macro_rules! impl_tags {
             fn is_in_tag(&self, item: mod_api::ItemKey, tag: mod_api::TagKey) -> Option<bool> {
                 let $this = self;
                 $crate::game::native_tags::is_in_tag($items, item, tag)
+            }
+            fn item_tags(&self, item: mod_api::ItemKey) -> Option<Vec<mod_api::Identifier>> {
+                let $this = self;
+                $crate::game::native_tags::item_tags($items, item)
             }
             fn items(&self, tag: mod_api::TagKey) -> Option<Vec<mod_api::ItemKey>> {
                 let $this = self;
@@ -206,5 +222,32 @@ mod tests {
         assert_eq!(items(Some(&table), missing), Some(vec![]));
         assert_eq!(is_in_tag(None, stone, tag), None);
         assert_eq!(items(None, tag), None);
+    }
+    #[test]
+    fn an_items_tags_come_sorted_by_id_and_are_none_without_tags() {
+        crate::game::api_values::install_parts(&[]).unwrap();
+        mod_api::__private::resolve_items(["minecraft:diamond", "minecraft:dirt"]).unwrap();
+        let diamond = mod_api::__private::item_key("minecraft:diamond").unwrap();
+        let dirt = mod_api::__private::item_key("minecraft:dirt").unwrap();
+        let mut table = Items::for_tests(Default::default());
+        for (tag, member) in [
+            ("minecraft:gems", "minecraft:diamond"),
+            ("c:gems", "minecraft:diamond"),
+            ("minecraft:dirt", "minecraft:dirt"),
+        ] {
+            table.item_tags.insert(tag.into(), [member.into()].into());
+        }
+        let names = |tags: Option<Vec<mod_api::Identifier>>| -> Option<Vec<String>> {
+            tags.map(|t| t.iter().map(|id| id.to_string()).collect())
+        };
+        assert_eq!(
+            names(item_tags(Some(&table), diamond)),
+            Some(vec!["c:gems".to_owned(), "minecraft:gems".to_owned()])
+        );
+        assert_eq!(
+            names(item_tags(Some(&table), dirt)),
+            Some(vec!["minecraft:dirt".to_owned()])
+        );
+        assert_eq!(item_tags(None, diamond), None);
     }
 }

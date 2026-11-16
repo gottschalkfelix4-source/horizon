@@ -616,6 +616,45 @@ impl Game<'_> {
         self.level_block_state(level, pos)
             .and_then(|state| mod_api::__private::block_key(&self.res.facts().get(state).name))
     }
+    /// The blocks of the box `min`..=`max` in x, z, y order (`level_block` for each), or None for
+    /// a stale handle, an unloaded column in the box, or a box past `BLOCKS_IN_BOX_MAX`. Loaded
+    /// columns are checked once per column, and the block names once per state.
+    pub(super) fn level_blocks_in_box(
+        &self,
+        level: LevelRef,
+        a: [i32; 3],
+        b: [i32; 3],
+    ) -> Option<Vec<mod_api::BlockKey>> {
+        let world = self.native_level_read_world(level)?;
+        let lo = [a[0].min(b[0]), a[1].min(b[1]), a[2].min(b[2])];
+        let hi = [a[0].max(b[0]), a[1].max(b[1]), a[2].max(b[2])];
+        let size = |i: usize| (i64::from(hi[i]) - i64::from(lo[i]) + 1) as u64;
+        let total = size(0).checked_mul(size(1))?.checked_mul(size(2))?;
+        if total > mod_api::BLOCKS_IN_BOX_MAX
+            || !world.shape.contains_y(lo[1])
+            || !world.shape.contains_y(hi[1])
+        {
+            return None;
+        }
+        let mut keys: crate::fast_hash::FxHashMap<BlockStateId, Option<mod_api::BlockKey>> =
+            Default::default();
+        let mut out = Vec::with_capacity(total as usize);
+        for x in lo[0]..=hi[0] {
+            for z in lo[2]..=hi[2] {
+                if !world.is_loaded_at(x, lo[1], z) {
+                    return None;
+                }
+                for y in lo[1]..=hi[1] {
+                    let state = world.block(x, y, z);
+                    let key = *keys.entry(state).or_insert_with(|| {
+                        mod_api::__private::block_key(&self.res.facts().get(state).name)
+                    });
+                    out.push(key?);
+                }
+            }
+        }
+        Some(out)
+    }
     /// Property `key` of the block state at `pos` (`BlockState.getValue`):
     /// `east` for `facing`. None for a block without it, or as for
     /// `block_state`. API 381.
@@ -717,7 +756,7 @@ impl Game<'_> {
         layer: LightLayer,
         pos: [i32; 3],
     ) -> Option<i32> {
-        let world = self.native_level_world(level)?;
+        let world = self.native_level_read_world(level)?;
         world
             .is_loaded_at(pos[0], pos[1], pos[2])
             .then(|| world_brightness(world, layer, pos))

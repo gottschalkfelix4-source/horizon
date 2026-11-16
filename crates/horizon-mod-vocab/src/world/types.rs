@@ -360,6 +360,9 @@ impl LevelRef {
     }
 }
 
+/// The most positions `LevelRef::blocks_in_box` reads in one call (a 101-block cube).
+pub const BLOCKS_IN_BOX_MAX: u64 = 1 << 20;
+
 /// A mod-owned watered area in one server level. Created by [`LevelRef::add_water_ticket`].
 /// Explicit removal, owner disable and level unload invalidate it. Never saved.
 #[derive(horizon_mod_api_macros::Wire)]
