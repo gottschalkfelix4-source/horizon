@@ -1,0 +1,6 @@
+{
+  "item.measurements.tape_measure": "Tape Measure",
+  "measurements.start": "Measuring from %s, %s, %s",
+  "measurements.result": "%s x %s x %s (%s blocks), distance %s",
+  "measurements.cleared": "Measurement cleared"
+}
