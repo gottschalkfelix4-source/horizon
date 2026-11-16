@@ -76,14 +76,14 @@ pub struct KeyMapping {
     pub label: Text,
 }
 
-/// Why `ClientHost::set_mapping_down` or `ClientHost::click_mapping` refused a mapping.
+/// Why `ClientHost::set_mapping_down`, `click_mapping`, `set_key_binding` or `press_binding` refused a mapping.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 #[derive(horizon_mod_api_macros::Wire)]
 pub enum MappingError {
     /// No player is in a world.
     NoWorld,
-    /// No vanilla mapping has this name.
+    /// No mapping has this name (or, for `set_key_binding`, no key has it).
     Unknown {
         /// The name asked for.
         key: String,

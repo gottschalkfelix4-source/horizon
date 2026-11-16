@@ -38,6 +38,9 @@ pub struct ModList {
     pub installed: Vec<Installed>,
     /// What the Mods screen's panel shows of each installed mod, by id.
     pub info: BTreeMap<String, ModInfo>,
+    /// Ids of the key bindings Controls leaves out (`ClientHost::set_key_binding_hidden`): a
+    /// vanilla name or `<mod id>:<id>`, one `hidden_key:<id>` line each.
+    pub hidden_keys: BTreeSet<String>,
 }
 
 /// What the Mods screen shows of a mod besides its row: the manifest's descriptive fields and
@@ -374,6 +377,11 @@ impl ModList {
             disabled,
             keys,
             wasm_memory_cap_mib,
+            hidden_keys: text
+                .lines()
+                .filter_map(|l| l.strip_prefix("hidden_key:"))
+                .map(|id| id.trim().to_owned())
+                .collect(),
             installed: Vec::new(),
             info: BTreeMap::new(),
         }
@@ -388,7 +396,11 @@ impl ModList {
         let cap = self
             .wasm_memory_cap_mib
             .map(|mib| format!("{WASM_MEMORY_CAP}:{mib}\n"));
-        on.chain(off).chain(keys).chain(cap).collect()
+        let hidden = self
+            .hidden_keys
+            .iter()
+            .map(|id| format!("hidden_key:{id}\n"));
+        on.chain(off).chain(keys).chain(hidden).chain(cap).collect()
     }
     /// The cap on each wasm group's memory this instance allows, in MiB.
     pub fn wasm_memory_cap(&self) -> u32 {
@@ -427,6 +439,7 @@ impl ModList {
         if self.enabled.is_empty()
             && self.disabled.is_empty()
             && self.keys.is_empty()
+            && self.hidden_keys.is_empty()
             && self.wasm_memory_cap_mib.is_none()
             && !path.exists()
         {
@@ -485,6 +498,17 @@ mod tests {
         assert_eq!(list.enabled.iter().collect::<Vec<_>>(), ["coords_hud"]);
         assert_eq!(ModList::parse(&list.serialize()), list);
         assert_eq!(ModList::default().serialize(), "");
+    }
+
+    /// A hidden binding's id may hold a colon (`<mod id>:<id>`) and survives a save.
+    #[test]
+    fn hidden_key_bindings_round_trip() {
+        let list = ModList::parse("hidden_key:key.jump\nhidden_key:zoom:in\n");
+        assert_eq!(
+            list.hidden_keys.iter().collect::<Vec<_>>(),
+            ["key.jump", "zoom:in"]
+        );
+        assert_eq!(ModList::parse(&list.serialize()), list);
     }
 
     #[test]

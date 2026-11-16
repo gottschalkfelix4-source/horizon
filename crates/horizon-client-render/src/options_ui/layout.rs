@@ -252,7 +252,8 @@ impl OptionsUi {
                     MAPPINGS.iter().map(|(n, _, c)| (*n, *c)).collect();
                 let query = self.settings_search.value.to_lowercase();
                 mappings.retain(|(name, _)| {
-                    query.is_empty() || lang::get(name).to_lowercase().contains(&query)
+                    !s.mods.hidden_keys.contains(*name)
+                        && (query.is_empty() || lang::get(name).to_lowercase().contains(&query))
                 });
                 mappings.sort_by(|a, b| {
                     let ca = CATEGORIES.iter().position(|c| *c == a.1).unwrap_or(99);
@@ -394,6 +395,12 @@ impl OptionsUi {
                     rows.end(&mut out, y);
                     let mut last_category = "";
                     for (k, mapping) in page.mappings.iter().enumerate() {
+                        if s.mods
+                            .hidden_keys
+                            .contains(&format!("{}:{}", m.id, mapping.id))
+                        {
+                            continue;
+                        }
                         if !query.is_empty()
                             && !lang::get(&mapping.label).to_lowercase().contains(&query)
                             && !lang::get(&mapping.category).to_lowercase().contains(&query)
