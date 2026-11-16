@@ -1,0 +1,8 @@
+{
+  "silentgems.linker.bound": "Teleporter bound: use the linker on a second teleporter",
+  "silentgems.linker.linked": "Teleporters linked",
+  "silentgems.linker.failed": "Could not link the teleporters",
+  "silentgems.charm.bound": "Charm bound to this teleporter",
+  "silentgems.teleporter.unlinked": "This teleporter is not linked",
+  "silentgems.teleporter.missing": "The destination teleporter is gone"
+}
