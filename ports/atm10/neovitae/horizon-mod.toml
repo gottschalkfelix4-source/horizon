@@ -1,0 +1,8 @@
+id = "neovitae"
+name = "Neo Vitae"
+version = "1.1.38-horizon.1"
+description = "The tier 1 Blood Altar, filled with the Sacrificial Dagger, and its infusion crafting. A Horizon port of Neo Vitae (MIT), the Blood Magic successor, written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Neo Vitae contributors (Blood Magic by WayofTime)"]
+api = "0.2"
+side = "server"
+capabilities = ["registries"]
