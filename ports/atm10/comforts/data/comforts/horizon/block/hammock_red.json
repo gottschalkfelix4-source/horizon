@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:red_bed",
+  "properties": { "hardness": 0.1, "explosion_resistance": 0.1 },
+  "item": true
+}

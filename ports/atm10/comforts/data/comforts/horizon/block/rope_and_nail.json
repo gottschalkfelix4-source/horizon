@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:tripwire_hook",
+  "properties": { "hardness": 0.5, "explosion_resistance": 0.5 },
+  "item": true
+}
