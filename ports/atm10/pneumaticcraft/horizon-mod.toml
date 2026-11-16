@@ -1,0 +1,8 @@
+id = "pneumaticcraft"
+name = "PneumaticCraft: Repressurized"
+version = "8.2.23-horizon.1"
+description = "Pressure: the Air Compressor burns fuel into compressed air, Pressure Tubes share it until pressures are equal, and anything pushed past its limit explodes. A Horizon port of PneumaticCraft: Repressurized (LGPL-2.1-only) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: desht (Repressurized), MineMaarten (PneumaticCraft)"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
