@@ -181,19 +181,15 @@ impl Game<'_> {
     /// from its type, `Monster` for the dragon, `Misc` for every other kind.
     pub(super) fn entity_classification(&self, entity: EntityRef) -> Option<MobCategory> {
         Some(match self.native_entity_target(entity)? {
-            Target::Mob(id) => match self.mobs.iter().find(|m| m.id == id)?.category() {
-                "monster" => MobCategory::Monster,
-                "creature" => MobCategory::Creature,
-                "ambient" => MobCategory::Ambient,
-                "axolotls" => MobCategory::Axolotls,
-                "underground_water_creature" => MobCategory::UndergroundWaterCreature,
-                "water_creature" => MobCategory::WaterCreature,
-                "water_ambient" => MobCategory::WaterAmbient,
-                _ => MobCategory::Misc,
-            },
+            Target::Mob(id) => mob_category(self.mobs.iter().find(|m| m.id == id)?.category()),
             Target::Dragon(_) => MobCategory::Monster,
             _ => MobCategory::Misc,
         })
+    }
+    /// The category of the mob type `kind` (`EntityType.getCategory`), from the
+    /// loaded mob types; `None` for an id that names no mob type.
+    pub(super) fn entity_type_category(&self, kind: &str) -> Option<MobCategory> {
+        Some(mob_category(&self.res.mob_types().get(kind)?.category))
     }
     /// Whether the entity is in its level: from when `entity_join_level` let
     /// it in (false while that hook runs for it and before) until it
@@ -427,5 +423,19 @@ mod tests {
                 assert!(!cow.added_to_level(game));
             });
         });
+    }
+}
+
+/// `MobCategory` by its saved name; an unknown name is `Misc`, as `EntityType.getCategory` falls back.
+fn mob_category(name: &str) -> MobCategory {
+    match name {
+        "monster" => MobCategory::Monster,
+        "creature" => MobCategory::Creature,
+        "ambient" => MobCategory::Ambient,
+        "axolotls" => MobCategory::Axolotls,
+        "underground_water_creature" => MobCategory::UndergroundWaterCreature,
+        "water_creature" => MobCategory::WaterCreature,
+        "water_ambient" => MobCategory::WaterAmbient,
+        _ => MobCategory::Misc,
     }
 }

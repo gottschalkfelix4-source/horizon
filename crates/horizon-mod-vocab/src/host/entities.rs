@@ -37,6 +37,14 @@ pub trait EntitiesHost {
     /// dimension the server hasn't loaded. API 373.
     #[access(WorldOnly)]
     fn level(&self, dimension: &str) -> Option<LevelRef>;
+    /// Side: both.
+    /// The category of an entity type by its id (`EntityType.getCategory`), without an
+    /// entity of it: `Some` for every registered mob type, vanilla's or a mod's
+    /// (`"minecraft:zombie"` answers `Monster`), `None` for an id no mob type has. A
+    /// spawn check reads it from `kind`, before the mob exists, as NeoForge mods read
+    /// `event.getEntity().getType().getCategory()`.
+    #[access(WorldOnly)]
+    fn entity_type_category(&self, kind: &str) -> Option<MobCategory>;
 }
 /// The server host's methods of the `entities` area, implemented by the game and reached through [`ServerHost`].
 #[horizon_mod_api_macros::host_area]
