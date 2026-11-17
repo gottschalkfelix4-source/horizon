@@ -21,6 +21,8 @@ BLOCKS = {
     "andesite_casing": ("minecraft:stripped_oak_log", 2.0, 3.0, "Andesite Casing"),
     "deployer": ("minecraft:stripped_oak_log", 3.5, 6.0, "Deployer"),
     "mechanical_saw": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Saw"),
+    "fluid_pipe": ("minecraft:iron_bars", 1.0, 3.0, "Fluid Pipe"),
+    "mechanical_pump": ("minecraft:observer", 3.0, 6.0, "Mechanical Pump"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
     "basin": ("minecraft:furnace", 3.0, 6.0, "Basin"),
     "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),

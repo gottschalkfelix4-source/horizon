@@ -22,10 +22,12 @@ pub enum Kind {
     BlazeBurner,
     Deployer,
     MechanicalSaw,
+    FluidPipe,
+    MechanicalPump,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 18] = [
+    pub const ALL: [Kind; 20] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -44,6 +46,8 @@ impl Kind {
         Kind::BlazeBurner,
         Kind::Deployer,
         Kind::MechanicalSaw,
+        Kind::FluidPipe,
+        Kind::MechanicalPump,
     ];
 
     pub fn name(self) -> &'static str {
@@ -66,6 +70,8 @@ impl Kind {
             Kind::BlazeBurner => "blaze_burner",
             Kind::Deployer => "deployer",
             Kind::MechanicalSaw => "mechanical_saw",
+            Kind::FluidPipe => "fluid_pipe",
+            Kind::MechanicalPump => "mechanical_pump",
         }
     }
 }
@@ -174,6 +180,24 @@ pub fn cut(id: &str) -> Option<(&'static str, u32, u32)> {
         "minecraft:bamboo_planks" => ("minecraft:bamboo_mosaic", 1, 20),
         _ => return None,
     })
+}
+
+/// A pipe holds this many mB, passes at most `PIPE_FLOW` a tick to each neighbour, and a pump moves
+/// `PUMP_PER_RPM` mB a tick per RPM (all unconfirmed) at `PUMP_IMPACT` su per RPM.
+pub const PIPE_CAPACITY: i32 = 1000;
+pub const PIPE_FLOW: u32 = 250;
+pub const PUMP_PER_RPM: f64 = 8.0;
+pub const PUMP_IMPACT: f64 = 4.0;
+
+/// The fluid a pump moves this tick at `speed` RPM, in mB (0 when it stands still).
+pub fn pump_rate(speed: f64) -> u32 {
+    (speed.abs() * PUMP_PER_RPM).floor() as u32
+}
+
+/// Whether a pipe holding `mine` of `cap` should hand fluid to a neighbour pipe holding `theirs`:
+/// only downhill, so a network evens out and nothing swings back.
+pub fn flows(mine: i32, theirs: i32) -> bool {
+    mine > theirs
 }
 
 /// What a press makes of one item lying on a depot.
@@ -372,5 +396,15 @@ mod tests {
     fn a_saw_cuts_alloy_into_six_shafts() {
         assert_eq!(cut("create:andesite_alloy"), Some(("create:shaft", 6, 200)));
         assert_eq!(cut("minecraft:dirt"), None);
+    }
+
+    #[test]
+    fn a_pump_moves_8_mb_per_rpm_and_pipes_flow_downhill() {
+        assert_eq!(pump_rate(16.0), 128);
+        assert_eq!(pump_rate(-16.0), 128);
+        assert_eq!(pump_rate(0.0), 0);
+        assert!(flows(500, 100));
+        assert!(!flows(100, 100));
+        assert!(!flows(100, 500));
     }
 }

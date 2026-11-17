@@ -14,6 +14,8 @@
   "block.create.andesite_casing": "Andesite Casing",
   "block.create.deployer": "Deployer",
   "block.create.mechanical_saw": "Mechanical Saw",
+  "block.create.fluid_pipe": "Fluid Pipe",
+  "block.create.mechanical_pump": "Mechanical Pump",
   "block.create.depot": "Depot",
   "block.create.basin": "Basin",
   "block.create.mechanical_mixer": "Mechanical Mixer",
