@@ -20,10 +20,12 @@ pub enum Kind {
     Funnel,
     CrushingWheel,
     BlazeBurner,
+    Deployer,
+    MechanicalSaw,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 16] = [
+    pub const ALL: [Kind; 18] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -40,6 +42,8 @@ impl Kind {
         Kind::Funnel,
         Kind::CrushingWheel,
         Kind::BlazeBurner,
+        Kind::Deployer,
+        Kind::MechanicalSaw,
     ];
 
     pub fn name(self) -> &'static str {
@@ -60,6 +64,8 @@ impl Kind {
             Kind::Funnel => "funnel",
             Kind::CrushingWheel => "crushing_wheel",
             Kind::BlazeBurner => "blaze_burner",
+            Kind::Deployer => "deployer",
+            Kind::MechanicalSaw => "mechanical_saw",
         }
     }
 }
@@ -122,6 +128,53 @@ pub const MILL_INPUTS: usize = 4;
 
 /// Stress per RPM a crushing wheel uses.
 pub const CRUSHER_IMPACT: f64 = 8.0;
+
+/// Stress per RPM, and the work (RPM-ticks) of one deployer or saw cycle (both unconfirmed).
+pub const DEPLOYER_IMPACT: f64 = 4.0;
+pub const SAW_IMPACT: f64 = 4.0;
+pub const DEPLOY_WORK: f64 = 640.0;
+
+/// What a deployer makes of the item on a depot (`target`) with the item it holds (`held`): the
+/// result id and whether the held item survives. From the original's deploying recipes: planks
+/// turn a shaft into a cogwheel and a cogwheel into a large one; an axe scrapes and unwaxes copper
+/// and keeps itself; honeycomb waxes copper and is used up.
+pub fn deploy(target: &str, held: &str) -> Option<(String, bool)> {
+    let is_planks = held.ends_with("_planks") && held.starts_with("minecraft:");
+    match target {
+        "create:shaft" if is_planks => return Some(("create:cogwheel".into(), false)),
+        "create:cogwheel" if is_planks => return Some(("create:large_cogwheel".into(), false)),
+        _ => {}
+    }
+    let name = target.strip_prefix("minecraft:")?;
+    if !name.contains("copper") {
+        return None;
+    }
+    if held.starts_with("minecraft:") && held.ends_with("_axe") {
+        if let Some(bare) = name.strip_prefix("waxed_") {
+            return Some((format!("minecraft:{bare}"), true));
+        }
+        for (stage, prev) in [("exposed_", ""), ("weathered_", "exposed_"), ("oxidized_", "weathered_")] {
+            if let Some(rest) = name.strip_prefix(stage) {
+                let out = if prev.is_empty() && rest == "copper" { "copper_block".to_string() } else { format!("{prev}{rest}") };
+                return Some((format!("minecraft:{out}"), true));
+            }
+        }
+        return None;
+    }
+    if held == "minecraft:honeycomb" && !name.starts_with("waxed_") {
+        return Some((format!("minecraft:waxed_{name}"), false));
+    }
+    None
+}
+
+/// What a saw makes of one item: output id, count, ticks at 16 RPM.
+pub fn cut(id: &str) -> Option<(&'static str, u32, u32)> {
+    Some(match id {
+        "create:andesite_alloy" => ("create:shaft", 6, 200),
+        "minecraft:bamboo_planks" => ("minecraft:bamboo_mosaic", 1, 20),
+        _ => return None,
+    })
+}
 
 /// What a press makes of one item lying on a depot.
 pub fn press(id: &str) -> Option<&'static str> {
@@ -302,5 +355,22 @@ mod tests {
         assert_eq!(burner_fuel("minecraft:coal"), Some((1600, HEATED)));
         assert_eq!(burner_fuel("create:blaze_cake").map(|f| f.1), Some(SUPERHEATED));
         assert_eq!(burner_fuel("minecraft:dirt"), None);
+    }
+
+    #[test]
+    fn deployer_recipes_follow_the_original() {
+        assert_eq!(deploy("create:shaft", "minecraft:oak_planks"), Some(("create:cogwheel".into(), false)));
+        assert_eq!(deploy("create:shaft", "minecraft:stone"), None);
+        assert_eq!(deploy("minecraft:exposed_copper", "minecraft:iron_axe"), Some(("minecraft:copper_block".into(), true)));
+        assert_eq!(deploy("minecraft:oxidized_cut_copper", "minecraft:stone_axe"), Some(("minecraft:weathered_cut_copper".into(), true)));
+        assert_eq!(deploy("minecraft:waxed_exposed_copper", "minecraft:iron_axe"), Some(("minecraft:exposed_copper".into(), true)));
+        assert_eq!(deploy("minecraft:cut_copper", "minecraft:honeycomb"), Some(("minecraft:waxed_cut_copper".into(), false)));
+        assert_eq!(deploy("minecraft:copper_block", "minecraft:iron_axe"), None);
+    }
+
+    #[test]
+    fn a_saw_cuts_alloy_into_six_shafts() {
+        assert_eq!(cut("create:andesite_alloy"), Some(("create:shaft", 6, 200)));
+        assert_eq!(cut("minecraft:dirt"), None);
     }
 }
