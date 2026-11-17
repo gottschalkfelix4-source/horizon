@@ -19,6 +19,7 @@ pub mod bus;
 pub mod cells;
 pub mod crafting;
 pub mod interface;
+pub mod search;
 pub mod terminal;
 pub mod view;
 pub mod wireless;
@@ -581,6 +582,14 @@ impl Hooks for Mod {
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);
         }
+        let mut handlers = r.payload_handlers();
+        let mut payloads = handlers.registrar("1");
+        let token = payloads.play_to_server_typed::<String>(search::id(), |text, context| {
+            let player = context.player().map_err(|e| format!("{e:?}"))?;
+            terminal::queue_search(player.uuid(), text);
+            Ok(())
+        });
+        let _ = search::SEARCH.set(token);
         let wt = r.item_key(wireless::ITEM);
         r.item_part(wt, wireless::Terminal);
         // one rule for the 9x1 menu: pattern provider and both buses (the block says which)
@@ -588,6 +597,7 @@ impl Hooks for Mod {
     }
 
     fn server_tick(&self, host: &mut dyn ServerHost, _: &mut mod_api::ServerTickEvent<'_>) {
+        terminal::apply_searches(host);
         autocraft::tick(host);
     }
 
@@ -597,5 +607,21 @@ impl Hooks for Mod {
 
     fn menu_closed(&self, _: &mut dyn ServerHost, event: &mut MenuClosedEvent) {
         terminal::closed(event.uuid, event.window);
+    }
+
+    fn screen_key_pressed_pre(&self, _: &dyn mod_api::ClientHost, event: &mut mod_api::ScreenKeyPressedPreEvent<'_>) -> mod_api::Flow {
+        search::key_pressed(event)
+    }
+
+    fn screen_char_typed_pre(&self, _: &dyn mod_api::ClientHost, event: &mut mod_api::ScreenCharTypedPreEvent<'_>) -> mod_api::Flow {
+        search::char_typed(event)
+    }
+
+    fn client_tick_post(&self, host: &mut dyn mod_api::ClientHost, event: &mut mod_api::ClientTickPostEvent) {
+        search::send(host, event);
+    }
+
+    fn screen_closing(&self, host: &dyn mod_api::ClientHost, event: &mut mod_api::ScreenClosingEvent<'_>) {
+        search::closing(host, event);
     }
 }
