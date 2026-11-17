@@ -61,6 +61,8 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
     let axis = axis
         .or_else(|| facing.and_then(Axis::of_offset))
         .unwrap_or(Axis::Y);
+    // a millstone is driven from below (or above), whichever way its menu faces
+    let axis = if kind == Kind::Millstone { Axis::Y } else { axis };
     let part = match kind {
         Kind::Shaft => Part::Shaft,
         Kind::Cogwheel => Part::Cog,
@@ -69,7 +71,7 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::Millstone => Part::Consumer { impact: MILLSTONE_IMPACT },
         Kind::MechanicalPress => Part::Consumer { impact: PRESS_IMPACT },
         Kind::MechanicalMixer => Part::Consumer { impact: MIXER_IMPACT },
-        Kind::Belt => Part::Consumer { impact: BELT_IMPACT },
+        Kind::Belt => Part::Belt { impact: BELT_IMPACT },
         Kind::Depot | Kind::Basin | Kind::Funnel => return None,
         Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM * facing_sign(facing), capacity: CREATIVE_MOTOR_CAPACITY },
         Kind::WaterWheel => {
@@ -330,11 +332,13 @@ fn tick_belt(
         set_progress(nbt, BELT_WORK - speed.abs());
         return;
     }
+    // one item at a time, not the whole stack
+    let Some(one) = ItemStack::new(held.item(), 1) else { return };
     let moved = host
-        .transaction(|host, tx| be.set_item_slot(host, tx, 0, Some(held)).map_err(|_| ()).map(|_| ()))
+        .transaction(|host, tx| be.set_item_slot(host, tx, 0, Some(one)).map_err(|_| ()).map(|_| ()))
         .is_ok();
     if moved {
-        items[0] = None;
+        items[0] = items[0].take().and_then(|i| i.shrink(1));
         set_progress(nbt, 0.0);
     }
 }
