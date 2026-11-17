@@ -204,6 +204,14 @@ pub trait LevelsBackend {
     #[access(WorldOnly)]
     fn chunk_loaded(&self, chunk: ChunkRef) -> bool;
     /// Side: server.
+    /// The mod block entities of a loaded chunk (`LevelChunk.getBlockEntities`, those of mod
+    /// block entity types), sorted by position (x, then z, then y), so a mod can find its own
+    /// machines in a chunk without asking every position. Empty for a chunk with none. None for a
+    /// chunk that isn't loaded, a stale handle or a client. Vanilla's block entities are not
+    /// listed: read those by position with `LevelRef::block_entity`.
+    #[access(WorldOnly)]
+    fn chunk_block_entities(&self, chunk: ChunkRef) -> Option<Vec<BlockEntityRef>>;
+    /// Side: server.
     /// The status of a loaded chunk. Proto chunks are not exposed here.
     #[access(WorldOnly)]
     fn chunk_status(&self, chunk: ChunkRef) -> Option<ChunkStatus>;
