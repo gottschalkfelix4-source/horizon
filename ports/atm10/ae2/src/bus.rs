@@ -128,6 +128,17 @@ pub fn use_item_on(host: &mut dyn ServerHost, event: &mut UseItemOnEvent<'_>) ->
 
 pub fn use_without_item(host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
     let click = event.click;
+    // The game also runs this empty-hand use right after the item use of the same click, so an empty
+    // hand alone must not clear the filter: sneaking with an empty hand does.
     let stack = held(&mut *host, click.stack, click.player, click.hand);
+    if stack.is_none() {
+        let sneaking = host
+            .player(click.player)
+            .and_then(|p| p.is_secondary_use_active(&*host))
+            .unwrap_or(false);
+        if !sneaking {
+            return None;
+        }
+    }
     set_filter(host, click.pos, click.player, stack.as_ref())
 }
