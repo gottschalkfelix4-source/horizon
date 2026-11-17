@@ -34,6 +34,8 @@ Rules followed here:
 | [SmithingTemplateViewer](smithingtemplateviewer/) | 1.0.4 | MIT | client | ported in part; not run in the game, not yet checked against the original |
 | [Toast Control](toastcontrol/) | 9.0.1 | MIT | client | ported in part; not run in the game, not yet checked against the original |
 | [Luminax](luminax/) | 1.3.1 | LGPL-3.0-or-later | client | README only: behaviour must be observed first |
+| [AE2 Import Export Card](ae2importexportcard/) | 1.21.1-1.9.1 | MIT | machines | README only: waits for upgrade slots in the AE2 port |
+| [AE2WTLib](ae2wtlib/) | 19.5.1 | MIT | machines | README only: the AE2 port has the base wireless terminal; battery, range cards and the other terminals follow |
 | [Just Enough Mekanism Multiblocks](jei_mekanism_multiblocks/) | 7.23 | MIT | client | README only: waits for the Mekanism port |
 | [Refined Storage - JEI Integration](refinedstorage_jei_integration/) | 1.0.0 | MIT | client | README only: waits for the Refined Storage port |
 | [Mouse Tweaks](mousetweaks/) | 2.26.1 | BSD-3-Clause | client | covered by Horizon's built-in extras; gaps listed |
