@@ -9,12 +9,14 @@
 //! tick: energy acceptors hand FE to the cells, the idle draw of cables and the controller is taken
 //! from the cells, and the result (`powered`, `nodes`, `stored`) is saved in that block's data.
 use mod_api::{
-    BlockEntityEvent, BlockEntityPart, ItemStack, MenuContainer, MenuPart, MenuSlotRulesEvent, BlockEntityTickEvent, BlockEntityTickReply,
+    BlockEntityEvent, BlockEntityPart, InteractionResult, ItemStack, MenuClickedEvent, MenuClosedEvent, UseItemOnEvent, UseWithoutItemEvent, MenuContainer, MenuPart, MenuSlotRulesEvent, BlockEntityTickEvent, BlockEntityTickReply,
     BlockEntityTicksEvent, BlockPart, Compound, Direction, ENERGY, Hooks, Host, LevelRef,
     LevelSide, HostTransaction, ModContainer, ModEnergyBuffer, Registrar, RegistrationContext, ServerHost, Tag,
 };
 
 pub mod cells;
+pub mod terminal;
+pub mod view;
 pub mod rules;
 use cells::*;
 use rules::*;
@@ -30,12 +32,12 @@ fn set_int(nbt: &mut Compound, key: &str, v: i32) {
     nbt.insert(key.into(), Tag::Int(v));
 }
 
-fn offset(pos: [i32; 3], dir: Direction) -> [i32; 3] {
+pub(crate) fn offset(pos: [i32; 3], dir: Direction) -> [i32; 3] {
     let n = dir.normal();
     [pos[0] + n[0], pos[1] + n[1], pos[2] + n[2]]
 }
 
-fn id_at(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<String> {
+pub(crate) fn id_at(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<String> {
     Some(level.block(host, pos)?.id(host))
 }
 
@@ -111,7 +113,7 @@ fn stored(host: &mut dyn ServerHost, level: LevelRef, cells: &[[i32; 3]]) -> i64
 }
 
 /// The cells in a network's drives: (drive position, slot, tier, stack).
-fn cells_of(
+pub(crate) fn cells_of(
     host: &dyn Host,
     level: LevelRef,
     drives: &[[i32; 3]],
@@ -303,6 +305,20 @@ fn buffer_of(d: Device) -> Option<ModEnergyBuffer> {
     })
 }
 
+/// The ME terminal block: using it opens the network's items.
+struct Terminal;
+
+#[mod_api::horizon_part]
+impl BlockPart for Terminal {
+    fn use_item_on(&self, host: &mut dyn ServerHost, event: &mut UseItemOnEvent<'_>) -> Option<InteractionResult> {
+        terminal::open(host, event.click.player, event.click.pos)
+    }
+
+    fn use_without_item(&self, host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
+        terminal::open(host, event.click.player, event.click.pos)
+    }
+}
+
 /// The drive takes only storage cells, in its first ten slots.
 struct DriveRules;
 
@@ -359,6 +375,10 @@ impl Hooks for Mod {
                 }
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
+            if entity_type == "terminal" {
+                let key = r.block_key("ae2:terminal");
+                r.block_part(key, Terminal);
+            }
             if entity_type == "drive" {
                 let key = r.block_key("ae2:drive");
                 r.block_container(&key, drive_container());
@@ -367,5 +387,13 @@ impl Hooks for Mod {
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);
         }
+    }
+
+    fn menu_clicked(&self, host: &mut dyn ServerHost, event: &mut MenuClickedEvent) {
+        terminal::clicked(host, event);
+    }
+
+    fn menu_closed(&self, _: &mut dyn ServerHost, event: &mut MenuClosedEvent) {
+        terminal::closed(event.uuid, event.window);
     }
 }
