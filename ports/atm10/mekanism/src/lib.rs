@@ -192,6 +192,49 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
     }
 }
 
+/// Moves up to `want` from the tanks of `src` into those of `dst`, each resource to the tank that
+/// takes it, by the amount that makes the two equally full: how much moved.
+fn balance_tanks<R: 'static>(
+    host: &mut dyn ServerHost,
+    src: &dyn ResourceHandler<R>,
+    dst: &dyn ResourceHandler<R>,
+    want: u32,
+) -> u32 {
+    let (mut left, mut total) = (want, 0u32);
+    for i in 0..src.size(host) {
+        if left == 0 {
+            break;
+        }
+        let Some(r) = src.resource(host, i) else { continue };
+        let (sa, sc) = (f64::from(src.amount(host, i)), f64::from(src.capacity(host, i, &r)));
+        if sc <= 0.0 {
+            continue;
+        }
+        let Some(j) = (0..dst.size(host)).find(|j| dst.capacity(host, *j, &r) > 0) else { continue };
+        let (da, dc) = (f64::from(dst.amount(host, j)), f64::from(dst.capacity(host, j, &r)));
+        if sa * dc <= da * sc {
+            continue;
+        }
+        let balance = ((sa * dc - da * sc) / (sc + dc)).floor();
+        let n = left.min(balance.min(f64::from(u32::MAX)) as u32);
+        if n == 0 {
+            continue;
+        }
+        let moved = host
+            .transaction(|host, tx| {
+                let out = src.extract(host, tx, i, &r, n);
+                if out == 0 {
+                    return Ok(0);
+                }
+                if dst.insert(host, tx, j, &r, out) < out { Err(()) } else { Ok::<u32, ()>(out) }
+            })
+            .unwrap_or(0);
+        total += moved;
+        left -= moved;
+    }
+    total
+}
+
 /// How long (in ticks) a pair of endpoints keeps its direction: once one fed the other, the other
 /// may not feed it back for this long, whatever the levels say.
 const SETTLE: i32 = 200;
@@ -251,8 +294,14 @@ fn move_network<R: 'static>(
     items: bool,
     memory: &mut Memory<'_>,
 ) {
+    // machines and the multiblocks that only consume or produce (boiler, turbine, reactor) are
+    // filled and emptied freely: their sides are one-way
     let machine_end = |host: &dyn Host, p: [i32; 3]| {
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
+            || matches!(
+                mb::id_at(host, level, p).as_deref(),
+                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT)
+            )
     };
     for (i, &from) in ends.iter().enumerate() {
         for (j, &to) in ends.iter().enumerate() {
@@ -268,31 +317,25 @@ fn move_network<R: 'static>(
             ) else {
                 continue;
             };
-            let mut want = budget;
+            let want = budget;
             let stores = !machine_end(&*host, from.0) && !machine_end(&*host, to.0);
             if stores && !memory.allows(from.0, to.0) {
                 continue;
             }
+            if stores && !items {
+                // two tanks balance, each chemical or fluid on its own: the amount that leaves
+                // them equally full, so nothing swings back and forth
+                let moved = balance_tanks(host, &*src, &*dst, want);
+                if moved > 0 {
+                    memory.moved(from.0, to.0);
+                    budget -= moved.min(budget);
+                }
+                continue;
+            }
             if stores {
-                if items {
-                    let (a, b) = (fill_of(host, &*src, true), fill_of(host, &*dst, true));
-                    if a <= b {
-                        continue;
-                    }
-                } else {
-                    // two tanks balance: the amount that leaves them equally full, so nothing
-                    // swings back and forth
-                    let Some(r) = src.resource(host, 0) else { continue };
-                    let (sa, sc) = (f64::from(src.amount(host, 0)), f64::from(src.capacity(host, 0, &r)));
-                    let (da, dc) = (f64::from(dst.amount(host, 0)), f64::from(dst.capacity(host, 0, &r)));
-                    if sc <= 0.0 || dc <= 0.0 || sa * dc <= da * sc {
-                        continue;
-                    }
-                    let balance = ((sa * dc - da * sc) / (sc + dc)).floor();
-                    want = want.min(balance.min(f64::from(u32::MAX)) as u32);
-                    if want == 0 {
-                        continue;
-                    }
+                let (a, b) = (fill_of(host, &*src, true), fill_of(host, &*dst, true));
+                if a <= b {
+                    continue;
                 }
             }
             let moved = host
