@@ -110,36 +110,15 @@ pub const MILLSTONE_IMPACT: f64 = 4.0;
 pub const PRESS_IMPACT: f64 = 8.0;
 
 /// Work (RPM summed over ticks) one millstone item or one pressing needs: 64 ticks at 32 RPM.
-pub const MILL_WORK: f64 = 2048.0;
+pub const MILL_WORK: f64 = 2048.0; // the old flat time, kept for the tests of `advance`
 pub const PRESS_WORK: f64 = 1280.0;
 
 /// The millstone's slots: 4 in, 5 out.
 pub const MILL_SLOTS: usize = 9;
 pub const MILL_INPUTS: usize = 4;
 
-/// What a millstone makes of one item: `(output id, count)`.
-pub fn mill(id: &str) -> Option<(&'static str, u32)> {
-    Some(match id {
-        "minecraft:wheat" => ("create:wheat_flour", 1),
-        "minecraft:cobblestone" => ("minecraft:gravel", 1),
-        "minecraft:bone" => ("minecraft:bone_meal", 3),
-        _ => return None,
-    })
-}
-
 /// Stress per RPM a crushing wheel uses.
 pub const CRUSHER_IMPACT: f64 = 8.0;
-
-/// What a crushing wheel makes of one item: `(output id, count)`.
-pub fn crush(id: &str) -> Option<(&'static str, u32)> {
-    Some(match id {
-        "minecraft:raw_iron" => ("create:crushed_raw_iron", 1),
-        "minecraft:raw_copper" => ("create:crushed_raw_copper", 1),
-        "minecraft:raw_gold" => ("create:crushed_raw_gold", 1),
-        "minecraft:cobblestone" => ("minecraft:gravel", 1),
-        _ => return None,
-    })
-}
 
 /// What a press makes of one item lying on a depot.
 pub fn press(id: &str) -> Option<&'static str> {
@@ -148,6 +127,8 @@ pub fn press(id: &str) -> Option<&'static str> {
         "minecraft:gold_ingot" => "create:golden_sheet",
         "minecraft:copper_ingot" => "create:copper_sheet",
         "create:brass_ingot" => "create:brass_sheet",
+        "minecraft:sugar_cane" => "minecraft:paper",
+        "create:pulp" => "create:cardboard",
         _ => return None,
     })
 }
@@ -157,7 +138,8 @@ pub const MIXER_IMPACT: f64 = 4.0;
 pub const MIX_WORK: f64 = 2560.0;
 pub const BASIN_SLOTS: usize = 9;
 
-/// What a mixer makes of the items in a basin (unheated recipes only): the ids taken, one of
+/// What a mixer makes of the items in a basin (andesite plus an iron or zinc nugget; the other
+/// recipes need water, heat or both): the ids taken, one of
 /// each, and the output `(id, count)`.
 pub fn mix(held: &[String]) -> Option<(Vec<&'static str>, &'static str, u32)> {
     let has = |id: &str| held.iter().any(|h| h == id);
@@ -259,10 +241,9 @@ mod tests {
 
     #[test]
     fn recipes_know_their_inputs() {
-        assert_eq!(mill("minecraft:wheat"), Some(("create:wheat_flour", 1)));
-        assert_eq!(mill("minecraft:dirt"), None);
         assert_eq!(press("minecraft:iron_ingot"), Some("create:iron_sheet"));
         assert_eq!(press("minecraft:iron_nugget"), None);
+        assert_eq!(press("minecraft:sugar_cane"), Some("minecraft:paper"));
     }
 
     #[test]
@@ -288,12 +269,4 @@ mod tests {
         assert_eq!(belt_step(Axis::X, 0.0), None);
     }
 
-    #[test]
-    fn a_crushing_wheel_crushes_raw_ore() {
-        assert_eq!(
-            crush("minecraft:raw_iron"),
-            Some(("create:crushed_raw_iron", 1))
-        );
-        assert_eq!(crush("minecraft:iron_ingot"), None);
-    }
 }
