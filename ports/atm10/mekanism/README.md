@@ -58,5 +58,6 @@ Not a gap: gases, infuse types, pigments and slurries need no engine change (`Ca
 sh ../dev-sdk.sh                              # once: links the checkout's mod API
 cargo test                                    # in this folder
 python3 gen_data.py                           # rewrites data/ (placeholders)
+python3 gen_lang.py                           # from ports/atm10: names for all four Mekanism ports
 horizon-launcher native-build . --instance <instance> --trust-native-code
 ```
