@@ -11,7 +11,7 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 | 1 | Cables (glass, covered, smart, dense covered, dense smart; fluix and 16 colours), controller, energy acceptor, energy cell, dense energy cell, network scan and power model; crystals, dusts, processors as data | ported, numbers to check; not run in the game |
 | 2 | Drive (ten cell slots), item storage cells 1k to 256k with contents saved in the stack, `network_insert` / `network_extract` over a network's cells, storage summary on the leader | ported, not run in the game. Not yet: ME chest, fluid cells, cell workbench and partitioning, inscriber and presses, charger, certus growth |
 | 3 | ME terminal (six-row view: 45 listed items by count, paging, take out and put in, search by item on the cursor); channels | ported, not run in the game. Not yet: text search (client hooks), crafting and pattern terminal, channels |
-| 4 | Import/export buses, storage bus, interface, annihilation and formation planes, p2p tunnels | not yet |
+| 4 | Import and export bus, channels | ported, not run in the game. Not yet: storage bus, interface, annihilation and formation planes, P2P, upgrade cards |
 | 5 | Autocrafting: patterns, pattern provider, molecular assembler, crafting CPU multiblock | not yet |
 | 6 | Spatial IO, wireless access points and terminals, quantum bridge, meteorites, world generation | not yet |
 
@@ -91,3 +91,15 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   search to the item on the cursor (empty cursor clears it). A listed stack shows at most one stack's count.
 - Idle draw 0.5 AE/tick. Text search and AE2's counts in k/M need client hooks (`screen_char_typed_pre`, `screen_draw`);
   stage 3b.
+
+## Stage 4 behaviour (buses, channels)
+
+- `ae2:import_bus` and `ae2:export_bus` are blocks joined to the network. Every 5 ticks a bus moves one item between the
+  network's cells and the first neighbouring inventory (a block outside the network with an item capability) that can
+  take or give it. Needs power and a channel, draws 0.1 AE/tick.
+- The import bus takes the first plain item it finds (only its filter's item when it has one). The export bus puts out
+  its filter's item, nothing without a filter. Right-click a bus with an item to set its filter, with an empty hand to
+  clear it (shown on the action bar). AE2 buses are cable parts with a configuration screen; this is the port's stand-in.
+- Channels: a network has 8, or 32 with a controller. Drives, terminals and buses each take one, the lowest positions
+  first; a device past the limit does nothing (a drive's cells are not seen, a terminal says "no free channel"). AE2's
+  per-cable channel routing (8 per smart cable, 32 per dense) is not modelled.

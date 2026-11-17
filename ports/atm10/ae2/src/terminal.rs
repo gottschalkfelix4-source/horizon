@@ -43,17 +43,24 @@ fn nodes_of(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Vec<[i32; 3]> {
     })
 }
 
-struct Net {
-    drives: Vec<[i32; 3]>,
-    powered: bool,
+pub(crate) struct Net {
+    pub drives: Vec<[i32; 3]>,
+    pub powered: bool,
+    /// Whether the block `net` was asked from has a channel.
+    pub channel: bool,
 }
 
-fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> Net {
+pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> Net {
     let nodes = nodes_of(&*host, level, pos);
+    let has_channel = crate::channels(&*host, level, &nodes);
     let (mut drives, mut cells) = (Vec::new(), Vec::new());
     for &n in &nodes {
         match id_at(&*host, level, n).as_deref().and_then(parse_block) {
-            Some(Kind::Device(Device::Drive)) => drives.push(n),
+            Some(Kind::Device(Device::Drive)) => {
+                if has_channel.contains(&n) {
+                    drives.push(n);
+                }
+            }
             Some(Kind::Device(d)) if d.is_cell() => cells.push(n),
             _ => {}
         }
@@ -64,7 +71,7 @@ fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> Net {
             stored += cap.amount(host) as u64;
         }
     }
-    Net { drives, powered: stored > 0 }
+    Net { drives, powered: stored > 0, channel: has_channel.contains(&pos) }
 }
 
 /// The network's items, as the view lists them.
@@ -115,9 +122,10 @@ fn render(host: &dyn Host, level: LevelRef, v: &View, drives: &[[i32; 3]]) -> (u
 pub fn open(host: &mut dyn ServerHost, player: u128, pos: [i32; 3]) -> Option<InteractionResult> {
     let level = host.level(host.dimension())?;
     let n = net(host, level, pos);
-    if !n.powered {
+    if !n.powered || !n.channel {
         if let Some(p) = host.player(player) {
-            let _ = p.action_bar(host, Text::literal("The network has no power"));
+            let msg = if n.powered { "The network has no free channel" } else { "The network has no power" };
+            let _ = p.action_bar(host, Text::literal(msg));
         }
         return Some(InteractionResult::Fail);
     }

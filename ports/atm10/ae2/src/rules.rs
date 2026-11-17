@@ -62,16 +62,20 @@ pub enum Device {
     DenseEnergyCell,
     Drive,
     Terminal,
+    ImportBus,
+    ExportBus,
 }
 
 impl Device {
-    pub const ALL: [Device; 6] = [
+    pub const ALL: [Device; 8] = [
         Device::Controller,
         Device::EnergyAcceptor,
         Device::EnergyCell,
         Device::DenseEnergyCell,
         Device::Drive,
         Device::Terminal,
+        Device::ImportBus,
+        Device::ExportBus,
     ];
 
     pub fn name(self) -> &'static str {
@@ -82,13 +86,15 @@ impl Device {
             Device::DenseEnergyCell => "dense_energy_cell",
             Device::Drive => "drive",
             Device::Terminal => "terminal",
+            Device::ImportBus => "import_bus",
+            Device::ExportBus => "export_bus",
         }
     }
 
     /// FE a block holds: cells 200k and 1.6M AE, the acceptor a small buffer to hand on.
     pub fn capacity_fe(self) -> i32 {
         match self {
-            Device::Controller | Device::Drive | Device::Terminal => 0,
+            Device::Controller | Device::Drive | Device::Terminal | Device::ImportBus | Device::ExportBus => 0,
             Device::EnergyAcceptor => 800,
             Device::EnergyCell => 200_000 * FE_PER_AE,
             Device::DenseEnergyCell => 1_600_000 * FE_PER_AE,
@@ -101,8 +107,19 @@ impl Device {
             Device::Controller => 6 * FE_PER_AE as i64 * 100,
             // the terminal draws 0.5 AE per tick
             Device::Terminal => 100,
+            // buses draw 0.1 AE per tick
+            Device::ImportBus | Device::ExportBus => 20,
             _ => 0,
         }
+    }
+
+    /// Whether the device takes one of the network's channels to work.
+    pub fn needs_channel(self) -> bool {
+        matches!(self, Device::Drive | Device::Terminal | Device::ImportBus | Device::ExportBus)
+    }
+
+    pub fn is_bus(self) -> bool {
+        matches!(self, Device::ImportBus | Device::ExportBus)
     }
 
     pub fn is_cell(self) -> bool {
@@ -157,6 +174,21 @@ pub fn connects(a: &str, b: &str) -> bool {
     }
     true
 }
+
+/// Channels a network offers: 8 on its own, 32 with a controller.
+pub fn channel_capacity(has_controller: bool) -> usize {
+    if has_controller { 32 } else { 8 }
+}
+
+/// The devices that have a channel: the first `capacity` of those that need one, in position order.
+pub fn channelled<P: Copy + Ord>(mut users: Vec<P>, capacity: usize) -> Vec<P> {
+    users.sort();
+    users.truncate(capacity);
+    users
+}
+
+/// What a bus does each `BUS_PERIOD` ticks: one item.
+pub const BUS_PERIOD: i64 = 5;
 
 /// Every block joined to `start` (up to `MAX_NODES`), sorted.
 pub fn flood<P: Copy + Ord>(start: P, neighbours: impl Fn(P) -> Vec<P>) -> Vec<P> {
@@ -279,6 +311,15 @@ mod tests {
     fn cables_lead_before_devices() {
         assert!(lead_class(Kind::Cable(Cable::Glass)) < lead_class(Kind::Device(Device::EnergyCell)));
         assert_eq!(lead_class(Kind::Device(Device::Controller)), 0);
+    }
+
+    #[test]
+    fn channels_go_to_the_first_devices_and_a_controller_adds_more() {
+        assert_eq!(channel_capacity(false), 8);
+        assert_eq!(channel_capacity(true), 32);
+        let users: Vec<i32> = (0..10).rev().collect();
+        assert_eq!(channelled(users, 8), (0..8).collect::<Vec<_>>());
+        assert_eq!(channelled(vec![3, 1], 8), vec![1, 3]);
     }
 
     #[test]
