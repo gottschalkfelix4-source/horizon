@@ -265,7 +265,15 @@ impl BlockEntityPart for Machines {
         match kind {
             Kind::Cable(t) => tick_cable(host, level, pos, t),
             Kind::Cube(t) => tick_cube(host, level, pos, t, int(&nbt, "energy")),
-            Kind::Machine(m) => tick_machine(host, level, m, &mut nbt, &mut items),
+            Kind::Machine(m) => {
+                tick_machine(host, level, m, &mut nbt, &mut items);
+                // the furnace template's `lit` shows the machine working
+                let lit = i32::from(int(&nbt, "progress") > 0);
+                if int(&nbt, "lit") != lit {
+                    set_int(&mut nbt, "lit", lit);
+                    let _ = host.set_block_property(pos, "lit", if lit == 1 { "true" } else { "false" });
+                }
+            }
         }
         if nbt == event.entity.nbt && items == event.entity.items {
             *event.reply = BlockEntityTickReply::Unchanged;

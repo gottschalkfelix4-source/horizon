@@ -14,7 +14,8 @@ use mod_api::{
 pub mod rules;
 use rules::*;
 
-const FUEL: usize = 0;
+/// Fuel slots, as many as the hopper menu shows.
+const SLOTS: usize = 5;
 
 fn int(nbt: &Compound, key: &str) -> i32 {
     match nbt.get(&key.into()) {
@@ -72,21 +73,22 @@ fn tick_generator(
         }
         Gen::Wind => wind_output(pos[1]),
         Gen::Heat | Gen::Bio => {
-            if items.len() < 1 {
-                items.resize(1, None);
+            if items.len() < SLOTS {
+                items.resize(SLOTS, None);
             }
             let mut burn = Burn { left: int(nbt, "burn") };
             let made = burn.tick(g, room, || {
-                let stack = items[FUEL].take()?;
-                let id = stack.item().id(&*host);
+                let slot = items.iter().position(|s| {
+                    s.as_ref().is_some_and(|s| {
+                        let vanilla = host.item_burn_time(s.item()).unwrap_or(0);
+                        burn_ticks(g, &s.item().id(&*host), vanilla) > 0
+                    })
+                })?;
+                let stack = items[slot].take()?;
                 let vanilla = host.item_burn_time(stack.item()).unwrap_or(0);
-                let ticks = burn_ticks(g, &id, vanilla);
-                if ticks <= 0 {
-                    items[FUEL] = Some(stack);
-                    return None;
-                }
+                let ticks = burn_ticks(g, &stack.item().id(&*host), vanilla);
                 let remainder = host.item_crafting_remainder(&stack);
-                items[FUEL] = stack.shrink(1).or(remainder);
+                items[slot] = stack.shrink(1).or(remainder);
                 Some(ticks)
             });
             set_int(nbt, "burn", burn.left);
@@ -96,6 +98,14 @@ fn tick_generator(
     let mut e = (held + made.min(room.max(0))).min(g.buffer());
     e -= push_to_neighbours(host, level, pos, e, g.rate());
     set_int(nbt, "energy", e);
+    // the furnace template's `lit` shows a burner making energy
+    if g.burns() {
+        let lit = i32::from(made > 0);
+        if int(nbt, "lit") != lit {
+            set_int(nbt, "lit", lit);
+            let _ = host.set_block_property(pos, "lit", if lit == 1 { "true" } else { "false" });
+        }
+    }
 }
 
 /// One part for every generator block entity.
@@ -160,11 +170,11 @@ impl Hooks for Mod {
                 r.block_container(
                     &key,
                     ModContainer {
-                        slots: 1,
-                        faces: std::array::from_fn(|_| vec![FUEL]),
-                        inputs: vec![FUEL],
+                        slots: SLOTS,
+                        faces: std::array::from_fn(|_| (0..SLOTS).collect()),
+                        inputs: (0..SLOTS).collect(),
                         outputs: vec![],
-                        menu: Some("minecraft:generic_9x1".into()),
+                        menu: Some("minecraft:hopper".into()),
                     },
                 );
             }

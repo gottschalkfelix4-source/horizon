@@ -12,7 +12,7 @@ Port of Mekanism Generators 10.7 (ATM10 8.x, MIT) as a native Horizon mod beside
 | Gas-burning generator, turbine, fission and fusion reactors, boiler, induction matrix | | not yet (need the multiblock and gas machines) |
 
 Generators hold 100 ticks of output, give to adjacent energy blocks (up to 4x their output) and the
-Mekanism port's universal cables draw from them. Fuel goes in through the hopper menu (slot 0).
+Mekanism port's universal cables draw from them. Fuel goes in through the hopper menu (any of its five slots).
 
 ## To check against the NeoForge original
 
