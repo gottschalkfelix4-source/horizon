@@ -53,7 +53,9 @@ small cogwheel mesh at, and the sail rule. `src/rules.rs` and `src/kinetics.rs` 
 
 ## Recipes
 
-`data/create/recipe/` holds the original's crafting recipes (MIT, its data files, not code) for the
+`data/create/recipe/` (written in the engine's format: ingredients are strings, `#` for tags) holds the original's crafting recipes (MIT, its data files, not code) for the
 blocks and items this port has: shafts, cogwheels, gearbox, depot, press, millstone, basin, water wheel,
 windmill bearing, andesite alloy, zinc and brass compacting, andesite funnel. Recipes that need blocks not
 ported yet (mixer needs the whisk, belts, casings other than andesite) are left out. Not yet run in the game.
+
+The port defines the `c:` item tags its recipes use (`data/c/tags/item/`: zinc ingot and nugget, brass nugget, iron nugget and block, stones). Recipes with zinc or brass blocks wait for those blocks.
