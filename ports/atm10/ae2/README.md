@@ -12,7 +12,7 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 | 2 | Drive (ten cell slots), item storage cells 1k to 256k with contents saved in the stack, `network_insert` / `network_extract` over a network's cells, storage summary on the leader | ported, not run in the game. Not yet: ME chest, fluid cells, cell workbench and partitioning, inscriber and presses, charger, certus growth |
 | 3 | ME terminal (six-row view: 45 listed items by count, paging, take out and put in, search by item on the cursor); channels | ported, not run in the game. Not yet: text search (client hooks), crafting and pattern terminal, channels |
 | 4 | Import and export bus, channels | ported, not run in the game. Not yet: storage bus, interface, annihilation and formation planes, P2P, upgrade cards |
-| 5 | Autocrafting: patterns, pattern provider, molecular assembler, crafting CPU multiblock | not yet |
+| 5 | Autocrafting: patterns, pattern provider, molecular assembler, recursive plans | ported, not run in the game. Stand-ins: no crafting CPU, no timing, the assembler is only the capacity a request needs; no pattern terminal, no processing patterns |
 | 6 | Spatial IO, wireless access points and terminals, quantum bridge, meteorites, world generation | not yet |
 
 ## Stage 1 behaviour
@@ -103,3 +103,16 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
 - Channels: a network has 8, or 32 with a controller. Drives, terminals and buses each take one, the lowest positions
   first; a device past the limit does nothing (a drive's cells are not seen, a terminal says "no free channel"). AE2's
   per-cable channel routing (8 per smart cable, 32 per dense) is not modelled.
+
+## Stage 5 behaviour (autocrafting)
+
+- `ae2:blank_pattern`: with one on the cursor, a click on a listed item in the terminal turns it into an
+  `ae2:crafting_pattern` for the first shaped or shapeless crafting recipe that makes that item (ingredients by their first
+  listed item). A pattern keeps `{out, out_n, in}` in its custom data.
+- `ae2:pattern_provider` holds nine patterns (only patterns go in; menu 9x1). The terminal also lists what the providers'
+  patterns make, with a count of 0 when none is stored.
+- Middle click on a listed item asks for one: the plan (`src/crafting.rs`) takes what the cells hold and crafts the rest, inputs
+  first, up to 16 deep, and says what is missing otherwise. It needs one `ae2:molecular_assembler` with a channel.
+  The crafts run at once, step by step; a craft that cannot start returns what it took; a result no cell has room for goes
+  to the player. Not modelled: crafting CPUs and their storage, crafting time and the assembler's power draw per craft (it
+  draws 2 AE/tick idle), processing patterns, amounts other than one.

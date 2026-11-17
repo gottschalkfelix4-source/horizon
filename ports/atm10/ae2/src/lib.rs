@@ -14,8 +14,10 @@ use mod_api::{
     LevelSide, HostTransaction, ModContainer, ModEnergyBuffer, Registrar, RegistrationContext, ServerHost, Tag,
 };
 
+pub mod autocraft;
 pub mod bus;
 pub mod cells;
+pub mod crafting;
 pub mod terminal;
 pub mod view;
 pub mod rules;
@@ -381,6 +383,26 @@ impl MenuPart for DriveRules {
     }
 }
 
+/// The pattern provider takes only encoded patterns.
+struct ProviderRules;
+
+#[mod_api::horizon_part]
+impl MenuPart for ProviderRules {
+    fn menu_slot_rules(&self, host: &dyn Host, event: &mut MenuSlotRulesEvent<'_>) {
+        if event.container != MenuContainer::Main {
+            return;
+        }
+        let Some(pos) = event.context.pos else { return };
+        let Some(level) = host.level(host.dimension()) else { return };
+        if !level.block(host, pos).is_some_and(|b| b.id(host) == "ae2:pattern_provider") {
+            return;
+        }
+        if event.slot >= 9 || event.stack.item().id(host) != autocraft::PATTERN {
+            event.may_place = false;
+        }
+    }
+}
+
 /// The drive: ten cell slots. Vanilla's 9x2 menu has 18, so the drive keeps 18 and only the first
 /// ten count (until the mod's own menu with ten slots exists).
 fn drive_container() -> ModContainer {
@@ -426,6 +448,21 @@ impl Hooks for Mod {
             if entity_type == "terminal" {
                 let key = r.block_key("ae2:terminal");
                 r.block_part(key, Terminal);
+            }
+            if entity_type == "pattern_provider" {
+                let key = r.block_key("ae2:pattern_provider");
+                let all: Vec<usize> = (0..9).collect();
+                r.block_container(
+                    &key,
+                    ModContainer {
+                        slots: 9,
+                        faces: std::array::from_fn(|_| Vec::new()),
+                        inputs: all.clone(),
+                        outputs: all,
+                        menu: Some("minecraft:generic_9x1".into()),
+                    },
+                );
+                r.menu_part("minecraft:generic_9x1", ProviderRules);
             }
             if entity_type == "drive" {
                 let key = r.block_key("ae2:drive");

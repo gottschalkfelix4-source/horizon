@@ -64,10 +64,12 @@ pub enum Device {
     Terminal,
     ImportBus,
     ExportBus,
+    PatternProvider,
+    MolecularAssembler,
 }
 
 impl Device {
-    pub const ALL: [Device; 8] = [
+    pub const ALL: [Device; 10] = [
         Device::Controller,
         Device::EnergyAcceptor,
         Device::EnergyCell,
@@ -76,6 +78,8 @@ impl Device {
         Device::Terminal,
         Device::ImportBus,
         Device::ExportBus,
+        Device::PatternProvider,
+        Device::MolecularAssembler,
     ];
 
     pub fn name(self) -> &'static str {
@@ -88,13 +92,21 @@ impl Device {
             Device::Terminal => "terminal",
             Device::ImportBus => "import_bus",
             Device::ExportBus => "export_bus",
+            Device::PatternProvider => "pattern_provider",
+            Device::MolecularAssembler => "molecular_assembler",
         }
     }
 
     /// FE a block holds: cells 200k and 1.6M AE, the acceptor a small buffer to hand on.
     pub fn capacity_fe(self) -> i32 {
         match self {
-            Device::Controller | Device::Drive | Device::Terminal | Device::ImportBus | Device::ExportBus => 0,
+            Device::Controller
+            | Device::Drive
+            | Device::Terminal
+            | Device::ImportBus
+            | Device::ExportBus
+            | Device::PatternProvider
+            | Device::MolecularAssembler => 0,
             Device::EnergyAcceptor => 800,
             Device::EnergyCell => 200_000 * FE_PER_AE,
             Device::DenseEnergyCell => 1_600_000 * FE_PER_AE,
@@ -109,13 +121,24 @@ impl Device {
             Device::Terminal => 100,
             // buses draw 0.1 AE per tick
             Device::ImportBus | Device::ExportBus => 20,
+            // the provider draws 0.1 AE, the assembler 2 AE per tick
+            Device::PatternProvider => 20,
+            Device::MolecularAssembler => 400,
             _ => 0,
         }
     }
 
     /// Whether the device takes one of the network's channels to work.
     pub fn needs_channel(self) -> bool {
-        matches!(self, Device::Drive | Device::Terminal | Device::ImportBus | Device::ExportBus)
+        matches!(
+            self,
+            Device::Drive
+                | Device::Terminal
+                | Device::ImportBus
+                | Device::ExportBus
+                | Device::PatternProvider
+                | Device::MolecularAssembler
+        )
     }
 
     pub fn is_bus(self) -> bool {

@@ -48,12 +48,15 @@ pub(crate) struct Net {
     pub powered: bool,
     /// Whether the block `net` was asked from has a channel.
     pub channel: bool,
+    /// Pattern providers and molecular assemblers that have a channel.
+    pub providers: Vec<[i32; 3]>,
+    pub assemblers: usize,
 }
 
 pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> Net {
     let nodes = nodes_of(&*host, level, pos);
     let has_channel = crate::channels(&*host, level, &nodes);
-    let (mut drives, mut cells) = (Vec::new(), Vec::new());
+    let (mut drives, mut cells, mut providers, mut assemblers) = (Vec::new(), Vec::new(), Vec::new(), 0usize);
     for &n in &nodes {
         match id_at(&*host, level, n).as_deref().and_then(parse_block) {
             Some(Kind::Device(Device::Drive)) => {
@@ -61,6 +64,8 @@ pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> 
                     drives.push(n);
                 }
             }
+            Some(Kind::Device(Device::PatternProvider)) if has_channel.contains(&n) => providers.push(n),
+            Some(Kind::Device(Device::MolecularAssembler)) if has_channel.contains(&n) => assemblers += 1,
             Some(Kind::Device(d)) if d.is_cell() => cells.push(n),
             _ => {}
         }
@@ -71,11 +76,11 @@ pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> 
             stored += cap.amount(host) as u64;
         }
     }
-    Net { drives, powered: stored > 0, channel: has_channel.contains(&pos) }
+    Net { drives, powered: stored > 0, channel: has_channel.contains(&pos), providers, assemblers }
 }
 
 /// The network's items, as the view lists them.
-fn items_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]]) -> Vec<(String, u64)> {
+fn items_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]], patterns: &[crate::crafting::Pattern]) -> Vec<(String, u64)> {
     let mut all: Vec<(String, u64)> = Vec::new();
     for (_, _, _, stack) in cells_of(host, level, drives) {
         for (id, n) in Store::of_stack(&stack).items {
@@ -83,6 +88,12 @@ fn items_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]]) -> Vec<(Strin
                 Some((_, c)) => *c += n,
                 None => all.push((id, n)),
             }
+        }
+    }
+    // what a pattern makes is listed even when none is stored
+    for p in patterns {
+        if !all.iter().any(|(i, _)| *i == p.out) {
+            all.push((p.out.clone(), 0));
         }
     }
     view::listing(all)
@@ -102,8 +113,9 @@ fn stack_of(host: &dyn Host, id: &str, count: u64) -> Option<ItemStack> {
 }
 
 /// The 54 slots of the view for `page` and `search`.
-fn render(host: &dyn Host, level: LevelRef, v: &View, drives: &[[i32; 3]]) -> (usize, Vec<Option<ItemStack>>) {
-    let all = items_of(host, level, drives);
+fn render(host: &dyn Host, level: LevelRef, v: &View, n: &Net) -> (usize, Vec<Option<ItemStack>>) {
+    let patterns = crate::autocraft::patterns_of(host, level, &n.providers);
+    let all = items_of(host, level, &n.drives, &patterns);
     let shown = view::filter(&all, v.search.as_deref());
     let (page, here) = view::page_of(&shown, v.page);
     let mut slots: Vec<Option<ItemStack>> = vec![None; 54];
@@ -130,13 +142,19 @@ pub fn open(host: &mut dyn ServerHost, player: u128, pos: [i32; 3]) -> Option<In
         return Some(InteractionResult::Fail);
     }
     let mut v = View { player, window: 0, pos, page: 0, search: None };
-    let (_, items) = render(&*host, level, &v, &n.drives);
+    let (_, items) = render(&*host, level, &v, &n);
     let title = Text::translate("block.ae2.terminal", Vec::new());
     v.window = host.open_menu(player, view::ROWS, title, items, MenuReplace::CloseFirst).ok().flatten()?;
     let mut all = views();
     all.retain(|x| x.player != player);
     all.push(v);
     Some(InteractionResult::SuccessServer)
+}
+
+fn notify(host: &mut dyn ServerHost, player: u128, msg: &str) {
+    if let Some(p) = host.player(player) {
+        let _ = p.action_bar(host, Text::literal(msg));
+    }
 }
 
 pub fn closed(player: u128, window: i32) {
@@ -230,9 +248,39 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
                     .map(|id| id.split_once(':').map_or(id.clone(), |(_, p)| p.to_string()));
                 page = 0;
             }
+            // a blank pattern on the cursor: the item becomes a pattern for it
+            (Slot::Item(i), 0) if cursor.as_ref().is_some_and(|c| c.item().id(&*host) == crate::autocraft::BLANK) => {
+                let patterns = crate::autocraft::patterns_of(&*host, level, &n.providers);
+                let all = items_of(&*host, level, &n.drives, &patterns);
+                let shown = view::filter(&all, search.as_deref());
+                let (_, here) = view::page_of(&shown, page);
+                if let (Some((id, _)), Some(blank)) = (here.get(i).cloned(), cursor.clone()) {
+                    let made = crate::autocraft::encode(&*host, &id);
+                    let key = host.item_key(&Identifier::parse(crate::autocraft::PATTERN).unwrap());
+                    match (made, key.and_then(|k| ItemStack::new(k, 1))) {
+                        (Some(p), Some(mut stack)) if blank.count() == 1 => {
+                            p.write_to(&mut stack);
+                            let _ = put(host, &cursor_place, Some(stack));
+                        }
+                        (Some(_), _) => notify(host, event.uuid, "Use one blank pattern at a time"),
+                        (None, _) => notify(host, event.uuid, "No crafting recipe makes this item"),
+                    }
+                }
+            }
+            // middle click on an item: craft one of it
+            (Slot::Item(i), 3) => {
+                let patterns = crate::autocraft::patterns_of(&*host, level, &n.providers);
+                let all = items_of(&*host, level, &n.drives, &patterns);
+                let shown = view::filter(&all, search.as_deref());
+                let (_, here) = view::page_of(&shown, page);
+                if let Some((id, _)) = here.get(i).cloned() {
+                    crate::autocraft::request(host, level, event.uuid, &n.drives, &n.providers, n.assemblers, &id, 1);
+                }
+            }
             (Slot::Item(i), mode @ (0 | 1)) => {
                 let (shown, _) = {
-                    let all = items_of(&*host, level, &n.drives);
+                    let patterns = crate::autocraft::patterns_of(&*host, level, &n.providers);
+                    let all = items_of(&*host, level, &n.drives, &patterns);
                     let shown = view::filter(&all, search.as_deref());
                     let (p, here) = view::page_of(&shown, page);
                     (here.get(i).cloned(), p)
@@ -300,7 +348,7 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
     let Some(v) = all.iter_mut().find(|v| v.player == event.uuid && v.window == event.window) else { return };
     v.search = search;
     v.page = page;
-    let (shown_page, items) = render(&*host, level, v, &n.drives);
+    let (shown_page, items) = render(&*host, level, v, &n);
     v.page = shown_page;
     drop(all);
     let _ = host.menu_set_items(event.uuid, event.window, items);
