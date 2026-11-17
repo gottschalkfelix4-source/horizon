@@ -153,8 +153,8 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
             }
         }
     }
-    let cubes_in = cubes.clone();
     // machines first, then cubes and the foreign blocks: they take what is left
+    let machines = sinks.clone();
     sinks.extend(cubes);
     sinks.extend(foreign);
     let mut budget = rate.max(0) as u32;
@@ -163,23 +163,69 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
             if budget == 0 {
                 return;
             }
-            if source.0 == sink.0 || (cubes_in.contains(&source) && cubes_in.contains(&sink)) {
+            if source.0 == sink.0 {
                 continue;
             }
-            budget -= route(host, level, source, sink, budget);
+            let mut want = budget;
+            if !machines.contains(&sink) {
+                // two stores balance: energy runs from the fuller to the emptier, until both are
+                // as full as each other, so it cannot swing back and forth
+                let level_of = |host: &mut dyn ServerHost, end: ([i32; 3], Direction)| {
+                    level
+                        .capability(host, &ENERGY, end.0, Some(end.1))
+                        .map(|c| (f64::from(c.amount(host)), f64::from(c.capacity(host))))
+                };
+                let (Some((sa, sc)), Some((da, dc))) = (level_of(host, source), level_of(host, sink)) else {
+                    continue;
+                };
+                if sc <= 0.0 || dc <= 0.0 || sa * dc <= da * sc {
+                    continue;
+                }
+                let balance = ((sa * dc - da * sc) / (sc + dc)).floor();
+                want = want.min(balance.min(f64::from(u32::MAX)) as u32);
+            }
+            if want > 0 {
+                budget -= route(host, level, source, sink, want).min(budget);
+            }
         }
     }
 }
 
+/// How full an endpoint is, 0 to 1: occupied slots of an item handler, the fullest tank of a fluid
+/// or chemical one. An endpoint with nothing in it to be full of counts as full, so nothing moves
+/// into it.
+fn fill_of<R: 'static>(host: &mut dyn ServerHost, cap: &dyn ResourceHandler<R>, items: bool) -> f64 {
+    let n = cap.size(host);
+    if n == 0 {
+        return 1.0;
+    }
+    let mut best = 0.0f64;
+    let mut occupied = 0usize;
+    for i in 0..n {
+        let Some(r) = cap.resource(host, i) else { continue };
+        occupied += 1;
+        let amount = f64::from(cap.amount(host, i));
+        let room = f64::from(cap.capacity(host, i, &r)).max(1.0);
+        best = best.max((amount / room).min(1.0));
+    }
+    if items { occupied as f64 / n as f64 } else { best }
+}
+
 /// Moves up to `budget` of `R` between the endpoints of a pipe network: out of each endpoint,
-/// into the others, in one transaction per pair.
+/// into the others, in one transaction per pair. Between two stores (chests, tanks) it runs from
+/// the fuller to the emptier only, so it cannot swing back and forth; a machine's inputs and
+/// outputs are one-way already, so those are moved freely.
 fn move_network<R: 'static>(
     host: &mut dyn ServerHost,
     level: LevelRef,
     key: &CapabilityKey<dyn ResourceHandler<R>>,
     ends: &[([i32; 3], Direction)],
     mut budget: u32,
+    items: bool,
 ) {
+    let machine_end = |host: &dyn Host, p: [i32; 3]| {
+        matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
+    };
     for (i, &from) in ends.iter().enumerate() {
         for (j, &to) in ends.iter().enumerate() {
             if budget == 0 {
@@ -194,6 +240,12 @@ fn move_network<R: 'static>(
             ) else {
                 continue;
             };
+            if !machine_end(&*host, from.0) && !machine_end(&*host, to.0) {
+                let (a, b) = (fill_of(host, &*src, items), fill_of(host, &*dst, items));
+                if a <= b {
+                    continue;
+                }
+            }
             let moved = host
                 .transaction(|host, tx| {
                     move_resources(host, &src, &dst, |_| true, budget, tx).map_err(|_| ())
@@ -225,27 +277,37 @@ fn tick_pipe(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], family: 
         }
     }
     match family {
-        Family::Pipe => move_network(host, level, &FLUIDS, &ends, rate),
-        Family::Tube => move_network(host, level, &CHEMICALS, &ends, rate),
-        Family::Transporter => move_network(host, level, &ITEMS, &ends, rate),
+        Family::Pipe => move_network(host, level, &FLUIDS, &ends, rate, false),
+        Family::Tube => move_network(host, level, &CHEMICALS, &ends, rate, false),
+        Family::Transporter => move_network(host, level, &ITEMS, &ends, rate, true),
     }
 }
 
-/// A cube gives to the machines next to it (its cables take from it themselves).
-fn tick_cube(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: Tier, energy: i32) {
-    if energy == 0 {
+/// A cube gives to the machines next to it (its cables take from it themselves). It moves its
+/// own saved energy rather than asking its own capability, which cannot be read in its own tick.
+fn tick_cube(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: Tier, nbt: &mut Compound) {
+    let energy = int(nbt, "energy");
+    if energy <= 0 {
         return;
     }
     let mut budget = tier.cube_rate().min(energy).max(0) as u32;
+    let mut given = 0u32;
     for dir in Direction::ALL {
-        let n = offset(pos, dir);
         if budget == 0 {
             break;
         }
-        if matches!(kind_at(&*host, level, n), Some(Kind::Machine(_) | Kind::Factory(..))) {
-            budget -= route(host, level, (pos, dir), (n, dir.opposite()), budget);
+        let n = offset(pos, dir);
+        if !matches!(kind_at(&*host, level, n), Some(Kind::Machine(_) | Kind::Factory(..))) {
+            continue;
         }
+        let Some(cap) = level.capability(host, &ENERGY, n, Some(dir.opposite())) else { continue };
+        let moved = host
+            .transaction(|host, tx| Ok::<u32, ()>(cap.insert(host, tx, budget)))
+            .unwrap_or(0);
+        budget -= moved.min(budget);
+        given += moved;
     }
+    set_int(nbt, "energy", energy - given as i32);
 }
 
 /// Whether `stack`'s result fits in `held`.
@@ -442,8 +504,8 @@ fn tick_factory(
     items: &mut Vec<Option<ItemStack>>,
 ) {
     let lanes = tier.lanes();
-    if items.len() < lanes * 2 + 3 {
-        items.resize(lanes * 2 + 3, None);
+    if items.len() < FACTORY_SLOTS {
+        items.resize(FACTORY_SLOTS, None);
     }
     let mut energy = int(nbt, "energy");
     for lane in 0..lanes {
@@ -576,8 +638,15 @@ impl BlockEntityPart for Machines {
         match kind {
             Kind::Cable(t) => tick_cable(host, level, pos, t),
             Kind::Pipe(f, _) => tick_pipe(host, level, pos, f),
-            Kind::Factory(t, m) => tick_factory(host, level, t, m, &mut nbt, &mut items),
-            Kind::Cube(t) => tick_cube(host, level, pos, t, int(&nbt, "energy")),
+            Kind::Factory(t, m) => {
+                tick_factory(host, level, t, m, &mut nbt, &mut items);
+                let lit = i32::from((0..t.lanes()).any(|l| int(&nbt, &format!("progress_{l}")) > 0));
+                if int(&nbt, "lit") != lit {
+                    set_int(&mut nbt, "lit", lit);
+                    let _ = host.set_block_property(pos, "lit", if lit == 1 { "true" } else { "false" });
+                }
+            }
+            Kind::Cube(t) => tick_cube(host, level, pos, t, &mut nbt),
             Kind::Machine(m) => {
                 if m.has_items() {
                     tick_machine(host, level, m, &mut nbt, &mut items);
@@ -643,6 +712,9 @@ fn buffer_of(kind: Kind) -> ModEnergyBuffer {
     }
 }
 
+/// The 3-row chest menu's slots.
+const FACTORY_SLOTS: usize = 27;
+
 /// A factory's slots: inputs, outputs, an energy item, two upgrades, shown by a 3x3-row chest
 /// menu. Hoppers feed the inputs from above and the sides, and take from the outputs.
 fn factory_container(t: Tier) -> ModContainer {
@@ -650,7 +722,7 @@ fn factory_container(t: Tier) -> ModContainer {
     let inputs: Vec<usize> = (0..lanes).collect();
     let outputs: Vec<usize> = (lanes..lanes * 2).collect();
     ModContainer {
-        slots: lanes * 2 + 3,
+        slots: FACTORY_SLOTS,
         faces: [
             outputs.clone(),
             inputs.clone(),
