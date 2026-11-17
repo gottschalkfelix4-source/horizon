@@ -66,3 +66,10 @@ item("hdpe_pellet"); item("hdpe_sheet"); item("bio_fuel", "minecraft:wheat")
 for t in ["basic", "advanced", "elite", "ultimate"]:
     for w in ["smelting", "enriching", "crushing", "sawing", "purifying", "injecting"]:
         block(f"{t}_{w}_factory", "minecraft:furnace", 3.5, 16.0)
+
+# induction matrix: the port is a furnace-less plain block; cells and providers in four tiers
+block("induction_casing", "minecraft:iron_block", 3.5, 9.0)
+block("induction_port", "minecraft:iron_block", 3.5, 9.0)
+for t in ["basic", "advanced", "elite", "ultimate"]:
+    block(f"{t}_induction_cell", "minecraft:iron_block", 3.5, 9.0)
+    block(f"{t}_induction_provider", "minecraft:iron_block", 3.5, 9.0)
