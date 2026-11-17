@@ -76,3 +76,5 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
 - Blocks drop themselves (`data/ae2/loot_table/blocks/`, written once, not by gen_data.py); certus quartz
   ore drops crystals with fortune (`ore_drops`), itself with silk touch.
 - The drive takes only storage cells, in slots 0 to 9 (`menu_slot_rules` on `minecraft:generic_9x2`).
+- Storage cells stack to 1 (two cells used to merge into one stack of 2 that counted once).
+- `item replace` can still put any item into a drive slot; the network ignores non-cells and slots past ten.
