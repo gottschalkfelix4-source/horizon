@@ -2,7 +2,7 @@
 
 Port of [Create](https://github.com/Creators-of-Create/Create) (ATM10 8.x, MIT) as a native Horizon
 mod. Written from the mod's observed behaviour and public description, not from its code.
-Stages: 1 rotation and stress (done), 2 millstone, press (done) and mixer, crushing wheel (not yet), 3 belts, funnels and a fuller depot, 4 contraptions.
+Stages: 1 rotation and stress (done), 2 millstone, press, basin, mixer (done), crushing wheel (not yet), 3 belts, funnels and a fuller depot, 4 contraptions.
 
 ## What it does
 
@@ -19,7 +19,8 @@ Stages: 1 rotation and stress (done), 2 millstone, press (done) and mixer, crush
 | Millstone | Four input and five output slots (hoppers work, vanilla 9x1 menu until its own screen), 4 su per RPM; each item takes 2048 RPM-ticks (64 ticks at 32 RPM): wheat to flour, cobblestone to gravel, bone to 3 bone meal | ported, recipe table and time from memory |
 | Depot | One slot a hopper fills and empties | stand-in: no belt, no putting an item on it by hand yet |
 | Mechanical press | 8 su per RPM; presses the stack on a depot below it in 1280 RPM-ticks: iron, gold, copper and brass ingots to sheets | ported, whole stack at once (to check) |
-| Mechanical mixer, basin, crushing wheel | | not yet: the mixer needs the basin and the heater, the wheels need item entities between them |
+| Basin, mechanical mixer | Basin: nine slots (hoppers work). Mixer (4 su per RPM) above it mixes in 2560 RPM-ticks; only recipe so far: iron nugget + andesite to andesite alloy | ported, recipe and time from memory; no heat (blaze burner), no fluids, no compacting |
+| Crushing wheel | | not yet: needs item entities between the wheels |
 
 Consumers use the solver's `Part::Consumer`; a millstone or press takes its speed from the
 `speed_x1000` the network writes into it.

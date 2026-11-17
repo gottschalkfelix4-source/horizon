@@ -15,6 +15,8 @@ BLOCKS = {
     "creative_motor": ("minecraft:observer", 3.0, 6.0, "Creative Motor"),
     "millstone": ("minecraft:stripped_oak_log", 3.0, 6.0, "Millstone"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
+    "basin": ("minecraft:stone", 3.0, 6.0, "Basin"),
+    "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),
     "mechanical_press": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Press"),
 }
 ITEMS = {
@@ -23,6 +25,7 @@ ITEMS = {
     "golden_sheet": ("minecraft:gold_ingot", "Golden Sheet"),
     "copper_sheet": ("minecraft:copper_ingot", "Copper Sheet"),
     "brass_sheet": ("minecraft:gold_ingot", "Brass Sheet"),
+    "andesite_alloy": ("minecraft:iron_ingot", "Andesite Alloy"),
     "brass_ingot": ("minecraft:gold_ingot", "Brass Ingot"),
 }
 base = "data/create/horizon/block"

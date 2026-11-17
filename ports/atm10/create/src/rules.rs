@@ -14,10 +14,12 @@ pub enum Kind {
     Millstone,
     Depot,
     MechanicalPress,
+    Basin,
+    MechanicalMixer,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 10] = [
+    pub const ALL: [Kind; 12] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -28,6 +30,8 @@ impl Kind {
         Kind::Millstone,
         Kind::Depot,
         Kind::MechanicalPress,
+        Kind::Basin,
+        Kind::MechanicalMixer,
     ];
 
     pub fn name(self) -> &'static str {
@@ -42,6 +46,8 @@ impl Kind {
             Kind::Millstone => "millstone",
             Kind::Depot => "depot",
             Kind::MechanicalPress => "mechanical_press",
+            Kind::Basin => "basin",
+            Kind::MechanicalMixer => "mechanical_mixer",
         }
     }
 }
@@ -119,6 +125,21 @@ pub fn press(id: &str) -> Option<&'static str> {
     })
 }
 
+/// Stress per RPM a mixer uses, its work, and the basin's nine slots.
+pub const MIXER_IMPACT: f64 = 4.0;
+pub const MIX_WORK: f64 = 2560.0;
+pub const BASIN_SLOTS: usize = 9;
+
+/// What a mixer makes of the items in a basin (unheated recipes only): the ids taken, one of
+/// each, and the output `(id, count)`.
+pub fn mix(held: &[String]) -> Option<(Vec<&'static str>, &'static str, u32)> {
+    let has = |id: &str| held.iter().any(|h| h == id);
+    if has("minecraft:iron_nugget") && has("minecraft:andesite") {
+        return Some((vec!["minecraft:iron_nugget", "minecraft:andesite"], "create:andesite_alloy", 1));
+    }
+    None
+}
+
 /// One tick of work at `speed` RPM: the new progress and whether `work` is reached (then the
 /// progress starts over). A block that stands still loses no progress.
 pub fn advance(progress: f64, speed: f64, work: f64) -> (f64, bool) {
@@ -184,5 +205,13 @@ mod tests {
         assert_eq!(mill("minecraft:dirt"), None);
         assert_eq!(press("minecraft:iron_ingot"), Some("create:iron_sheet"));
         assert_eq!(press("minecraft:iron_nugget"), None);
+    }
+
+    #[test]
+    fn a_mixer_needs_both_ingredients() {
+        let one = vec!["minecraft:andesite".to_string()];
+        assert!(mix(&one).is_none());
+        let both = vec!["minecraft:andesite".to_string(), "minecraft:iron_nugget".to_string()];
+        assert_eq!(mix(&both).map(|m| (m.1, m.2)), Some(("create:andesite_alloy", 1)));
     }
 }
