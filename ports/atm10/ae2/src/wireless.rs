@@ -3,7 +3,7 @@
 //! it in the air then opens the network's terminal view from anywhere within `RANGE` blocks of that
 //! point, as long as the point is on a powered network with a channel.
 use mod_api::{
-    Compound, HostSide, HostTransaction, InteractionResult, ItemPart, ItemPlace, ItemStack, Tag, Text,
+    Compound, HostSide, InteractionResult, ItemPart, ItemStack, Tag, Text,
     UseItemEvent, UseOnEvent,
 };
 
@@ -69,9 +69,15 @@ impl ItemPart for Terminal {
             return None;
         }
         let pos = event.pos;
-        let place = ItemPlace::PlayerHand { player: event.player, hand: event.hand };
-        let done = host.transaction(|host, tx| if place.edit(host, tx, |s| set_link(s, pos)) { Ok(()) } else { Err(()) });
-        tell(host, event.player, if done.is_ok() { "Wireless terminal linked" } else { "Could not link the terminal" });
+        // The linked stack is written straight into the hand: an exchange through an `ItemPlace` takes the old
+        // stack out first, which a creative player's inventory does not lose (the link then landed on a copy).
+        let linked = (|| {
+            let living = host.living(host.player(event.player)?.entity())?;
+            let mut stack = living.hand_item(&*host, event.hand)?;
+            set_link(&mut stack, pos);
+            living.set_hand_item(host, event.hand, Some(stack)).ok()
+        })();
+        tell(host, event.player, if linked.is_some() { "Wireless terminal linked" } else { "Could not link the terminal" });
         Some(InteractionResult::SuccessServer)
     }
 
