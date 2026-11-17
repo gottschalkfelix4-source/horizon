@@ -90,3 +90,6 @@ os.makedirs(f"{base}/fluid", exist_ok=True)
 with open(f"{base}/fluid/brine.json", "w") as f:
     json.dump({"tint": 4290094079}, f)
     f.write("\n")
+
+for n in ["fusion_reactor_frame", "fusion_reactor_port"]:
+    block(n, "minecraft:iron_block", 3.5, 9.0)

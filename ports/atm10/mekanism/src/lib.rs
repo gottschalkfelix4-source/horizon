@@ -24,6 +24,7 @@ pub mod chemical;
 use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
 pub mod evaporation;
 pub mod fission;
+pub mod fusion;
 pub mod matrix;
 pub mod mb;
 pub mod multiblock;
@@ -309,7 +310,7 @@ fn move_network<R: 'static>(
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
             || matches!(
                 mb::id_at(host, level, p).as_deref(),
-                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE)
+                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | fusion::PORT)
             )
     };
     for (i, &from) in ends.iter().enumerate() {
@@ -939,6 +940,7 @@ impl Hooks for Mod {
         steam::register(r);
         fission::register(r);
         evaporation::register(r);
+        fusion::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };

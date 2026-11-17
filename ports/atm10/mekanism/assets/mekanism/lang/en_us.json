@@ -74,6 +74,8 @@
   "block.mekanism.fission_reactor_casing": "Fission Reactor Casing",
   "block.mekanism.fission_reactor_port": "Fission Reactor Port",
   "block.mekanism.fluorite_ore": "Fluorite Ore",
+  "block.mekanism.fusion_reactor_frame": "Fusion Reactor Frame",
+  "block.mekanism.fusion_reactor_port": "Fusion Reactor Port",
   "block.mekanism.induction_casing": "Induction Casing",
   "block.mekanism.induction_port": "Induction Port",
   "block.mekanism.isotopic_centrifuge": "Isotopic Centrifuge",
