@@ -70,7 +70,6 @@ impl Hooks for Mod {
                     menu: Some(store.menu().into()),
                 },
             );
-            r.block_part(key, Stores);
             let kind = r.block_entity_type(store.name()).blocks(&[id.as_str()]).build();
             let _ = r.block_entity_part(&kind, Stores);
             r.menu_part(store.menu(), Rules);

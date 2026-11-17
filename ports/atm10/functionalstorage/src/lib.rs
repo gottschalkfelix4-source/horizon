@@ -196,10 +196,6 @@ impl Hooks for Mod {
             .flat_map(|w| SIZES.iter().map(move |n| format!("functionalstorage:{w}_{n}")))
             .collect();
         let names: Vec<&str> = ids.iter().map(String::as_str).collect();
-        for id in &ids {
-            let key = r.block_key(id);
-            r.block_part(key, Drawers);
-        }
         let kind = r.block_entity_type("drawer").blocks(&names).build();
         let _ = r.block_entity_part(&kind, Drawers);
         r.block_entity_capability(&ITEMS, &kind, |_, at: BlockSide| {

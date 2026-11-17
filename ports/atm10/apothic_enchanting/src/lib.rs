@@ -95,7 +95,6 @@ impl Hooks for Mod {
                 menu: Some(MENU.into()),
             },
         );
-        r.block_part(library, Library);
         let kind = r.block_entity_type("library").blocks(&[LIBRARY]).build();
         let _ = r.block_entity_part(&kind, Library);
         r.menu_part(MENU, Books);

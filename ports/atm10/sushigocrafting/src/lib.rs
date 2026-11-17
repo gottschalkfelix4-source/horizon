@@ -119,7 +119,6 @@ impl Hooks for Mod {
                 menu: Some("minecraft:hopper".into()),
             },
         );
-        r.block_part(key, Mat);
         let kind = r.block_entity_type("rolling_mat").blocks(&[MAT]).build();
         let _ = r.block_entity_part(&kind, Mat);
     }

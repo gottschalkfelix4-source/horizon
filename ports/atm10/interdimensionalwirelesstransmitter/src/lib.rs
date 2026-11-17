@@ -132,9 +132,5 @@ impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         let kind = r.block_entity_type("wireless").blocks(&[TRANSMITTER, RECEIVER]).build();
         let _ = r.block_entity_part(&kind, Wireless);
-        let receiver = r.block_key(RECEIVER);
-        r.block_part(receiver, Wireless);
-        let transmitter = r.block_key(TRANSMITTER);
-        r.block_part(transmitter, Wireless);
     }
 }

@@ -224,8 +224,7 @@ impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         for path in TICKING {
             let id = format!("{NS}:{path}");
-            let key = r.block_key(&id);
-            r.block_part(key, Machines);
+            let _ = r.block_key(&id);
             let kind = r.block_entity_type(path).blocks(&[id.as_str()]).build();
             let _ = r.block_entity_part(&kind, Machines);
         }

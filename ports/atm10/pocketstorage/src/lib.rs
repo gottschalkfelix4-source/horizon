@@ -93,7 +93,6 @@ impl Hooks for Mod {
                     menu: Some((*menu).into()),
                 },
             );
-            r.block_part(key, Pocket);
         }
         let kind = r.block_entity_type("pocket").blocks(&names).build();
         let _ = r.block_entity_part(&kind, Pocket);

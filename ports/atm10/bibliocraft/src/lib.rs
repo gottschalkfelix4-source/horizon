@@ -67,7 +67,6 @@ impl Hooks for Mod {
                         menu: Some(shelf.menu().into()),
                     },
                 );
-                r.block_part(key, Shelves);
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
             let kind = r.block_entity_type(shelf.name()).blocks(&names).build();

@@ -219,7 +219,6 @@ impl Hooks for Mod {
                 menu: Some("minecraft:hopper".into()),
             },
         );
-        r.block_part(key, ModularStorage);
         let kind = r
             .block_entity_type("modular_storage")
             .blocks(&["rftoolsstorage:modular_storage"])

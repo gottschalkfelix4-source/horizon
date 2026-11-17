@@ -836,10 +836,6 @@ impl Hooks for Mod {
         let _ = r.block_entity_part(&skillet, Skillet);
         let board = r.block_entity_type("cutting_board").blocks(&["farmersdelight:cutting_board"]).build();
         let _ = r.block_entity_part(&board, CuttingBoard);
-        r.block_part(keys.pot, CookingPot);
-        r.block_part(keys.stove, Stove);
-        r.block_part(keys.skillet, Skillet);
-        r.block_part(keys.board, CuttingBoard);
 
         for soil in ["farmersdelight:rich_soil", "farmersdelight:rich_soil_farmland"] {
             let key = r.block_key(soil);

@@ -117,7 +117,6 @@ struct Mod;
 impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         let key = r.block_key("mifa:lava_generator");
-        r.block_part(key, Generator);
         r.block_energy(&key, ModEnergyBuffer {
             capacity: CAPACITY,
             max_insert: 0,

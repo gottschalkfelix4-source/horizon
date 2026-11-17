@@ -396,12 +396,6 @@ fn hopper_like(slots: usize) -> ModContainer {
 #[mod_api::horizon_mod]
 impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
-        let ids: Vec<String> = TICKING.iter().map(|p| id(p)).collect();
-        let names: Vec<&str> = ids.iter().map(String::as_str).collect();
-        for name in &names {
-            let key = r.block_key(name);
-            r.block_part(key, Machines);
-        }
         for tier in Tier::ALL {
             let key = r.block_key(&id(tier.block()));
             let rate = tier.rf_per_tick();

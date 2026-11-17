@@ -146,7 +146,6 @@ impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         let screen = r.block_key("rftoolsbase:information_screen");
         let _ = SCREEN.set(screen);
-        r.block_part(screen, InformationScreen);
         let kind = r
             .block_entity_type("information_screen")
             .blocks(&["rftoolsbase:information_screen"])

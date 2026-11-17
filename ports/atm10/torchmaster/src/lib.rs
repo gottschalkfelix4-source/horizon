@@ -130,7 +130,13 @@ fn decode_lights(data: &Compound) -> Result<Vec<Light>, AttachmentError> {
 /// The two blocks' keys, known once registration ran.
 static KEYS: OnceLock<[BlockKey; 2]> = OnceLock::new();
 
+/// The Mega Torch's wall form: the item places it on a wall, and it is the same light.
+static WALL: OnceLock<BlockKey> = OnceLock::new();
+
 fn kind_of(block: BlockKey) -> Option<Kind> {
+    if WALL.get() == Some(&block) {
+        return Some(Kind::MegaTorch);
+    }
     let keys = KEYS.get()?;
     [Kind::MegaTorch, Kind::DreadLamp]
         .into_iter()
@@ -174,6 +180,7 @@ impl Hooks for Mod {
             r.block_key(Kind::DreadLamp.id()),
         ];
         let _ = KEYS.set(keys);
+        let _ = WALL.set(r.block_key("torchmaster:megatorch_wall"));
         for kind in [Kind::MegaTorch, Kind::DreadLamp] {
             let item = r.item_key(kind.id());
             r.item_part(item, LightItem);
@@ -209,7 +216,8 @@ impl Hooks for Mod {
             row.value.iter().any(|light| {
                 light.kind == kind
                     && light.covers(pos)
-                    && event.level.block(host, light.pos) == Some(block)
+                    && matches!(event.level.block(host, light.pos),
+                        Some(b) if b == block || (kind == Kind::MegaTorch && WALL.get() == Some(&b)))
             })
         });
         if covered {

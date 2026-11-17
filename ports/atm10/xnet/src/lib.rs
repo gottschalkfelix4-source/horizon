@@ -230,10 +230,8 @@ struct Mod;
 #[mod_api::horizon_mod]
 impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
-        for id in ["xnet:netcable", "xnet:connector", "xnet:controller"] {
-            let key = r.block_key(id);
-            r.block_part(key, Xnet);
-        }
+        let cable = r.block_key("xnet:netcable");
+        r.block_part(cable, Xnet);
         let kind = r
             .block_entity_type("xnet")
             .blocks(&["xnet:connector", "xnet:controller"])
