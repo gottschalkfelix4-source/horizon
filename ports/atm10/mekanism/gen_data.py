@@ -127,3 +127,5 @@ for piece, slot, tpl, pts in [("helmet", "head", "helmet", 4), ("bodyarmor", "ch
              "operation": "add_value", "slot": slot},
             {"type": "minecraft:knockback_resistance", "id": f"mekanism:mekasuit_{piece}", "amount": 0.1,
              "operation": "add_value", "slot": slot}]})
+
+block("qio_drive_array", "minecraft:iron_block", 3.5, 9.0)

@@ -27,6 +27,7 @@ pub mod digital_miner;
 pub mod fission;
 pub mod fusion;
 pub mod meka;
+pub mod qio;
 pub mod sps;
 pub mod teleporter;
 pub mod matrix;
@@ -968,6 +969,7 @@ impl Hooks for Mod {
         digital_miner::register(r);
         teleporter::register(r);
         meka::register(r);
+        qio::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
