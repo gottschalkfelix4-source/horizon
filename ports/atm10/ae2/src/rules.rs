@@ -68,10 +68,11 @@ pub enum Device {
     MolecularAssembler,
     StorageBus,
     Interface,
+    WirelessAccessPoint,
 }
 
 impl Device {
-    pub const ALL: [Device; 12] = [
+    pub const ALL: [Device; 13] = [
         Device::Controller,
         Device::EnergyAcceptor,
         Device::EnergyCell,
@@ -84,6 +85,7 @@ impl Device {
         Device::MolecularAssembler,
         Device::StorageBus,
         Device::Interface,
+        Device::WirelessAccessPoint,
     ];
 
     pub fn name(self) -> &'static str {
@@ -100,6 +102,7 @@ impl Device {
             Device::MolecularAssembler => "molecular_assembler",
             Device::StorageBus => "storage_bus",
             Device::Interface => "interface",
+            Device::WirelessAccessPoint => "wireless_access_point",
         }
     }
 
@@ -114,7 +117,8 @@ impl Device {
             | Device::PatternProvider
             | Device::MolecularAssembler
             | Device::StorageBus
-            | Device::Interface => 0,
+            | Device::Interface
+            | Device::WirelessAccessPoint => 0,
             Device::EnergyAcceptor => 800,
             Device::EnergyCell => 200_000 * FE_PER_AE,
             Device::DenseEnergyCell => 1_600_000 * FE_PER_AE,
@@ -134,6 +138,8 @@ impl Device {
             Device::MolecularAssembler => 400,
             // the storage bus draws 0.1 AE per tick
             Device::StorageBus | Device::Interface => 20,
+            // the wireless access point draws 1 AE per tick
+            Device::WirelessAccessPoint => 200,
             _ => 0,
         }
     }
@@ -150,6 +156,7 @@ impl Device {
                 | Device::MolecularAssembler
                 | Device::StorageBus
                 | Device::Interface
+                | Device::WirelessAccessPoint
         )
     }
 

@@ -152,6 +152,8 @@ struct Job {
     todo: std::collections::VecDeque<(Pattern, u64)>,
 }
 
+static LAST_ROUND: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(-1);
+
 static JOBS: std::sync::Mutex<Vec<Job>> = std::sync::Mutex::new(Vec::new());
 
 fn jobs() -> std::sync::MutexGuard<'static, Vec<Job>> {
@@ -227,7 +229,9 @@ pub fn tick(host: &mut dyn ServerHost) {
         return;
     }
     let Some(level) = host.level(host.dimension()) else { return };
-    if level.game_time(&*host).unwrap_or(0) % ROUND_TICKS != 0 {
+    let time = level.game_time(&*host).unwrap_or(0);
+    // the hook can run more than once in a game tick: a round runs once per game time
+    if time % ROUND_TICKS != 0 || LAST_ROUND.swap(time, std::sync::atomic::Ordering::Relaxed) == time {
         return;
     }
     let mut all = std::mem::take(&mut *jobs());

@@ -130,3 +130,11 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   a hopper or another mod's bus taking from it takes from the network, anything put in goes into the network. Not
   transactional: a rolled-back outer transaction does not undo what reached the cells. No stocking (AE2's configured
   requests) yet.
+
+## Wireless
+
+- `ae2:wireless_access_point` (a device with a channel, draws 1 AE/tick) and `ae2:wireless_terminal` (item). Sneak-use the
+  terminal on an access point to link it (the position is kept in the item's data); using it in the air opens the terminal
+  view of that point's network when the player is within 16 blocks of the point and the network has power. Same
+  dimension only; no range boost from more points or cards, no battery (AE2WTLib's terminal draws power from the
+  item), no other terminal kinds.

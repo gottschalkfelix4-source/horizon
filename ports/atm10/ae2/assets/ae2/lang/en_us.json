@@ -95,6 +95,7 @@
   "block.ae2.white_glass_cable": "White Glass Cable",
   "block.ae2.white_smart_cable": "White Smart Cable",
   "block.ae2.white_smart_dense_cable": "White Smart Dense Cable",
+  "block.ae2.wireless_access_point": "ME Wireless Access Point",
   "block.ae2.yellow_covered_cable": "Yellow Covered Cable",
   "block.ae2.yellow_covered_dense_cable": "Yellow Covered Dense Cable",
   "block.ae2.yellow_glass_cable": "Yellow Glass Cable",
@@ -128,5 +129,6 @@
   "item.ae2.printed_logic_processor": "Printed Logic Processor",
   "item.ae2.printed_silicon": "Printed Silicon",
   "item.ae2.silicon": "Silicon",
-  "item.ae2.sky_dust": "Sky Dust"
+  "item.ae2.sky_dust": "Sky Dust",
+  "item.ae2.wireless_terminal": "Wireless Terminal"
 }

@@ -52,6 +52,7 @@ block("pattern_provider", "minecraft:furnace", 2.2, 6.0)
 block("molecular_assembler", "minecraft:iron_block", 2.2, 6.0)
 block("storage_bus", "minecraft:iron_block", 2.2, 6.0)
 block("interface", "minecraft:iron_block", 2.2, 6.0)
+block("wireless_access_point", "minecraft:iron_block", 2.2, 6.0)
 for t in ["1k", "4k", "16k", "64k", "256k"]:
     with open(f"{base}/item/item_storage_cell_{t}.json", "w") as f:
         json.dump({"template": "minecraft:iron_ingot", "max_stack_size": 1}, f)
@@ -59,6 +60,9 @@ for t in ["1k", "4k", "16k", "64k", "256k"]:
 item("cell_component_1k"); item("cell_component_4k"); item("cell_component_16k"); item("cell_component_64k"); item("cell_component_256k")
 item("empty_storage_cell")
 item("blank_pattern", "minecraft:paper")
+with open(f"{base}/item/wireless_terminal.json", "w") as f:
+    json.dump({"template": "minecraft:compass", "max_stack_size": 1}, f)
+    f.write("\n")
 with open(f"{base}/item/crafting_pattern.json", "w") as f:
     json.dump({"template": "minecraft:paper", "max_stack_size": 1}, f)
     f.write("\n")
@@ -97,7 +101,7 @@ for fn in os.listdir(f"{base}/item"):
     lang[f"item.ae2.{n}"] = " ".join(w.capitalize() for w in n.split("_"))
 lang.update({"block.ae2.quartz_ore": "Certus Quartz Ore", "block.ae2.deepslate_quartz_ore": "Deepslate Certus Quartz Ore",
              "block.ae2.quartz_block": "Certus Quartz Block", "block.ae2.drive": "ME Drive", "block.ae2.controller": "ME Controller",
-             "block.ae2.terminal": "ME Terminal", "block.ae2.import_bus": "ME Import Bus", "block.ae2.storage_bus": "ME Storage Bus", "block.ae2.interface": "ME Interface", "block.ae2.pattern_provider": "ME Pattern Provider", "block.ae2.molecular_assembler": "Molecular Assembler", "block.ae2.export_bus": "ME Export Bus", "block.ae2.energy_acceptor": "Energy Acceptor"})
+             "block.ae2.terminal": "ME Terminal", "block.ae2.import_bus": "ME Import Bus", "block.ae2.storage_bus": "ME Storage Bus", "block.ae2.interface": "ME Interface", "block.ae2.wireless_access_point": "ME Wireless Access Point", "block.ae2.pattern_provider": "ME Pattern Provider", "block.ae2.molecular_assembler": "Molecular Assembler", "block.ae2.export_bus": "ME Export Bus", "block.ae2.energy_acceptor": "Energy Acceptor"})
 for t in ["1k", "4k", "16k", "64k", "256k"]:
     lang[f"item.ae2.item_storage_cell_{t}"] = f"ME Item Storage Cell {t[:-1]}k".replace("k", "k")
 os.makedirs("assets/ae2/lang", exist_ok=True)
