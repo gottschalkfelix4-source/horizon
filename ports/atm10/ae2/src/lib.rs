@@ -390,7 +390,11 @@ impl BlockEntityPart for Network {
         if let Some(Kind::Device(d)) = kind_at_pos(&*host, level, pos).filter(|k| matches!(k, Kind::Device(d) if d.is_bus())) {
             // the filter is the item in the bus's first slot (else a filter saved by `merge_data`)
             let slot_filter = event.entity.items.first().cloned().flatten().map(|s| s.item().id(&*host));
-            bus::tick(host, level, pos, d, slot_filter.or_else(|| bus::filter_of(&event.entity.nbt)));
+            let cards = {
+                let speed = host.item_key(&mod_api::Identifier::parse(bus::SPEED_CARD).unwrap());
+                event.entity.items.iter().skip(1).take(4).flatten().filter(|s| Some(s.item()) == speed).count()
+            };
+            bus::tick(host, level, pos, d, slot_filter.or_else(|| bus::filter_of(&event.entity.nbt)), cards);
             *event.reply = BlockEntityTickReply::Unchanged;
             return;
         }
@@ -482,7 +486,9 @@ impl MenuPart for ProviderRules {
             }
             // a bus keeps its filter in slot 0: the item put there is the filter
             "ae2:import_bus" | "ae2:export_bus" => {
-                if event.slot != 0 {
+                // slot 0 takes the filter item, slots 1 to 4 speed cards
+                let card = event.stack.item().id(host) == bus::SPEED_CARD;
+                if !(event.slot == 0 || (1..=4).contains(&event.slot) && card) {
                     event.may_place = false;
                 }
             }
