@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "botania"
+    }
+  ],
+  "pattern": [
+    "EHE",
+    "WDW",
+    "EWE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:insanium_essence",
+    "H": "botania:terrasteel_block",
+    "W": "botania:gaia_ingot",
+    "D": "#c:storage_blocks/diamond"
+  },
+  "result": {
+    "id": "mysticalagradditions:gaia_spirit_crux"
+  }
+}

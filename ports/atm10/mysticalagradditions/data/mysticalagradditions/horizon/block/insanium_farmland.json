@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:farmland",
+  "base_block": "minecraft:dirt",
+  "item": true
+}

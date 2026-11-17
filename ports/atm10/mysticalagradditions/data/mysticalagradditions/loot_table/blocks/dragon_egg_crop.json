@@ -1,0 +1,40 @@
+{
+  "pools": [
+    {
+      "entries": [
+        {
+          "name": "mysticalagradditions:dragon_egg_seeds",
+          "type": "minecraft:item"
+        }
+      ],
+      "rolls": 1
+    },
+    {
+      "condition": {
+        "block": "mysticalagradditions:dragon_egg_crop",
+        "properties": {
+          "age": "7"
+        },
+        "type": "minecraft:block_state_property"
+      },
+      "entries": [
+        {
+          "modifier": [
+            {
+              "count": {
+                "max": 2,
+                "min": 1,
+                "type": "minecraft:uniform"
+              },
+              "type": "minecraft:set_count"
+            }
+          ],
+          "name": "mysticalagradditions:dragon_egg_essence",
+          "type": "minecraft:item"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "type": "minecraft:block"
+}

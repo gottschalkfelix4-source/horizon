@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:netherrack",
+  "properties": {
+    "hardness": 3.0,
+    "explosion_resistance": 3.0
+  },
+  "item": true
+}

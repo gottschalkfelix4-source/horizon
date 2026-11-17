@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "avaritia"
+    }
+  ],
+  "pattern": [
+    "EWE",
+    "WDW",
+    "EWE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:insanium_essence",
+    "W": "#mysticalagradditions:neutronium_ingot",
+    "D": "#c:storage_blocks/diamond"
+  },
+  "result": {
+    "id": "mysticalagradditions:neutronium_crux"
+  }
+}

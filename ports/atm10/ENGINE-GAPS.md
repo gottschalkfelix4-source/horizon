@@ -503,3 +503,12 @@ mod menu and an item part, both of which the API has.
 - A per-slot stack limit for mod containers: a belt holds one item, but hoppers, funnels and `item replace` put several in
   because the slot takes a whole stack. Proposed: `ModContainer::slot_limit: u32` (`crates/horizon-mod-vocab/src/item/containers.rs`),
   honoured by the items capability and `/item replace`.
+
+## mysticalagradditions
+
+- Fuel values for items from data: the mod's coals (and the blocks) burn longer than vanilla's. Proposed: read
+  NeoForge's `neoforge:furnace_fuels` data map (`data/<ns>/data_maps/item/furnace_fuels.json`, `burn_time`) in the
+  furnace, or a `Hooks::item_burn_time` answer. Today only `Host::item_burn_time` reads.
+- Mod recipe serializers of another mod's machines (`mysticalagriculture:infusion`, `awakening`, `reprocessor`,
+  `farmland_till`) wait for the Mystical Agriculture port to register them.
+- Fluids from files for molten metals and their buckets.

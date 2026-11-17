@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:end_stone",
+  "properties": {
+    "hardness": 3.0,
+    "explosion_resistance": 9.0
+  },
+  "item": true
+}

@@ -1,0 +1,47 @@
+{
+  "template": "minecraft:iron_pickaxe",
+  "components": {
+    "minecraft:max_damage": 345,
+    "minecraft:tool": {
+      "rules": [
+        {
+          "blocks": "#minecraft:incorrect_for_diamond_tool",
+          "correct_for_drops": false
+        },
+        {
+          "blocks": "#minecraft:mineable/pickaxe",
+          "correct_for_drops": true,
+          "speed": 7.02
+        },
+        {
+          "blocks": "#minecraft:mineable/axe",
+          "correct_for_drops": true,
+          "speed": 7.02
+        },
+        {
+          "blocks": "#minecraft:mineable/shovel",
+          "correct_for_drops": true,
+          "speed": 7.02
+        }
+      ],
+      "default_mining_speed": 1.0,
+      "damage_per_block": 1
+    },
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:attack_damage",
+        "id": "minecraft:base_attack_damage",
+        "amount": 4.5,
+        "operation": "add_value",
+        "slot": "mainhand"
+      },
+      {
+        "type": "minecraft:attack_speed",
+        "id": "minecraft:base_attack_speed",
+        "amount": -3.0,
+        "operation": "add_value",
+        "slot": "mainhand"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " E ",
+    "ECE",
+    " E "
+  ],
+  "key": {
+    "E": "mysticalagriculture:supremium_essence",
+    "C": "#mysticalagriculture:infusion_crystals"
+  },
+  "result": {
+    "id": "mysticalagradditions:insanium_essence"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "EEE",
+    "EEE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:inferium_coal"
+  },
+  "result": {
+    "id": "mysticalagradditions:inferium_coal_block"
+  }
+}
