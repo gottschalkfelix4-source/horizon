@@ -318,6 +318,10 @@ The API already has what the next steps need, so they are not gaps: a general en
   in `crates/horizon-mod-vocab/src/item/containers.rs`:
   `impl ModFluidTanks { pub fn new(tanks: Vec<i32>, faces: [Vec<usize>; 6], inputs: Vec<usize>, outputs: Vec<usize>) -> Self }`.
 
+## mekanism
+
+- See mekanism/README.md, "Needs from Horizon": menu widgets, per-slot hopper rules, item-backed menus, `ChunkRef::block_entities`, and a multi-input data-driven recipe type (items, fluids, chemicals). Gases need no engine change.
+
 ## moreoverlays
 
 1. **Light levels on a client.** `LevelRef::brightness(host, LightLayer, pos)`
