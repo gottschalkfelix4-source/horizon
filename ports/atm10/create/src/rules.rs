@@ -148,6 +148,8 @@ pub fn press(id: &str) -> Option<&'static str> {
         "minecraft:gold_ingot" => "create:golden_sheet",
         "minecraft:copper_ingot" => "create:copper_sheet",
         "create:brass_ingot" => "create:brass_sheet",
+        "minecraft:sugar_cane" => "minecraft:paper",
+        "create:pulp" => "create:cardboard",
         _ => return None,
     })
 }
@@ -157,7 +159,8 @@ pub const MIXER_IMPACT: f64 = 4.0;
 pub const MIX_WORK: f64 = 2560.0;
 pub const BASIN_SLOTS: usize = 9;
 
-/// What a mixer makes of the items in a basin (unheated recipes only): the ids taken, one of
+/// What a mixer makes of the items in a basin (andesite plus an iron or zinc nugget; the other
+/// recipes need water, heat or both): the ids taken, one of
 /// each, and the output `(id, count)`.
 pub fn mix(held: &[String]) -> Option<(Vec<&'static str>, &'static str, u32)> {
     let has = |id: &str| held.iter().any(|h| h == id);
@@ -263,6 +266,7 @@ mod tests {
         assert_eq!(mill("minecraft:dirt"), None);
         assert_eq!(press("minecraft:iron_ingot"), Some("create:iron_sheet"));
         assert_eq!(press("minecraft:iron_nugget"), None);
+        assert_eq!(press("minecraft:sugar_cane"), Some("minecraft:paper"));
     }
 
     #[test]

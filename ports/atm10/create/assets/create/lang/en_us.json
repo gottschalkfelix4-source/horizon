@@ -23,5 +23,8 @@
   "item.create.crushed_raw_iron": "Crushed Raw Iron",
   "item.create.crushed_raw_copper": "Crushed Raw Copper",
   "item.create.crushed_raw_gold": "Crushed Raw Gold",
+  "item.create.zinc_nugget": "Zinc Nugget",
+  "item.create.pulp": "Pulp",
+  "item.create.cardboard": "Cardboard",
   "item.create.brass_ingot": "Brass Ingot"
 }
