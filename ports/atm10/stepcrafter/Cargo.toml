@@ -9,11 +9,10 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies]
-# In a launcher build this is the pinned SDK's copy (.horizon/sdk/api/crates/horizon-mod-api);
-# in this checkout it is the workspace crate, so `cargo check` runs against the current API.
-horizon-mod-api = { path = "../../../crates/horizon-mod-api" }
+# The pinned SDK's copy, which `cargo horizon-mod` fetches into .horizon/sdk/. In a checkout,
+# `ports/atm10/dev-sdk.sh` links it to this repository's crates for `cargo check`.
+horizon-mod-api = { path = ".horizon/sdk/api/crates/horizon-mod-api" }
 
 [dev-dependencies]
-horizon-mod-api = { path = "../../../crates/horizon-mod-api", features = ["testing"] }
+horizon-mod-api = { path = ".horizon/sdk/api/crates/horizon-mod-api", features = ["testing"] }
 
-[workspace]

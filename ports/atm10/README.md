@@ -96,3 +96,12 @@ All of these were built and unit-tested only (`cargo test`, clippy, fmt); none h
 | [Mystical Agriculture](mysticalagriculture/) | 8.0.28 | MIT | machines | 16 essence crops and five farmland tiers with tier-gated growth; rest to do |
 | [Storage Delight](storagedelight/) | 26.09.17-1.21-neoforge | MIT | machines | Placeholder: food-only pantry and fridge; original's blocks not recalled |
 | [Sushi Go Crafting](sushigocrafting/) | 0.6.6 | MIT | machines | Rolling mat making rolls (assumed); ingredients not obtainable yet |
+
+## Building
+
+Each port pins its build in `horizon-mod.toml` (`[native]`: `game`, `horizon`, `mixins`) and names the SDK
+by the path the launcher takes, `.horizon/sdk/api/crates/horizon-mod-api`. `horizon` is the fork commit
+that carries the engine's `Mod API:` commits the ports need; move it when a later one is needed. In a
+checkout, run `ports/atm10/dev-sdk.sh` once: it links each port's `.horizon/sdk/api` to this repository's
+crates, then `cargo check` and `cargo test` work in a port folder. `justenoughbreeding` and
+`justenoughprofessions` get `jei` from the launcher, so they build through it.

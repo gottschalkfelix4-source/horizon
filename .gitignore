@@ -43,3 +43,5 @@
 
 # Visual Studio editor state.
 .vs/
+/ports/atm10/*/.horizon/
+/ports/atm10/.dev-sdk/

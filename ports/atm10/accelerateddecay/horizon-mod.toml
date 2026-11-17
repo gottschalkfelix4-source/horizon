@@ -6,3 +6,8 @@ authors = ["Port: gottschalkfelix4-source", "Original: ErrorMikey"]
 api = "0.2"
 side = "server"
 capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"
