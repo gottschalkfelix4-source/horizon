@@ -175,6 +175,11 @@ impl View {
     /// `Container.getMaxStackSize`: what one slot holds of any item, 1 for a chiseled
     /// bookshelf's books and a jukebox's disc, else vanilla's default.
     fn slot_limit(&self) -> u32 {
+        if let Some(c) = &self.container
+            && c.slot_limit > 0
+        {
+            return c.slot_limit.min(99);
+        }
         match self.kind {
             Kind::Bookshelf | Kind::Jukebox | Kind::Composter(_) => 1,
             _ => 99,
@@ -2526,6 +2531,7 @@ mod mod_container_tests {
             parts: vec![((0, 0, 0), 3)],
             kind: Kind::Mod,
             container: Some(Arc::new(ModContainer {
+ slot_limit: 0,
                 slots: 3,
                 faces,
                 inputs: vec![0, 1],

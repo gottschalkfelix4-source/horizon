@@ -227,6 +227,7 @@ fn native_tick_publishes_or_rejects_item_proposals_with_writeback() {
                     [(
                         state,
                         Arc::new(horizon_client::containers::ModContainer {
+ slot_limit: 0,
                             slots: 1,
                             ..Default::default()
                         }),

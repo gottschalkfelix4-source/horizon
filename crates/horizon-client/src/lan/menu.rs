@@ -1864,6 +1864,7 @@ pub(crate) mod tests {
         use crate::containers::{ModBlockEntityFields, ModContainer, ModCrafting, ModMenuType};
         let mut world = World::new(horizon_world::registry::BlockStateId(0), 0);
         let container = ModContainer {
+ slot_limit: 0,
             slots: 5,
             ..Default::default()
         };
@@ -1986,6 +1987,7 @@ pub(crate) mod tests {
         use crate::containers::{ModBlockEntityFields, ModContainer, ModLinks, ModMenuType};
         let mut world = World::new(horizon_world::registry::BlockStateId(0), 0);
         let container = ModContainer {
+ slot_limit: 0,
             slots: 6,
             ..Default::default()
         };
@@ -2083,6 +2085,7 @@ pub(crate) mod tests {
         use crate::containers::{ModBlockEntity, ModBlockEntityFields, ModContainer};
         let mut world = World::new(horizon_world::registry::BlockStateId(0), 0);
         let container = ModContainer {
+ slot_limit: 0,
             slots: 5,
             ..Default::default()
         };

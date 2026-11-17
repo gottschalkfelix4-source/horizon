@@ -362,6 +362,7 @@ fn fixture(name: &str, test: impl FnOnce(&mut Game<'_>, LevelRef, Probe)) {
                 [(
                     barrel.0,
                     Arc::new(ModContainer {
+ slot_limit: 0,
                         slots: 2,
                         inputs: vec![0, 1],
                         outputs: vec![0, 1],
@@ -897,6 +898,7 @@ fn extract_notifications_cross_signal_each_tick_and_comparator_ticks_every_secon
                 [(
                     game.world.block(8, 65, 8).0,
                     Arc::new(ModContainer {
+ slot_limit: 0,
                         slots: 1,
                         inputs: vec![0],
                         outputs: vec![0],

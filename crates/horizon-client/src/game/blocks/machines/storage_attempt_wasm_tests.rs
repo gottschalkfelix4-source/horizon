@@ -112,6 +112,7 @@ fn run() {
                 [(
                     state.0,
                     Arc::new(ModContainer {
+ slot_limit: 0,
                         slots: 1,
                         inputs: vec![0],
                         outputs: vec![0],

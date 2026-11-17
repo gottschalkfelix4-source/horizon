@@ -136,6 +136,7 @@ fn native_and_compiled_wasm_tick_reply_matrix() {
                     [(
                         state,
                         Arc::new(horizon_client::containers::ModContainer {
+ slot_limit: 0,
                             slots: 1,
                             ..Default::default()
                         }),
