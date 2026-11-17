@@ -17,6 +17,7 @@ BLOCKS = {
     "belt": ("minecraft:stripped_oak_log", 0.8, 3.0, "Mechanical Belt"),
     "funnel": ("minecraft:observer", 1.0, 3.0, "Andesite Funnel"),
     "crushing_wheel": ("minecraft:furnace", 3.0, 6.0, "Crushing Wheel"),
+    "blaze_burner": ("minecraft:furnace", 3.5, 6.0, "Blaze Burner"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
     "basin": ("minecraft:furnace", 3.0, 6.0, "Basin"),
     "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),
@@ -38,6 +39,8 @@ ITEMS = {
     "experience_nugget": ("minecraft:gold_nugget", "Nugget of Experience"),
     "powdered_obsidian": ("minecraft:gunpowder", "Powdered Obsidian"),
     "cinder_flour": ("minecraft:gunpowder", "Cinder Flour"),
+    "zinc_ingot": ("minecraft:iron_ingot", "Zinc Ingot"),
+    "blaze_cake": ("minecraft:cake", "Blaze Cake"),
     "brass_ingot": ("minecraft:gold_ingot", "Brass Ingot"),
 }
 base = "data/create/horizon/block"
