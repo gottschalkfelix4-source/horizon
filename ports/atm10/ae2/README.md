@@ -98,8 +98,7 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   network's cells and the first neighbouring inventory (a block outside the network with an item capability) that can
   take or give it. Needs power and a channel, draws 0.1 AE/tick.
 - The import bus takes the first plain item it finds (only its filter's item when it has one). The export bus puts out
-  its filter's item, nothing without a filter. Right-click the bus to open it and put the item to filter by in its first slot (the other slots refuse
-  items). AE2 buses are cable parts with a configuration screen; this is the port's stand-in. A filter saved by
+  its filter's item, nothing without a filter. Right-click the bus to open it and put the item to filter by in its first slot (slots 1 to 4 take `ae2:speed_card`s, each card doubles the items per operation: 1, 2, 4, 8, 16; the other slots refuse items). AE2 buses are cable parts with a configuration screen; this is the port's stand-in. A filter saved by
   `data merge` (`filter`) also works.
 - Channels: a network has 8, or 32 with a controller. Drives, terminals and buses each take one, the lowest positions
   first; a device past the limit does nothing (a drive's cells are not seen, a terminal says "no free channel"). AE2's
@@ -146,3 +145,5 @@ characters), Backspace removes one, the compass slot still sets it from an item.
 names without the namespace, underscores as spaces. While the terminal is open the typing keys are swallowed (E does
 not close it); Escape closes it. The text is forgotten when the screen closes. Not AE2's `@mod` or `#tag` syntax,
 no search box drawn (the compass slot's name shows the search).
+
+- Speed cards (`ae2:speed_card`) in the bus's slots 1 to 4: 0 to 4 cards move 1, 2, 4, 8 or 16 items per operation (numbers to check against the original).

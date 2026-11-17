@@ -60,6 +60,7 @@ for t in ["1k", "4k", "16k", "64k", "256k"]:
 item("cell_component_1k"); item("cell_component_4k"); item("cell_component_16k"); item("cell_component_64k"); item("cell_component_256k")
 item("empty_storage_cell")
 item("blank_pattern", "minecraft:paper")
+item("speed_card", "minecraft:paper")
 with open(f"{base}/item/wireless_terminal.json", "w") as f:
     json.dump({"template": "minecraft:compass", "max_stack_size": 1}, f)
     f.write("\n")

@@ -14,6 +14,14 @@ use crate::rules::*;
 use crate::terminal::net;
 use crate::{id_at, network_extract, network_insert, offset};
 
+/// The upgrade card a bus takes in its slots 1 to 4.
+pub const SPEED_CARD: &str = "ae2:speed_card";
+
+/// How many items one operation moves with `cards` speed cards (0 to 4 count).
+pub fn items_per_operation(cards: usize) -> usize {
+    [1, 2, 4, 8, 16][cards.min(4)]
+}
+
 const FILTER: &str = "filter";
 
 pub fn filter_of(nbt: &Compound) -> Option<String> {
@@ -33,7 +41,7 @@ pub(crate) fn resource_of(host: &dyn ServerHost, id: &str) -> Option<ItemResourc
 }
 
 /// One operation of the bus at `pos`, run on the ticks that are a multiple of the period.
-pub fn tick(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], device: Device, filter: Option<String>) {
+pub fn tick(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], device: Device, filter: Option<String>, cards: usize) {
     if level.game_time(&*host).unwrap_or(0) % BUS_PERIOD != 0 {
         return;
     }
@@ -48,11 +56,18 @@ pub fn tick(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], device: D
             continue;
         }
         let Some(cap) = level.capability(host, &ITEMS, other, Some(dir.opposite())) else { continue };
-        let done = match device {
-            Device::ImportBus => import(host, level, &n.drives, &*cap, filter.as_deref()),
-            _ => filter.as_deref().is_some_and(|f| export(host, level, &n.drives, &*cap, f)),
-        };
-        if done {
+        let mut any = false;
+        for _ in 0..items_per_operation(cards) {
+            let done = match device {
+                Device::ImportBus => import(host, level, &n.drives, &*cap, filter.as_deref()),
+                _ => filter.as_deref().is_some_and(|f| export(host, level, &n.drives, &*cap, f)),
+            };
+            if !done {
+                break;
+            }
+            any = true;
+        }
+        if any {
             break;
         }
     }
@@ -97,4 +112,17 @@ fn export(host: &mut dyn ServerHost, level: LevelRef, drives: &[[i32; 3]], cap: 
         return false;
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn speed_cards_double_the_items_per_operation_up_to_four() {
+        assert_eq!(items_per_operation(0), 1);
+        assert_eq!(items_per_operation(2), 4);
+        assert_eq!(items_per_operation(4), 16);
+        assert_eq!(items_per_operation(9), 16);
+    }
 }
