@@ -13,7 +13,7 @@ Stages: 1 rotation and stress (done), 2 millstone, press, basin, mixer (done), c
 | Gearbox | Joins shafts on all six faces; a turn between X and Y faces reverses the sense | ported, sense rule to check |
 | Water wheel | 8 RPM while a side (not its axis) touches flowing water | ported, simplified: no flow direction, one speed |
 | Windmill bearing | Counts joined wool and sail frames in front of it (up to 64); nothing below 8, then half an RPM per sail up to 16 | stand-in: the original turns a contraption of any blocks |
-| Creative motor | 16 RPM, huge capacity | ported, speed not configurable yet |
+| Creative motor | 16 RPM (measured, run 23), 16384 su per RPM; turns its shaft the way it faces, so two facing each other jam | ported, speed not configurable yet |
 | Networks | The blocks joined by shafts, cogwheels and gearboxes (up to 4096) share one speed. Sources that disagree on speed or sense, or a ring of cogwheels that turns against itself, jam the network. Stress used (impact x RPM of each consumer) above what the sources give (capacity x RPM) stops it | ported; the network's lowest block solves it every 10 ticks and writes `speed_x1000`, `capacity`, `stress`, `jammed`, `overstressed` into every member's block entity |
 
 | Millstone | Four input and five output slots (hoppers work, vanilla 9x1 menu until its own screen), 4 su per RPM; each item takes 2048 RPM-ticks (64 ticks at 32 RPM): wheat to flour, cobblestone to gravel, bone to 3 bone meal | ported, recipe table and time from memory |

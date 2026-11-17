@@ -71,7 +71,7 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::MechanicalMixer => Part::Consumer { impact: MIXER_IMPACT },
         Kind::Belt => Part::Consumer { impact: BELT_IMPACT },
         Kind::Depot | Kind::Basin => return None,
-        Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM, capacity: CREATIVE_MOTOR_CAPACITY },
+        Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM * facing_sign(facing), capacity: CREATIVE_MOTOR_CAPACITY },
         Kind::WaterWheel => {
             let flowing = Direction6::ALL
                 .iter()
@@ -86,10 +86,19 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::WindmillBearing => {
             let toward = facing.unwrap_or([0, 1, 0]);
             let sails = count_sails(host, level, pos, toward);
-            Part::Source { rpm: windmill_rpm(sails), capacity: WINDMILL_CAPACITY }
+            Part::Source { rpm: windmill_rpm(sails) * facing_sign(facing), capacity: WINDMILL_CAPACITY }
         }
     };
     Some(Node::new(part, axis))
+}
+
+/// +1 when a source faces towards a positive axis direction, -1 the other way: it turns its
+/// shaft that way round, so two motors facing each other fight.
+fn facing_sign(facing: Option<[i32; 3]>) -> f64 {
+    match facing {
+        Some(d) if d.iter().sum::<i32>() < 0 => -1.0,
+        _ => 1.0,
+    }
 }
 
 /// The six unit offsets.
