@@ -18,6 +18,7 @@ BLOCKS = {
     "funnel": ("minecraft:observer", 1.0, 3.0, "Andesite Funnel"),
     "crushing_wheel": ("minecraft:furnace", 3.0, 6.0, "Crushing Wheel"),
     "blaze_burner": ("minecraft:furnace", 3.5, 6.0, "Blaze Burner"),
+    "andesite_casing": ("minecraft:stripped_oak_log", 2.0, 3.0, "Andesite Casing"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
     "basin": ("minecraft:furnace", 3.0, 6.0, "Basin"),
     "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),

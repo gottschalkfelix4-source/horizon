@@ -48,3 +48,10 @@ small cogwheel mesh at, and the sail rule. `src/rules.rs` and `src/kinetics.rs` 
 4. A per-slot stack limit in `ModContainer` (a belt holds one item; hoppers and funnels now put up to a few
    in, because the container takes stacks). Proposed: `slot_limit: u32` on `ModContainer`
    (`crates/horizon-mod-vocab/src/item/containers.rs`), honoured by the items capability.
+
+## Recipes
+
+`data/create/recipe/` holds the original's crafting recipes (MIT, its data files, not code) for the
+blocks and items this port has: shafts, cogwheels, gearbox, depot, press, millstone, basin, water wheel,
+windmill bearing, andesite alloy, zinc and brass compacting, andesite funnel. Recipes that need blocks not
+ported yet (mixer needs the whisk, belts, casings other than andesite) are left out. Not yet run in the game.
