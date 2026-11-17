@@ -16,6 +16,7 @@ BLOCKS = {
     "millstone": ("minecraft:furnace", 3.0, 6.0, "Millstone"),
     "belt": ("minecraft:stripped_oak_log", 0.8, 3.0, "Mechanical Belt"),
     "funnel": ("minecraft:observer", 1.0, 3.0, "Andesite Funnel"),
+    "crushing_wheel": ("minecraft:furnace", 3.0, 6.0, "Crushing Wheel"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
     "basin": ("minecraft:furnace", 3.0, 6.0, "Basin"),
     "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),
@@ -28,6 +29,9 @@ ITEMS = {
     "copper_sheet": ("minecraft:copper_ingot", "Copper Sheet"),
     "brass_sheet": ("minecraft:gold_ingot", "Brass Sheet"),
     "andesite_alloy": ("minecraft:iron_ingot", "Andesite Alloy"),
+    "crushed_raw_iron": ("minecraft:raw_iron", "Crushed Raw Iron"),
+    "crushed_raw_copper": ("minecraft:raw_copper", "Crushed Raw Copper"),
+    "crushed_raw_gold": ("minecraft:raw_gold", "Crushed Raw Gold"),
     "brass_ingot": ("minecraft:gold_ingot", "Brass Ingot"),
 }
 base = "data/create/horizon/block"

@@ -22,7 +22,7 @@ Stages: 1 rotation and stress (done), 2 millstone, press, basin, mixer (done), c
 | Basin, mechanical mixer | Basin: nine slots (hoppers work). Mixer (4 su per RPM) above it mixes in 2560 RPM-ticks; only recipe so far: iron nugget + andesite to andesite alloy | ported, recipe and time from memory; no heat (blaze burner), no fluids, no compacting |
 | Belt | One item per belt block, moved to the next belt or depot along the horizontal axis across its shaft axis (direction by the sign of the speed), 256 RPM-ticks per block (8 ticks at 32 RPM); hoppers feed and empty it | stand-in: single blocks not a stretched belt, one item each, no funnels, no items riding past a press, stress 0, numbers to check |
 | Funnel | Moves one item every 8 ticks from the container behind it to the one it faces (belt, depot, chest, machine) through the items capability | ported, simplified: no filter, no belt-side placement or tunnel, speed from memory |
-| Crushing wheel | | not yet: needs item entities between the wheels |
+| Crushing wheel | A single wheel acts like the millstone (same slots, driven from below, 8 su per RPM): raw iron, copper and gold to crushed ore, cobblestone to gravel | stand-in: the original is a pair of wheels with items falling between them; needs item entities and a wheel controller. Table, time and stress from memory |
 
 Consumers use the solver's `Part::Consumer`; a millstone or press takes its speed from the
 `speed_x1000` the network writes into it.
