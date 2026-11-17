@@ -241,15 +241,32 @@ fn move_network<R: 'static>(
             ) else {
                 continue;
             };
+            let mut want = budget;
             if !machine_end(&*host, from.0) && !machine_end(&*host, to.0) {
-                let (a, b) = (fill_of(host, &*src, items), fill_of(host, &*dst, items));
-                if a <= b {
-                    continue;
+                if items {
+                    let (a, b) = (fill_of(host, &*src, true), fill_of(host, &*dst, true));
+                    if a <= b {
+                        continue;
+                    }
+                } else {
+                    // two tanks balance: the amount that leaves them equally full, so nothing
+                    // swings back and forth
+                    let Some(r) = src.resource(host, 0) else { continue };
+                    let (sa, sc) = (f64::from(src.amount(host, 0)), f64::from(src.capacity(host, 0, &r)));
+                    let (da, dc) = (f64::from(dst.amount(host, 0)), f64::from(dst.capacity(host, 0, &r)));
+                    if sc <= 0.0 || dc <= 0.0 || sa * dc <= da * sc {
+                        continue;
+                    }
+                    let balance = ((sa * dc - da * sc) / (sc + dc)).floor();
+                    want = want.min(balance.min(f64::from(u32::MAX)) as u32);
+                    if want == 0 {
+                        continue;
+                    }
                 }
             }
             let moved = host
                 .transaction(|host, tx| {
-                    move_resources(host, &src, &dst, |_| true, budget, tx).map_err(|_| ())
+                    move_resources(host, &src, &dst, |_| true, want, tx).map_err(|_| ())
                 })
                 .unwrap_or(0);
             budget -= moved.min(budget);
