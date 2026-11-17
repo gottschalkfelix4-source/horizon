@@ -19,10 +19,11 @@ pub enum Kind {
     Belt,
     Funnel,
     CrushingWheel,
+    BlazeBurner,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 15] = [
+    pub const ALL: [Kind; 16] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -38,6 +39,7 @@ impl Kind {
         Kind::Belt,
         Kind::Funnel,
         Kind::CrushingWheel,
+        Kind::BlazeBurner,
     ];
 
     pub fn name(self) -> &'static str {
@@ -57,6 +59,7 @@ impl Kind {
             Kind::Belt => "belt",
             Kind::Funnel => "funnel",
             Kind::CrushingWheel => "crushing_wheel",
+            Kind::BlazeBurner => "blaze_burner",
         }
     }
 }
@@ -138,19 +141,35 @@ pub const MIXER_IMPACT: f64 = 4.0;
 pub const MIX_WORK: f64 = 2560.0;
 pub const BASIN_SLOTS: usize = 9;
 
-/// What a mixer makes of the items in a basin (andesite plus an iron or zinc nugget; the other
-/// recipes need water, heat or both): the ids taken, one of
-/// each, and the output `(id, count)`.
-pub fn mix(held: &[String]) -> Option<(Vec<&'static str>, &'static str, u32)> {
+/// Heat a blaze burner gives: 0 none, 1 heated (kindled), 2 superheated (seething).
+pub const HEATED: u8 = 1;
+pub const SUPERHEATED: u8 = 2;
+
+/// What a mixer makes of the items in a basin at heat level `heat` (andesite plus an iron or zinc
+/// nugget; brass from copper and zinc ingots needs "heated"; the recipes with water, milk or
+/// lava need fluids): the ids taken, one of each, and the output `(id, count)`.
+pub fn mix(held: &[String], heat: u8) -> Option<(Vec<&'static str>, &'static str, u32)> {
     let has = |id: &str| held.iter().any(|h| h == id);
-    if has("minecraft:iron_nugget") && has("minecraft:andesite") {
-        return Some((
-            vec!["minecraft:iron_nugget", "minecraft:andesite"],
-            "create:andesite_alloy",
-            1,
-        ));
+    if has("minecraft:andesite") {
+        for nugget in ["minecraft:iron_nugget", "create:zinc_nugget"] {
+            if has(nugget) {
+                return Some((vec![nugget, "minecraft:andesite"], "create:andesite_alloy", 1));
+            }
+        }
+    }
+    if heat >= HEATED && has("minecraft:copper_ingot") && has("create:zinc_ingot") {
+        return Some((vec!["minecraft:copper_ingot", "create:zinc_ingot"], "create:brass_ingot", 2));
     }
     None
+}
+
+/// How many ticks a blaze burner burns one fuel item for, and the heat it gives (not confirmed).
+pub fn burner_fuel(id: &str) -> Option<(i32, u8)> {
+    match id {
+        "minecraft:coal" | "minecraft:charcoal" => Some((1600, HEATED)),
+        "create:blaze_cake" => Some((3000, SUPERHEATED)),
+        _ => None,
+    }
 }
 
 /// Work (RPM summed over ticks) for a belt to move its item one block, and the stress a belt uses.
@@ -249,13 +268,13 @@ mod tests {
     #[test]
     fn a_mixer_needs_both_ingredients() {
         let one = vec!["minecraft:andesite".to_string()];
-        assert!(mix(&one).is_none());
+        assert!(mix(&one, 0).is_none());
         let both = vec![
             "minecraft:andesite".to_string(),
             "minecraft:iron_nugget".to_string(),
         ];
         assert_eq!(
-            mix(&both).map(|m| (m.1, m.2)),
+            mix(&both, 0).map(|m| (m.1, m.2)),
             Some(("create:andesite_alloy", 1))
         );
     }
@@ -269,4 +288,19 @@ mod tests {
         assert_eq!(belt_step(Axis::X, 0.0), None);
     }
 
+
+    #[test]
+    fn brass_needs_heat() {
+        let held = vec!["minecraft:copper_ingot".to_string(), "create:zinc_ingot".to_string()];
+        assert!(mix(&held, 0).is_none());
+        assert_eq!(mix(&held, HEATED).map(|m| (m.1, m.2)), Some(("create:brass_ingot", 2)));
+        assert_eq!(mix(&held, SUPERHEATED).map(|m| m.1), Some("create:brass_ingot"));
+    }
+
+    #[test]
+    fn only_fuel_burns_in_a_burner() {
+        assert_eq!(burner_fuel("minecraft:coal"), Some((1600, HEATED)));
+        assert_eq!(burner_fuel("create:blaze_cake").map(|f| f.1), Some(SUPERHEATED));
+        assert_eq!(burner_fuel("minecraft:dirt"), None);
+    }
 }

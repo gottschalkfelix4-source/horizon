@@ -10,6 +10,7 @@
   "block.create.belt": "Mechanical Belt",
   "block.create.funnel": "Andesite Funnel",
   "block.create.crushing_wheel": "Crushing Wheel",
+  "block.create.blaze_burner": "Blaze Burner",
   "block.create.depot": "Depot",
   "block.create.basin": "Basin",
   "block.create.mechanical_mixer": "Mechanical Mixer",
@@ -29,5 +30,7 @@
   "item.create.experience_nugget": "Nugget of Experience",
   "item.create.powdered_obsidian": "Powdered Obsidian",
   "item.create.cinder_flour": "Cinder Flour",
+  "item.create.zinc_ingot": "Zinc Ingot",
+  "item.create.blaze_cake": "Blaze Cake",
   "item.create.brass_ingot": "Brass Ingot"
 }

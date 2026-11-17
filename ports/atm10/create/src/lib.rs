@@ -99,7 +99,7 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::Belt => Part::Belt {
             impact: BELT_IMPACT,
         },
-        Kind::Depot | Kind::Basin | Kind::Funnel => return None,
+        Kind::Depot | Kind::Basin | Kind::Funnel | Kind::BlazeBurner => return None,
         Kind::CreativeMotor => Part::Source {
             rpm: CREATIVE_MOTOR_RPM * facing_sign(facing),
             capacity: CREATIVE_MOTOR_CAPACITY,
@@ -222,6 +222,7 @@ impl BlockEntityPart for Kinetic {
             Kind::CrushingWheel => tick_millstone(host, pos, speed, &mut nbt, &mut items, grind::crushing),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
             Kind::Funnel => tick_funnel(host, level, pos),
+            Kind::BlazeBurner => tick_burner(host, &mut nbt, &mut items),
             Kind::Belt => tick_belt(host, level, pos, speed, &mut nbt, &mut items),
             Kind::MechanicalMixer => tick_mixer(host, level, pos, speed, &mut nbt),
             _ => {}
@@ -438,6 +439,27 @@ fn tick_belt(
     }
 }
 
+/// A blaze burner burns one fuel item at a time and keeps `heat` (and `burn`, the ticks left) in
+/// its saved data.
+fn tick_burner(host: &mut dyn ServerHost, nbt: &mut Compound, items: &mut Vec<Option<ItemStack>>) {
+    items.resize(1, None);
+    let burn = int(nbt, "burn");
+    if burn > 0 {
+        set_int(nbt, "burn", burn - 1);
+        if burn == 1 {
+            set_int(nbt, "heat", 0);
+        }
+        return;
+    }
+    let Some(fuel) = items[0].as_ref().and_then(|i| burner_fuel(&i.item().id(&*host))) else {
+        set_int(nbt, "heat", 0);
+        return;
+    };
+    items[0] = items[0].take().and_then(|i| i.shrink(1));
+    set_int(nbt, "burn", fuel.0);
+    set_int(nbt, "heat", i32::from(fuel.1));
+}
+
 /// Mixes what lies in the basin below: takes one of each ingredient, adds the product.
 fn tick_mixer(
     host: &mut dyn ServerHost,
@@ -461,7 +483,16 @@ fn tick_mixer(
         .flatten()
         .map(|s| s.item().id(&*host).to_string())
         .collect();
-    let Some((take, out, n)) = mix(&ids) else {
+    // a blaze burner under the basin heats it
+    let under = [below[0], below[1] - 1, below[2]];
+    let heat = if state_at(&*host, level, under).is_some_and(|(id, ..)| parse_block(&id) == Some(Kind::BlazeBurner)) {
+        host.block_entity(level, under)
+            .and_then(|b| b.data(&*host))
+            .map_or(0, |d| int(&d, "heat") as u8)
+    } else {
+        0
+    };
+    let Some((take, out, n)) = mix(&ids, heat) else {
         set_progress(nbt, 0.0);
         return;
     };
@@ -627,6 +658,18 @@ impl Hooks for Mod {
                 inputs: vec![0],
                 outputs: vec![0],
                 menu: None,
+            },
+        );
+        let key = r.block_key("create:blaze_burner");
+        // one fuel item at a time, from hoppers on any side
+        r.block_container(
+            &key,
+            ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| vec![0]),
+                inputs: vec![0],
+                outputs: vec![],
+                menu: Some("minecraft:hopper".into()),
             },
         );
         let key = r.block_key("create:depot");
