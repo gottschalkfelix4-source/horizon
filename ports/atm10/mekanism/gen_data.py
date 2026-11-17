@@ -84,7 +84,7 @@ for n in ["boiler_casing", "boiler_valve", "superheating_element", "turbine_casi
 for n in ["fission_reactor_casing", "fission_reactor_port", "fission_fuel_assembly", "control_rod_assembly"]:
     block(n, "minecraft:iron_block", 3.5, 9.0)
 
-for n in ["thermal_evaporation_block", "thermal_evaporation_valve"]:
+for n in ["thermal_evaporation_block", "thermal_evaporation_valve", "thermal_evaporation_outlet"]:
     block(n, "minecraft:iron_block", 3.5, 9.0)
 os.makedirs(f"{base}/fluid", exist_ok=True)
 with open(f"{base}/fluid/brine.json", "w") as f:

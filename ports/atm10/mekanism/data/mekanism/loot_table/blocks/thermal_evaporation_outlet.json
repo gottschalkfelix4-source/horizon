@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "bonus_rolls": 0,
+      "conditions": [
+        {
+          "type": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "mekanism:thermal_evaporation_outlet"
+        }
+      ]
+    }
+  ],
+  "random_sequence": "mekanism:blocks/thermal_evaporation_outlet"
+}

@@ -324,7 +324,7 @@ fn move_network<R: 'static>(
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
             || matches!(
                 mb::id_at(host, level, p).as_deref(),
-                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | fusion::PORT | sps::PORT)
+                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | evaporation::OUTLET | fusion::PORT | sps::PORT)
             )
     };
     for (i, &from) in ends.iter().enumerate() {
