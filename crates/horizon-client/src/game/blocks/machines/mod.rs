@@ -948,9 +948,18 @@ impl Game<'_> {
         let was_empty = self.inventory_is_empty(view);
         let c = self.containers();
         let vanilla_max = c.max_stack(&stack);
+        // A mod container's own `slot_limit` limits the hopper as it does the capability.
+        let own_limit = view
+            .container
+            .as_ref()
+            .map(|container| container.slot_limit)
+            .filter(|limit| *limit > 0);
         let override_limit = view
             .locate(slot)
-            .and_then(|(pos, _)| c.world.container_stack_limit(pos));
+            .and_then(|(pos, _)| c.world.container_stack_limit(pos))
+            .into_iter()
+            .chain(own_limit)
+            .min();
         let restricted = override_limit.is_some_and(|limit| limit < vanilla_max);
         let max = override_limit.map_or(vanilla_max, |limit| vanilla_max.min(limit));
         if restricted && max == 0 {
