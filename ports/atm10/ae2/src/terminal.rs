@@ -423,3 +423,40 @@ fn pickup(
         (Some(c), Some(s)) => (Some(s), Some(c)),
     }
 }
+
+/// Searches typed on clients, waiting for the next server tick: (player, text).
+static SEARCHES: Mutex<Vec<(u128, String)>> = Mutex::new(Vec::new());
+
+pub fn queue_search(player: u128, text: String) {
+    let mut s = SEARCHES.lock().unwrap_or_else(|e| e.into_inner());
+    s.retain(|(p, _)| *p != player);
+    s.push((player, text));
+}
+
+/// Applies the queued searches to the players' open terminals and shows them again.
+pub fn apply_searches(host: &mut dyn ServerHost) {
+    let queued = std::mem::take(&mut *SEARCHES.lock().unwrap_or_else(|e| e.into_inner()));
+    if queued.is_empty() {
+        return;
+    }
+    let Some(level) = host.level(host.dimension()) else { return };
+    for (player, text) in queued {
+        let (pos, window) = {
+            let mut all = views();
+            let Some(v) = all.iter_mut().find(|v| v.player == player) else { continue };
+            v.search = Some(text).filter(|t| !t.is_empty());
+            v.page = 0;
+            (v.pos, v.window)
+        };
+        let n = net(host, level, pos);
+        if !n.powered {
+            continue;
+        }
+        let mut all = views();
+        let Some(v) = all.iter_mut().find(|v| v.player == player) else { continue };
+        let (page, items) = render(&*host, level, v, &n);
+        v.page = page;
+        drop(all);
+        let _ = host.menu_set_items(player, window, items);
+    }
+}

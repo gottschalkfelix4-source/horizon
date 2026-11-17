@@ -10,7 +10,7 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 |---|---|---|
 | 1 | Cables (glass, covered, smart, dense covered, dense smart; fluix and 16 colours), controller, energy acceptor, energy cell, dense energy cell, network scan and power model; crystals, dusts, processors as data | ported, numbers to check; not run in the game |
 | 2 | Drive (ten cell slots), item storage cells 1k to 256k with contents saved in the stack, `network_insert` / `network_extract` over a network's cells, storage summary on the leader | ported, not run in the game. Not yet: ME chest, fluid cells, cell workbench and partitioning, inscriber and presses, charger, certus growth |
-| 3 | ME terminal (six-row view: 45 listed items by count, paging, take out and put in, search by item on the cursor); channels | ported, not run in the game. Not yet: text search (client hooks), crafting and pattern terminal, channels |
+| 3 | ME terminal (six-row view: 45 listed items by count, paging, take out and put in, search by item on the cursor); channels | ported, not run in the game. Text search (client typing sent to the server as `ae2:search`). Not yet: crafting and pattern terminal |
 | 4 | Import and export bus, channels, storage bus, interface | ported, not run in the game. Not yet: annihilation and formation planes, P2P, upgrade cards, priorities |
 | 5 | Autocrafting: patterns, pattern provider, molecular assembler, recursive plans | ported, not run in the game. Stand-ins: no crafting CPU, no timing, the assembler is only the capacity a request needs; no pattern terminal, no processing patterns |
 | 6 | Spatial IO, wireless access points and terminals, quantum bridge, meteorites, world generation | not yet |
@@ -138,3 +138,11 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   view of that point's network when the player is within 16 blocks of the point and the network has power. Same
   dimension only; no range boost from more points or cards, no battery (AE2WTLib's terminal draws power from the
   item), no other terminal kinds.
+
+## Terminal text search
+
+With the terminal open, typing filters the listing: letters, digits and space build the search text (up to 32
+characters), Backspace removes one, the compass slot still sets it from an item. The text is matched against item
+names without the namespace, underscores as spaces. While the terminal is open the typing keys are swallowed (E does
+not close it); Escape closes it. The text is forgotten when the screen closes. Not AE2's `@mod` or `#tag` syntax,
+no search box drawn (the compass slot's name shows the search).
