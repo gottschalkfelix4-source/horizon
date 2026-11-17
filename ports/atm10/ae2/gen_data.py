@@ -46,8 +46,8 @@ item("fluix_pearl", "minecraft:ender_pearl")
 
 block("drive", "minecraft:furnace", 2.2, 6.0)
 block("terminal", "minecraft:iron_block", 2.2, 6.0)
-block("import_bus", "minecraft:iron_block", 2.2, 6.0)
-block("export_bus", "minecraft:iron_block", 2.2, 6.0)
+block("import_bus", "minecraft:furnace", 2.2, 6.0)
+block("export_bus", "minecraft:furnace", 2.2, 6.0)
 block("pattern_provider", "minecraft:furnace", 2.2, 6.0)
 block("molecular_assembler", "minecraft:iron_block", 2.2, 6.0)
 for t in ["1k", "4k", "16k", "64k", "256k"]:

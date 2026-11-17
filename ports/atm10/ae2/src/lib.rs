@@ -297,7 +297,9 @@ impl BlockEntityPart for Network {
         let pos = event.pos;
         let Some(level) = host.level(host.dimension()) else { return };
         if let Some(Kind::Device(d)) = kind_at_pos(&*host, level, pos).filter(|k| matches!(k, Kind::Device(d) if d.is_bus())) {
-            bus::tick(host, level, pos, d, &event.entity.nbt);
+            // the filter is the item in the bus's first slot (else a filter saved by `merge_data`)
+            let slot_filter = event.entity.items.first().cloned().flatten().map(|s| s.item().id(&*host));
+            bus::tick(host, level, pos, d, slot_filter.or_else(|| bus::filter_of(&event.entity.nbt)));
             *event.reply = BlockEntityTickReply::Unchanged;
             return;
         }
@@ -349,20 +351,6 @@ impl BlockPart for Terminal {
     }
 }
 
-/// The import and export buses: their filter is set by using them.
-struct Bus;
-
-#[mod_api::horizon_part]
-impl BlockPart for Bus {
-    fn use_item_on(&self, host: &mut dyn ServerHost, event: &mut UseItemOnEvent<'_>) -> Option<InteractionResult> {
-        bus::use_item_on(host, event)
-    }
-
-    fn use_without_item(&self, host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
-        bus::use_without_item(host, event)
-    }
-}
-
 /// The drive takes only storage cells, in its first ten slots.
 struct DriveRules;
 
@@ -394,11 +382,20 @@ impl MenuPart for ProviderRules {
         }
         let Some(pos) = event.context.pos else { return };
         let Some(level) = host.level(host.dimension()) else { return };
-        if !level.block(host, pos).is_some_and(|b| b.id(host) == "ae2:pattern_provider") {
-            return;
-        }
-        if event.slot >= 9 || event.stack.item().id(host) != autocraft::PATTERN {
-            event.may_place = false;
+        let Some(id) = level.block(host, pos).map(|b| b.id(host)) else { return };
+        match id.as_str() {
+            "ae2:pattern_provider" => {
+                if event.slot >= 9 || event.stack.item().id(host) != autocraft::PATTERN {
+                    event.may_place = false;
+                }
+            }
+            // a bus keeps its filter in slot 0: the item put there is the filter
+            "ae2:import_bus" | "ae2:export_bus" => {
+                if event.slot != 0 {
+                    event.may_place = false;
+                }
+            }
+            _ => {}
         }
     }
 }
@@ -440,10 +437,22 @@ impl Hooks for Mod {
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
             if entity_type == "import_bus" || entity_type == "export_bus" {
+                // the filter slot: open the bus, put the item to filter by in the first slot
                 for id in &ids {
                     let key = r.block_key(id);
-                    r.block_part(key, Bus);
+                    let all: Vec<usize> = (0..9).collect();
+                    r.block_container(
+                        &key,
+                        ModContainer {
+                            slots: 9,
+                            faces: std::array::from_fn(|_| Vec::new()),
+                            inputs: all.clone(),
+                            outputs: all,
+                            menu: Some("minecraft:generic_9x1".into()),
+                        },
+                    );
                 }
+                r.menu_part("minecraft:generic_9x1", ProviderRules);
             }
             if entity_type == "terminal" {
                 let key = r.block_key("ae2:terminal");
