@@ -9,7 +9,7 @@
 //! the NeoForge original is in README.md.
 use mod_api::{
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
-    BlockEntityTicksEvent, BlockPart, Compound, Hooks, Host, HostBlockStates, HostTransaction, ItemStack, LevelRef,
+    BlockEntityTicksEvent, BlockPart, Compound, Direction, Hooks, ITEMS, move_resources, Host, HostBlockStates, HostTransaction, ItemStack, LevelRef,
     LevelSide, ModContainer, Registrar, RegistrationContext, ServerHost, Tag,
 };
 
@@ -70,7 +70,7 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::MechanicalPress => Part::Consumer { impact: PRESS_IMPACT },
         Kind::MechanicalMixer => Part::Consumer { impact: MIXER_IMPACT },
         Kind::Belt => Part::Consumer { impact: BELT_IMPACT },
-        Kind::Depot | Kind::Basin => return None,
+        Kind::Depot | Kind::Basin | Kind::Funnel => return None,
         Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM * facing_sign(facing), capacity: CREATIVE_MOTOR_CAPACITY },
         Kind::WaterWheel => {
             let flowing = Direction6::ALL
@@ -166,6 +166,7 @@ impl BlockEntityPart for Kinetic {
         match kind {
             Kind::Millstone => tick_millstone(host, speed, &mut nbt, &mut items),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
+            Kind::Funnel => tick_funnel(host, level, pos),
             Kind::Belt => tick_belt(host, level, pos, speed, &mut nbt, &mut items),
             Kind::MechanicalMixer => tick_mixer(host, level, pos, speed, &mut nbt),
             _ => {}
@@ -274,6 +275,26 @@ fn tick_millstone(host: &mut dyn ServerHost, speed: f64, nbt: &mut Compound, ite
         // the outputs are full: hold at the end
         set_progress(nbt, MILL_WORK - speed.abs());
     }
+}
+
+/// A funnel moves one item every `FUNNEL_EVERY` ticks from the container behind it to the one it
+/// faces (a belt, a depot, a chest, a machine).
+fn tick_funnel(host: &mut dyn ServerHost, level: LevelRef, pos: Pos) {
+    if level.game_time(&*host).unwrap_or(0) % FUNNEL_EVERY != 0 {
+        return;
+    }
+    let Some(facing) = state_at(&*host, level, pos).and_then(|(_, _, f, _)| f) else { return };
+    let Some(out_dir) = Direction::ALL.into_iter().find(|d| d.normal() == facing) else { return };
+    let back = out_dir.opposite();
+    let from = [pos[0] - facing[0], pos[1] - facing[1], pos[2] - facing[2]];
+    let to = [pos[0] + facing[0], pos[1] + facing[1], pos[2] + facing[2]];
+    let (Some(src), Some(dst)) = (
+        level.capability(host, &ITEMS, from, Some(out_dir)),
+        level.capability(host, &ITEMS, to, Some(back)),
+    ) else {
+        return;
+    };
+    let _ = host.transaction(|host, tx| move_resources(host, &src, &dst, |_| true, FUNNEL_ITEMS, tx).map_err(|_| ()));
 }
 
 /// Moves the belt's item one block on when the work is done: onto a belt or depot with a free slot.

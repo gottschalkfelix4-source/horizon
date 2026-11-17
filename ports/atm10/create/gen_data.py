@@ -15,6 +15,7 @@ BLOCKS = {
     "creative_motor": ("minecraft:observer", 3.0, 6.0, "Creative Motor"),
     "millstone": ("minecraft:furnace", 3.0, 6.0, "Millstone"),
     "belt": ("minecraft:stripped_oak_log", 0.8, 3.0, "Mechanical Belt"),
+    "funnel": ("minecraft:observer", 1.0, 3.0, "Andesite Funnel"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
     "basin": ("minecraft:furnace", 3.0, 6.0, "Basin"),
     "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),

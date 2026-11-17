@@ -17,10 +17,11 @@ pub enum Kind {
     Basin,
     MechanicalMixer,
     Belt,
+    Funnel,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 13] = [
+    pub const ALL: [Kind; 14] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -34,6 +35,7 @@ impl Kind {
         Kind::Basin,
         Kind::MechanicalMixer,
         Kind::Belt,
+        Kind::Funnel,
     ];
 
     pub fn name(self) -> &'static str {
@@ -51,6 +53,7 @@ impl Kind {
             Kind::Basin => "basin",
             Kind::MechanicalMixer => "mechanical_mixer",
             Kind::Belt => "belt",
+            Kind::Funnel => "funnel",
         }
     }
 }
@@ -161,6 +164,10 @@ pub fn belt_step(axis: crate::kinetics::Axis, speed: f64) -> Option<[i32; 3]> {
         Axis::Y => None,
     }
 }
+
+/// Ticks between two moves of a funnel, and how many items it moves.
+pub const FUNNEL_EVERY: i64 = 8;
+pub const FUNNEL_ITEMS: u32 = 1;
 
 /// One tick of work at `speed` RPM: the new progress and whether `work` is reached (then the
 /// progress starts over). A block that stands still loses no progress.
