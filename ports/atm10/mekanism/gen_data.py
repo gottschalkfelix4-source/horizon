@@ -100,3 +100,31 @@ for n in ["sps_casing", "sps_port"]:
 block("digital_miner", "minecraft:furnace", 3.5, 9.0)
 
 block("teleporter", "minecraft:furnace", 3.5, 9.0)
+
+# Meka-Tool and MekaSuit: netherite-grade stand-ins that hold energy (src/meka.rs)
+def meka(name, template, comps):
+    with open(f"{base}/item/{name}.json", "w") as f:
+        json.dump({"template": template, "components": comps}, f, indent=2)
+        f.write("\n")
+
+rules = [{"blocks": f"#minecraft:mineable/{k}", "correct_for_drops": True, "speed": 24.0}
+         for k in ("pickaxe", "axe", "shovel", "hoe")]
+meka("meka_tool", "minecraft:netherite_pickaxe", {
+    "minecraft:unbreakable": {},
+    "minecraft:tool": {"rules": rules, "default_mining_speed": 1.0, "damage_per_block": 0},
+    "minecraft:attribute_modifiers": [
+        {"type": "minecraft:attack_damage", "id": "minecraft:base_attack_damage", "amount": 8.0,
+         "operation": "add_value", "slot": "mainhand"},
+        {"type": "minecraft:attack_speed", "id": "minecraft:base_attack_speed", "amount": -2.4,
+         "operation": "add_value", "slot": "mainhand"}]})
+for piece, slot, tpl, pts in [("helmet", "head", "helmet", 4), ("bodyarmor", "chest", "chestplate", 9),
+                              ("pants", "legs", "leggings", 7), ("boots", "feet", "boots", 4)]:
+    meka(f"mekasuit_{piece}", f"minecraft:netherite_{tpl}", {
+        "minecraft:unbreakable": {},
+        "minecraft:attribute_modifiers": [
+            {"type": "minecraft:armor", "id": f"mekanism:mekasuit_{piece}", "amount": pts,
+             "operation": "add_value", "slot": slot},
+            {"type": "minecraft:armor_toughness", "id": f"mekanism:mekasuit_{piece}", "amount": 3.0,
+             "operation": "add_value", "slot": slot},
+            {"type": "minecraft:knockback_resistance", "id": f"mekanism:mekasuit_{piece}", "amount": 0.1,
+             "operation": "add_value", "slot": slot}]})

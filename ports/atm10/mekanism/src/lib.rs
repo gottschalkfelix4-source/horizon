@@ -26,6 +26,7 @@ pub mod evaporation;
 pub mod digital_miner;
 pub mod fission;
 pub mod fusion;
+pub mod meka;
 pub mod sps;
 pub mod teleporter;
 pub mod matrix;
@@ -932,6 +933,10 @@ struct Mod;
 
 #[mod_api::horizon_mod]
 impl Hooks for Mod {
+    fn component_types(&self, _: &RegistrationContext, event: &mut mod_api::ComponentTypesEvent<'_>) {
+        meka::component_types(event);
+    }
+
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         let mut groups: Vec<(&str, Vec<String>)> = vec![
             ("energy_cube", Tier::ALL.iter().map(|t| cube_id(*t)).collect()),
@@ -960,6 +965,7 @@ impl Hooks for Mod {
         sps::register(r);
         digital_miner::register(r);
         teleporter::register(r);
+        meka::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };

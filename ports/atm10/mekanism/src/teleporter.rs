@@ -104,34 +104,53 @@ fn tick(host: &mut dyn ServerHost, level: LevelRef, event: &mut BlockEntityTickE
         let key = format!("{}|{f}", host.dimension());
         remember(&key, pos);
         let mut energy = int(&nbt, "energy");
-        if rest == 0 {
-            let at = [f64::from(pos[0]), f64::from(pos[1]) + 1.0, f64::from(pos[2])];
-            let who = level
-                .entities_in(&*host, at, [at[0] + 1.0, at[1] + 2.0, at[2] + 1.0])
-                .unwrap_or_default();
-            if let (false, Some(to)) = (who.is_empty(), partner(&*host, level, &key, pos)) {
+        // only whoever stepped onto the block since the last tick travels: staying put on it
+        // (or arriving on it) does not send anyone back
+        let at = [f64::from(pos[0]), f64::from(pos[1]) + 1.0, f64::from(pos[2])];
+        let present = level
+            .entities_in(&*host, at, [at[0] + 1.0, at[1] + 2.0, at[2] + 1.0])
+            .unwrap_or_default();
+        let on: Vec<i32> = match nbt.get(&"on".into()) {
+            Some(Tag::IntArray(v)) => v.clone(),
+            _ => Vec::new(),
+        };
+        let mut keep: Vec<i32> = present.iter().map(|e| e.id() as i32).filter(|i| on.contains(i)).collect();
+        let newcomers: Vec<_> = present.iter().copied().filter(|e| !on.contains(&(e.id() as i32))).collect();
+        if rest == 0 && !newcomers.is_empty() {
+            if let Some(to) = partner(&*host, level, &key, pos) {
                 let cost = trip_cost(pos, to);
                 if energy >= cost {
-                    let mut sent = false;
-                    for e in who {
-                        sent |= e.teleport_to(
+                    let mut moved = Vec::new();
+                    for e in newcomers {
+                        let id = e.id() as i32;
+                        if e.teleport_to(
                             host,
                             [f64::from(to[0]) + 0.5, f64::from(to[1]) + 1.0, f64::from(to[2]) + 0.5],
                             None,
-                        );
+                        ) {
+                            moved.push(id);
+                        }
                     }
-                    if sent {
+                    if !moved.is_empty() {
                         energy -= cost;
                         nbt.insert("rest".into(), Tag::Int(REST));
                         if let Some(other) = host.block_entity(level, to) {
                             let mut patch = Compound::new();
                             patch.insert("rest".into(), Tag::Int(REST));
+                            let mut all = match other.data(&*host).and_then(|d| d.get(&"on".into()).cloned()) {
+                                Some(Tag::IntArray(v)) => v,
+                                _ => Vec::new(),
+                            };
+                            all.extend(moved);
+                            patch.insert("on".into(), Tag::IntArray(all));
                             let _ = other.merge_data(host, patch);
                         }
                     }
                 }
             }
         }
+        keep.sort_unstable();
+        nbt.insert("on".into(), Tag::IntArray(keep));
         nbt.insert("energy".into(), Tag::Int(energy));
     }
     if nbt == event.entity.nbt {
