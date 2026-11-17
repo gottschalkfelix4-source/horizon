@@ -1,0 +1,211 @@
+//! Create for Horizon, first slice: rotation and stress. Shafts, cogwheels, large cogwheels and
+//! gearboxes carry a network's speed, a water wheel, a windmill bearing and a creative motor make
+//! it, and the network's lowest block solves it (see `kinetics.rs`) and tells every block of it
+//! its speed through the block entity's saved `speed` (RPM), `capacity`, `stress` and a
+//! `jammed` / `overstressed` flag.
+//!
+//! Written from Create's observed behaviour and public description, never from its code
+//! (docs/modpacks.md, "Licences"). What is ported and which numbers still need a check against
+//! the NeoForge original is in README.md.
+use mod_api::{
+    BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
+    BlockEntityTicksEvent, BlockPart, HostBlockStates, Compound, Hooks, Host, LevelRef, LevelSide, Registrar,
+    RegistrationContext, ServerHost, Tag,
+};
+
+pub mod kinetics;
+pub mod rules;
+use kinetics::{Axis, Node, Part, Pos, solve};
+use rules::*;
+
+fn int(nbt: &Compound, key: &str) -> i32 {
+    match nbt.get(&key.into()) {
+        Some(Tag::Int(v)) => *v,
+        _ => 0,
+    }
+}
+
+fn set_int(nbt: &mut Compound, key: &str, v: i32) {
+    nbt.insert(key.into(), Tag::Int(v));
+}
+
+/// The id and the property reader of the block at `pos`.
+fn state_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<(String, Option<Axis>, Option<[i32; 3]>, i32)> {
+    let state = level.block_state(host, pos)?;
+    let id = state.block().id(host).to_string();
+    let meta = host.block_states();
+    let prop = |name: &str| state.property(&meta, name).ok().flatten().map(str::to_owned);
+    let axis = prop("axis").and_then(|a| Axis::from_name(&a));
+    let facing = prop("facing").and_then(|f| facing_offset(&f));
+    let level_prop = prop("level").and_then(|l| l.parse().ok()).unwrap_or(0);
+    Some((id, axis, facing, level_prop))
+}
+
+/// What a facing name points at.
+fn facing_offset(name: &str) -> Option<[i32; 3]> {
+    Some(match name {
+        "east" => [1, 0, 0],
+        "west" => [-1, 0, 0],
+        "up" => [0, 1, 0],
+        "down" => [0, -1, 0],
+        "south" => [0, 0, 1],
+        "north" => [0, 0, -1],
+        _ => return None,
+    })
+}
+
+/// What the block at `pos` is in a kinetic network, if it is part of one.
+fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
+    let (id, axis, facing, _) = state_at(host, level, pos)?;
+    let kind = parse_block(&id)?;
+    let axis = axis
+        .or_else(|| facing.and_then(Axis::of_offset))
+        .unwrap_or(Axis::Y);
+    let part = match kind {
+        Kind::Shaft => Part::Shaft,
+        Kind::Cogwheel => Part::Cog,
+        Kind::LargeCogwheel => Part::LargeCog,
+        Kind::Gearbox => Part::Gearbox,
+        Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM, capacity: CREATIVE_MOTOR_CAPACITY },
+        Kind::WaterWheel => {
+            let flowing = Direction6::ALL
+                .iter()
+                .filter(|d| Axis::of_offset(**d) != Some(axis))
+                .filter(|d| {
+                    let at = [pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]];
+                    state_at(host, level, at).is_some_and(|(id, _, _, lvl)| id == "minecraft:water" && lvl != 0)
+                })
+                .count();
+            Part::Source { rpm: water_wheel_rpm(flowing), capacity: WATER_WHEEL_CAPACITY }
+        }
+        Kind::WindmillBearing => {
+            let toward = facing.unwrap_or([0, 1, 0]);
+            let sails = count_sails(host, level, pos, toward);
+            Part::Source { rpm: windmill_rpm(sails), capacity: WINDMILL_CAPACITY }
+        }
+    };
+    Some(Node::new(part, axis))
+}
+
+/// The six unit offsets.
+struct Direction6;
+
+impl Direction6 {
+    const ALL: [[i32; 3]; 6] = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+}
+
+/// The sail blocks (wool, carpet, glass-free frames: `is_sail`) joined to the block in front of
+/// the bearing, up to `MAX_SAILS`.
+fn count_sails(host: &dyn Host, level: LevelRef, bearing: Pos, toward: [i32; 3]) -> usize {
+    let start = [bearing[0] + toward[0], bearing[1] + toward[1], bearing[2] + toward[2]];
+    let mut seen = std::collections::BTreeSet::new();
+    let mut queue = std::collections::VecDeque::from([start]);
+    while let Some(at) = queue.pop_front() {
+        if seen.len() >= MAX_SAILS || !seen.insert(at) {
+            continue;
+        }
+        let is = state_at(host, level, at).is_some_and(|(id, ..)| is_sail(&id));
+        if !is {
+            seen.remove(&at);
+            continue;
+        }
+        for d in Direction6::ALL {
+            let n = [at[0] + d[0], at[1] + d[1], at[2] + d[2]];
+            if !seen.contains(&n) {
+                queue.push_back(n);
+            }
+        }
+    }
+    seen.len()
+}
+
+/// One part for every Create block entity; the block's id says which kind it is.
+struct Kinetic;
+
+#[mod_api::horizon_part]
+impl BlockPart for Kinetic {}
+
+#[mod_api::horizon_part]
+impl BlockEntityPart for Kinetic {
+    fn block_entity(&self, _: LevelSide<'_>, event: &mut BlockEntityEvent<'_>) -> Option<Compound> {
+        parse_block(event.block).map(|_| {
+            let mut nbt = Compound::new();
+            set_int(&mut nbt, "speed_x1000", 0);
+            nbt
+        })
+    }
+
+    fn block_entity_ticks(&self, _: &dyn Host, event: &mut BlockEntityTicksEvent<'_>) {
+        if parse_block(event.block).is_some() {
+            event.ticks = true;
+        }
+    }
+
+    fn block_entity_tick(&self, host: &mut dyn ServerHost, event: &mut BlockEntityTickEvent<'_>) {
+        let pos = event.pos;
+        let Some(level) = host.level(host.dimension()) else { return };
+        // a network is solved every SOLVE_EVERY ticks, each block at its own offset
+        let time = level.game_time(&*host).unwrap_or(0);
+        let offset = i64::from((pos[0].wrapping_mul(31) ^ pos[2]).rem_euclid(SOLVE_EVERY));
+        if time.rem_euclid(i64::from(SOLVE_EVERY)) != offset {
+            *event.reply = BlockEntityTickReply::Unchanged;
+            return;
+        }
+        // a block the lowest block of its network keeps up to date leaves the solving to it
+        let stamp = int(&event.entity.nbt, "stamp");
+        let fresh = (period(time)).wrapping_sub(stamp).abs() <= 1;
+        if int(&event.entity.nbt, "leader") == 0 && fresh && stamp != 0 {
+            *event.reply = BlockEntityTickReply::Unchanged;
+            return;
+        }
+        let solution = {
+            let h: &dyn Host = &*host;
+            solve(|p| node_at(h, level, p), pos)
+        };
+        let leads = solution.leader() == Some(pos);
+        let mut nbt = event.entity.nbt.clone();
+        apply(&mut nbt, &solution, pos);
+        set_int(&mut nbt, "leader", i32::from(leads));
+        set_int(&mut nbt, "stamp", period(time));
+        event.entity.nbt = nbt;
+        // the network's lowest block tells the others
+        if leads {
+            for (at, _) in solution.speeds.iter().filter(|(p, _)| **p != pos) {
+                let Some(be) = host.block_entity(level, *at) else { continue };
+                let mut patch = Compound::new();
+                apply(&mut patch, &solution, *at);
+                set_int(&mut patch, "leader", 0);
+                set_int(&mut patch, "stamp", period(time));
+                let _ = be.merge_data(host, patch);
+            }
+        }
+    }
+}
+
+/// A coarse clock (about ten seconds) for the leader's stamp, so a stamp changes rarely.
+fn period(time: i64) -> i32 {
+    (time / 200) as i32 + 1
+}
+
+/// Writes what a solution says about the block at `pos` into `nbt`.
+fn apply(nbt: &mut Compound, solution: &kinetics::Solution, pos: Pos) {
+    let speed = solution.speeds.get(&pos).copied().unwrap_or(0.0);
+    set_int(nbt, "speed_x1000", (speed * 1000.0).round() as i32);
+    set_int(nbt, "capacity", solution.capacity.round() as i32);
+    set_int(nbt, "stress", solution.stress.round() as i32);
+    set_int(nbt, "jammed", i32::from(solution.conflict));
+    set_int(nbt, "overstressed", i32::from(solution.overstressed));
+}
+
+#[derive(Default)]
+struct Mod;
+
+#[mod_api::horizon_mod]
+impl Hooks for Mod {
+    fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
+        let ids: Vec<String> = Kind::ALL.iter().map(|k| format!("create:{}", k.name())).collect();
+        let names: Vec<&str> = ids.iter().map(String::as_str).collect();
+        let built = r.block_entity_type("kinetic").blocks(&names).build();
+        let _ = r.block_entity_part(&built, Kinetic);
+    }
+}
