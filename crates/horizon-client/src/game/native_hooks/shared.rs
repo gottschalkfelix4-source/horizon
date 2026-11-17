@@ -1878,6 +1878,47 @@ impl GameLevel<'_> {
         self.behaviours
             .remove_block(self, ticks, BlockPos::new(pos[0], pos[1], pos[2]), moved)
     }
+    /// `Level.updateNeighborsAt` and its two siblings from `pos`, for a write host: false, with
+    /// nothing done, off an authoritative level or at a position that isn't loaded.
+    pub(super) fn update_neighbors_write(
+        &mut self,
+        ticks: &mut Ticks,
+        pos: [i32; 3],
+        source: BlockStateId,
+        update: mod_api::NeighbourUpdate,
+    ) -> bool {
+        if !self.native_authoritative || !self.world.is_loaded_at(pos[0], pos[1], pos[2]) {
+            return false;
+        }
+        let block = self.behaviours.block(source);
+        self.behaviours.neighbour_update(
+            self,
+            ticks,
+            BlockPos::new(pos[0], pos[1], pos[2]),
+            block,
+            update,
+        );
+        true
+    }
+    /// `Level.neighborChanged(pos, source's block)`, for a write host; false as above.
+    pub(super) fn neighbor_changed_write(
+        &mut self,
+        ticks: &mut Ticks,
+        pos: [i32; 3],
+        source: BlockStateId,
+    ) -> bool {
+        if !self.native_authoritative || !self.world.is_loaded_at(pos[0], pos[1], pos[2]) {
+            return false;
+        }
+        let block = self.behaviours.block(source);
+        self.behaviours.neighbor_changed_at(
+            self,
+            ticks,
+            BlockPos::new(pos[0], pos[1], pos[2]),
+            block,
+        );
+        true
+    }
     /// Schedules a tick of `block` (a block name) at `pos` in `delay` game
     /// ticks, as a falling block's shape update schedules its fall
     /// (`ScheduledTickAccess.scheduleTick(pos, block, delay)`, normal

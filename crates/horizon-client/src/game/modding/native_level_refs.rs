@@ -358,6 +358,21 @@ impl Game<'_> {
     pub(super) fn chunk_loaded(&self, chunk: ChunkRef) -> bool {
         self.chunk(chunk.level(), chunk.pos()).is_some()
     }
+    /// The mod block entities of a loaded chunk, sorted by position; None for a chunk that isn't
+    /// loaded, a stale handle or a client. Taken-out entities (mid-tick) keep their identity.
+    pub(super) fn chunk_block_entities(&self, chunk: ChunkRef) -> Option<Vec<mod_api::BlockEntityRef>> {
+        self.chunk(chunk.level(), chunk.pos())?;
+        let world = self.native_level_world(chunk.level())?;
+        let [cx, cz] = chunk.pos();
+        let mut positions: Vec<_> = world.block_entities.mods_in((cx, cz)).copied().collect();
+        positions.sort_unstable();
+        Some(
+            positions
+                .into_iter()
+                .filter_map(|(x, y, z)| self.block_entity_identity(chunk.level(), [x, y, z]))
+                .collect(),
+        )
+    }
     /// The status of a loaded chunk. Proto chunks are not exposed here.
     pub(super) fn chunk_status(&self, chunk: ChunkRef) -> Option<ChunkStatus> {
         self.chunk(chunk.level(), chunk.pos())
@@ -735,7 +750,7 @@ impl Game<'_> {
     }
     /// Whether any neighbour powers the block at `pos` (`SignalGetter.hasNeighborSignal`),
     /// asking no side past the first that does. False where `signal` is None.
-    pub(super) fn level_has_neighbor_signal(&self, level: LevelRef, pos: [i32; 3]) -> bool {
+    pub(in crate::game) fn level_has_neighbor_signal(&self, level: LevelRef, pos: [i32; 3]) -> bool {
         self.native_level_signals(level, |s| s.has_neighbor_signal(block_pos(pos)))
             .unwrap_or(false)
     }

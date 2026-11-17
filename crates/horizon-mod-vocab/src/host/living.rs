@@ -537,6 +537,15 @@ pub trait LivingBackendMut {
         stack: Option<ItemStack>,
     ) -> Result<bool, StackWriteError>;
     /// Side: server.
+    /// Sets the chance that a mob drops what it wears or holds in `slot` when it dies
+    /// (`Mob.setDropChance`): 0 never, 1 always, above 1 always and even when no player killed
+    /// it (a "preserved" item, as a saddle is). The other slots keep the chance they had,
+    /// the game's default for the ones never set. False for anything but a mob (players,
+    /// armor stands and the dragon have no drop chances), a stale handle, a client, or a
+    /// `chance` that is not a finite number of at least 0.
+    #[access(WorldOnly)]
+    fn living_set_drop_chance(&mut self, living: LivingRef, slot: EquipmentSlot, chance: f32) -> bool;
+    /// Side: server.
     /// Puts `stack` in hand `hand` (`LivingEntity.setItemInHand`): the main
     /// hand's slot or the off hand's, written as `set_equipment`
     /// writes them, with its equip events and sound. None, air or a zero count

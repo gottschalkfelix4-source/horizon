@@ -941,6 +941,35 @@ impl Game<'_> {
     ) -> bool {
         self.write_living_equipment(living, slot, stack, false)
     }
+    /// `Mob.setDropChance(slot, chance)`: the mob's recorded chance for `slot`, the other slots
+    /// keeping theirs (or the game's defaults for those never set). False for a non-mob, a
+    /// stale handle, a client, or a `chance` below 0 or not finite.
+    pub(super) fn living_set_drop_chance(
+        &mut self,
+        living: LivingRef,
+        slot: EquipmentSlot,
+        chance: f32,
+    ) -> bool {
+        use horizon_client::mobs::drops::{SLOTS, drop_chance};
+        if self.remote.is_some() || !chance.is_finite() || chance < 0.0 {
+            return false;
+        }
+        let Some(Target::Mob(id)) = self.native_living_target(living) else {
+            return false;
+        };
+        let Some(mob) = self.mobs.iter_mut().find(|m| m.id == id) else {
+            return false;
+        };
+        let mut chances = mob
+            .extra
+            .drop_chances
+            .as_deref()
+            .copied()
+            .unwrap_or_else(|| SLOTS.map(|s| drop_chance(mob, s)));
+        chances[slot as usize] = chance;
+        mob.extra.drop_chances = Some(Box::new(chances));
+        true
+    }
     /// The write `native_living_set_equipment` makes (arismoko/horizon#932): with `defer`,
     /// its equip sound and game event wait for the root commit of the open
     /// transaction — an abort stays quiet — while the equipment and the
@@ -2061,6 +2090,30 @@ mod tests {
                     .set_hand_item(game, Hand::Main, Some(sword.try_into_api().unwrap()))
                     .unwrap()
             );
+        });
+    }
+
+    #[test]
+    #[ignore = "daily"]
+    fn a_mobs_drop_chance_is_set_for_one_slot_and_refused_for_bad_input() {
+        use horizon_client::mobs::Mob;
+        use horizon_core::geometry::Vec3;
+        super::super::native_entity_refs::tests::with_game(|game| {
+            let kind = game
+                .res
+                .mob_types()
+                .get("minecraft:zombie")
+                .unwrap()
+                .clone();
+            game.mobs.push(Mob::new(12, kind, Vec3::ZERO, 0.0));
+            let living = game.living(game.entity(12).unwrap()).unwrap();
+            assert!(game.living_set_drop_chance(living, EquipmentSlot::Head, 2.0));
+            // Vanilla's default for a slot never set is 0.085; only the head changed.
+            let chances = game.mobs[0].extra.drop_chances.as_deref().unwrap();
+            assert_eq!(chances[EquipmentSlot::Head as usize], 2.0);
+            assert_eq!(chances[EquipmentSlot::Chest as usize], 0.085);
+            assert!(!game.living_set_drop_chance(living, EquipmentSlot::Head, -1.0));
+            assert!(!game.living_set_drop_chance(living, EquipmentSlot::Head, f32::NAN));
         });
     }
 
