@@ -18,6 +18,7 @@ the later ones can sit on it.
 | Precision sawmill | Logs and stems to six planks (no sawdust chance yet) | ported |
 | Combiner | Dust and cobblestone into the metal's ore | ported |
 | Metallurgic infuser | Infusing items in the second slot fill an infuse tank (10 per item, 1000 max); makes infused/reinforced/atomic alloys, steel and bronze dust | ported, recipe table hard-coded |
+| Mechanical pipes, pressurized tubes, logistical transporters | Four tiers each; a network (up to 4096 pipes, run by its lowest) moves fluids (1, 4, 16, 64 B/tick), chemicals (same) or items (1, 2, 4, 8 per tick) between the blocks touching it, every one both giving and taking | ported, simplified: no side configuration, filters, colours or routing, and two chests joined by a transporter swap items back and forth |
 | `mekanism:chemicals` | `CapabilityKey` over `ResourceHandler<ChemicalResource>`, a one-tank block handler saved in the block entity | declared and unit-tested; no machine registers it yet |
 | Menus | Vanilla hopper menu (slots: input, output, energy item, two upgrades) | stand-in until mod menus with energy bars exist |
 | Generators, tools, additions | in the [Generators](../mekanismgenerators/), [Tools](../mekanismtools/) and [Additions](../mekanismadditions/) ports | | |

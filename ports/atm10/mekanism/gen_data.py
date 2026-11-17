@@ -52,6 +52,8 @@ for c in ["basic", "advanced", "elite", "ultimate"]:
     item(f"control_circuit_{c}")
     block(f"{c}_energy_cube", "minecraft:iron_block", 3.5, 16.0)
     block(f"{c}_universal_cable", "minecraft:iron_bars", 1.0, 6.0)
+    for pipe in ["mechanical_pipe", "pressurized_tube", "logistical_transporter"]:
+        block(f"{c}_{pipe}", "minecraft:iron_bars", 1.0, 6.0)
 # the furnace template is what makes a click open the container's menu (as Powah's furnator)
 for m in ["enrichment_chamber", "crusher", "energized_smelter", "precision_sawmill", "combiner", "metallurgic_infuser"]:
     block(m, "minecraft:furnace", 3.5, 16.0)

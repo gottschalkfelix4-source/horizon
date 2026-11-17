@@ -74,11 +74,63 @@ pub fn cable_id(t: Tier) -> String {
     format!("mekanism:{}_universal_cable", t.name())
 }
 
+/// What a pipe carries.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Family {
+    /// Mechanical pipes: fluids.
+    Pipe,
+    /// Pressurized tubes: chemicals (gases and the rest).
+    Tube,
+    /// Logistical transporters: items.
+    Transporter,
+}
+
+impl Family {
+    pub const ALL: [Family; 3] = [Family::Pipe, Family::Tube, Family::Transporter];
+
+    pub fn suffix(self) -> &'static str {
+        match self {
+            Family::Pipe => "mechanical_pipe",
+            Family::Tube => "pressurized_tube",
+            Family::Transporter => "logistical_transporter",
+        }
+    }
+
+    /// The block entity type of the family.
+    pub fn entity_type(self) -> &'static str {
+        self.suffix()
+    }
+
+    /// What one network moves per tick at `t`: millibuckets, or items for transporters.
+    pub fn rate(self, t: Tier) -> u32 {
+        let step = match t {
+            Tier::Basic => 1,
+            Tier::Advanced => 4,
+            Tier::Elite => 16,
+            Tier::Ultimate => 64,
+        };
+        match self {
+            Family::Pipe | Family::Tube => 1000 * step,
+            Family::Transporter => match t {
+                Tier::Basic => 1,
+                Tier::Advanced => 2,
+                Tier::Elite => 4,
+                Tier::Ultimate => 8,
+            },
+        }
+    }
+}
+
+pub fn pipe_id(f: Family, t: Tier) -> String {
+    format!("mekanism:{}_{}", t.name(), f.suffix())
+}
+
 /// What a block id is.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Kind {
     Cube(Tier),
     Cable(Tier),
+    Pipe(Family, Tier),
     Machine(Machine),
 }
 
@@ -89,6 +141,11 @@ pub fn parse_block(id: &str) -> Option<Kind> {
     }
     if let Some(t) = name.strip_suffix("_universal_cable") {
         return Tier::from_name(t).map(Kind::Cable);
+    }
+    for f in Family::ALL {
+        if let Some(t) = name.strip_suffix(f.suffix()).and_then(|t| t.strip_suffix('_')) {
+            return Tier::from_name(t).map(|t| Kind::Pipe(f, t));
+        }
     }
     Machine::ALL.into_iter().find(|m| m.name() == name).map(Kind::Machine)
 }
@@ -339,6 +396,12 @@ mod tests {
         assert_eq!(parse_block("mekanism:elite_energy_cube"), Some(Kind::Cube(Tier::Elite)));
         assert_eq!(parse_block("mekanism:basic_universal_cable"), Some(Kind::Cable(Tier::Basic)));
         assert_eq!(parse_block("mekanism:crusher"), Some(Kind::Machine(Machine::Crusher)));
+        assert_eq!(
+            parse_block("mekanism:ultimate_pressurized_tube"),
+            Some(Kind::Pipe(Family::Tube, Tier::Ultimate))
+        );
+        assert_eq!(pipe_id(Family::Transporter, Tier::Elite), "mekanism:elite_logistical_transporter");
+        assert_eq!(Family::Pipe.rate(Tier::Advanced), 4000);
         assert_eq!(parse_block("mekanism:osmium_ore"), None);
         assert_eq!(parse_block("powah:crusher"), None);
     }

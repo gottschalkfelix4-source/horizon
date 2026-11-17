@@ -13,6 +13,7 @@
 use std::collections::{BTreeSet, VecDeque};
 
 use mod_api::{
+    CapabilityKey, FLUIDS, ITEMS, ResourceHandler, move_resources,
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
     BlockEntityTicksEvent, BlockPart, Compound, Direction, ENERGY, Hooks, Host, Identifier,
     HostTransaction, ItemStack, LevelRef, LevelSide, ModContainer, ModEnergyBuffer, RecipeInput, Registrar,
@@ -20,6 +21,7 @@ use mod_api::{
 };
 
 pub mod chemical;
+use chemical::CHEMICALS;
 pub mod rules;
 use rules::*;
 
@@ -86,6 +88,16 @@ fn route(
 
 /// The cables joined to `start` (up to 4096), sorted, the lowest first.
 fn network(host: &dyn Host, level: LevelRef, start: [i32; 3]) -> Vec<[i32; 3]> {
+    network_of(host, level, start, |k| matches!(k, Kind::Cable(_)))
+}
+
+/// The blocks `same` accepts, joined to `start` (up to 4096), sorted, the lowest first.
+fn network_of(
+    host: &dyn Host,
+    level: LevelRef,
+    start: [i32; 3],
+    same: impl Fn(Kind) -> bool,
+) -> Vec<[i32; 3]> {
     let mut seen = BTreeSet::from([start]);
     let mut queue = VecDeque::from([start]);
     while let Some(pos) = queue.pop_front() {
@@ -94,7 +106,7 @@ fn network(host: &dyn Host, level: LevelRef, start: [i32; 3]) -> Vec<[i32; 3]> {
         }
         for dir in Direction::ALL {
             let n = offset(pos, dir);
-            if !seen.contains(&n) && matches!(kind_at(host, level, n), Some(Kind::Cable(_))) {
+            if !seen.contains(&n) && kind_at(host, level, n).is_some_and(&same) {
                 seen.insert(n);
                 queue.push_back(n);
             }
@@ -119,7 +131,7 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
         for dir in Direction::ALL {
             let n = offset(c, dir);
             match kind_at(&*host, level, n) {
-                Some(Kind::Cable(_)) => {}
+                Some(Kind::Cable(_) | Kind::Pipe(..)) => {}
                 Some(Kind::Cube(_)) => {
                     sources.push((n, dir.opposite()));
                     cubes.push((n, dir.opposite()));
@@ -151,6 +163,66 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
             }
             budget -= route(host, level, source, sink, budget);
         }
+    }
+}
+
+/// Moves up to `budget` of `R` between the endpoints of a pipe network: out of each endpoint,
+/// into the others, in one transaction per pair.
+fn move_network<R: 'static>(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    key: &CapabilityKey<dyn ResourceHandler<R>>,
+    ends: &[([i32; 3], Direction)],
+    mut budget: u32,
+) {
+    for (i, &from) in ends.iter().enumerate() {
+        for (j, &to) in ends.iter().enumerate() {
+            if budget == 0 {
+                return;
+            }
+            if i == j {
+                continue;
+            }
+            let (Some(src), Some(dst)) = (
+                level.capability(host, key, from.0, Some(from.1)),
+                level.capability(host, key, to.0, Some(to.1)),
+            ) else {
+                continue;
+            };
+            let moved = host
+                .transaction(|host, tx| {
+                    move_resources(host, &src, &dst, |_| true, budget, tx).map_err(|_| ())
+                })
+                .unwrap_or(0);
+            budget -= moved.min(budget);
+        }
+    }
+}
+
+/// One tick of the pipe network `pos` belongs to, run only by its lowest pipe: what the blocks
+/// touching it give is moved to the others, at the lowest tier's rate.
+fn tick_pipe(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], family: Family) {
+    let pipes = network_of(&*host, level, pos, |k| matches!(k, Kind::Pipe(f, _) if f == family));
+    if pipes.first() != Some(&pos) {
+        return;
+    }
+    let mut rate = u32::MAX;
+    let mut ends = Vec::new();
+    for &c in &pipes {
+        if let Some(Kind::Pipe(_, t)) = kind_at(&*host, level, c) {
+            rate = rate.min(family.rate(t));
+        }
+        for dir in Direction::ALL {
+            let n = offset(c, dir);
+            if !matches!(kind_at(&*host, level, n), Some(Kind::Pipe(..))) {
+                ends.push((n, dir.opposite()));
+            }
+        }
+    }
+    match family {
+        Family::Pipe => move_network(host, level, &FLUIDS, &ends, rate),
+        Family::Tube => move_network(host, level, &CHEMICALS, &ends, rate),
+        Family::Transporter => move_network(host, level, &ITEMS, &ends, rate),
     }
 }
 
@@ -323,6 +395,7 @@ impl BlockEntityPart for Machines {
         let mut items = event.entity.items.clone();
         match kind {
             Kind::Cable(t) => tick_cable(host, level, pos, t),
+            Kind::Pipe(f, _) => tick_pipe(host, level, pos, f),
             Kind::Cube(t) => tick_cube(host, level, pos, t, int(&nbt, "energy")),
             Kind::Machine(m) => {
                 tick_machine(host, level, m, &mut nbt, &mut items);
@@ -364,6 +437,7 @@ fn buffer_of(kind: Kind) -> ModEnergyBuffer {
             insert_faces: none,
             extract_faces: none,
         },
+        Kind::Pipe(..) => ModEnergyBuffer::default(),
         Kind::Machine(m) => ModEnergyBuffer {
             capacity: m.buffer(),
             max_insert: m.buffer(),
@@ -404,6 +478,9 @@ impl Hooks for Mod {
             ("energy_cube", Tier::ALL.iter().map(|t| cube_id(*t)).collect()),
             ("universal_cable", Tier::ALL.iter().map(|t| cable_id(*t)).collect()),
         ];
+        for f in Family::ALL {
+            groups.push((f.entity_type(), Tier::ALL.iter().map(|t| pipe_id(f, *t)).collect()));
+        }
         for m in Machine::ALL {
             groups.push((m.name(), vec![format!("mekanism:{}", m.name())]));
         }
@@ -411,7 +488,7 @@ impl Hooks for Mod {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
                 let key = r.block_key(id);
-                if !matches!(kind, Kind::Cable(_)) {
+                if !matches!(kind, Kind::Cable(_) | Kind::Pipe(..)) {
                     r.block_energy(&key, buffer_of(kind));
                 }
                 if let Kind::Machine(m) = kind {
