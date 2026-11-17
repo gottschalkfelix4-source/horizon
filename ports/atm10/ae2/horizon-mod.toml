@@ -1,0 +1,13 @@
+id = "ae2"
+name = "Applied Energistics 2"
+version = "19.2.18-horizon.1"
+description = "ME network: cables in 17 colours, controller, energy acceptor and energy cells with a per-network power model. A Horizon port of Applied Energistics 2 (LGPL-3.0) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: the Applied Energistics 2 team"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

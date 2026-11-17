@@ -488,3 +488,12 @@ mod menu and an item part, both of which the API has.
 - `Host::entity_type_category(kind)`: the category of a mob type before the mob exists. Added
   in this fork (`crates/horizon-mod-vocab/src/host/entities.rs`,
   `crates/horizon-client/src/game/modding/native_entity_data.rs`); to send upstream as a PR.
+
+## ae2
+
+- No hook to cache a network graph: a mod's blocks scan their network each tick (the lowest block leads). A per-block
+  `neighbor_changed` plus a mod-held graph would replace it.
+- A node cannot read another block entity's saved data, so only a network's leader knows `powered`; terminals will need it.
+- Energy faces: the acceptor must take FE in from outside without giving it out; `ModEnergyBuffer` has one set of faces for
+  both directions of what is reachable from the network's own routing.
+- Stages 3 to 5 (terminal, buses, autocrafting) will add their gaps here as they are reached.
