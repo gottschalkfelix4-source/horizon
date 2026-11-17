@@ -59,3 +59,5 @@ windmill bearing, andesite alloy, zinc and brass compacting, andesite funnel. Re
 ported yet (mixer needs the whisk, belts, casings other than andesite) are left out. Not yet run in the game.
 
 The port defines the `c:` item tags its recipes use (`data/c/tags/item/`: zinc ingot and nugget, brass nugget, iron nugget and block, stones). Recipes with zinc or brass blocks wait for those blocks.
+
+Andesite casing is made as in the original: right-click a stripped log (or wood, stem, hyphae) with andesite alloy (`right_click_block`); it has no crafting recipe. Other casings are not ported yet.
