@@ -98,3 +98,5 @@ for n in ["sps_casing", "sps_port"]:
     block(n, "minecraft:iron_block", 3.5, 9.0)
 
 block("digital_miner", "minecraft:furnace", 3.5, 9.0)
+
+block("teleporter", "minecraft:furnace", 3.5, 9.0)
