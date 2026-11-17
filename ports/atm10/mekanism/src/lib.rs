@@ -23,6 +23,7 @@ use mod_api::{
 pub mod chemical;
 use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
 pub mod evaporation;
+pub mod digital_miner;
 pub mod fission;
 pub mod fusion;
 pub mod sps;
@@ -956,6 +957,7 @@ impl Hooks for Mod {
         evaporation::register(r);
         fusion::register(r);
         sps::register(r);
+        digital_miner::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
