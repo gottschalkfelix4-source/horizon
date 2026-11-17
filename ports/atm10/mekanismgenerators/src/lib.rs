@@ -175,6 +175,7 @@ impl Hooks for Mod {
                         inputs: (0..SLOTS).collect(),
                         outputs: vec![],
                         menu: Some("minecraft:hopper".into()),
+                        slot_limit: 0,
                     },
                 );
             }

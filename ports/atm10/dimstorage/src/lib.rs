@@ -427,6 +427,7 @@ impl Hooks for Mod {
                 inputs: (0..CHEST_SLOTS).collect(),
                 outputs: (0..CHEST_SLOTS).collect(),
                 menu: Some("minecraft:generic_9x6".into()),
+                slot_limit: 0,
             },
         );
         let mut tanks = ModFluidTanks::default();

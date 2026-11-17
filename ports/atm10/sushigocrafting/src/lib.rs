@@ -117,6 +117,7 @@ impl Hooks for Mod {
                 inputs: vec![0, 1, 2, 3],
                 outputs: vec![4],
                 menu: Some("minecraft:hopper".into()),
+                slot_limit: 0,
             },
         );
         let kind = r.block_entity_type("rolling_mat").blocks(&[MAT]).build();

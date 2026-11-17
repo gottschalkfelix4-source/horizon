@@ -120,6 +120,7 @@ impl Hooks for Mod {
                 inputs: vec![SOIL, SEED],
                 outputs: OUTPUTS.collect(),
                 menu: Some("minecraft:generic_9x1".into()),
+                slot_limit: 0,
             },
         );
         let kind = r.block_entity_type("botany_pot").blocks(&[POT]).build();
