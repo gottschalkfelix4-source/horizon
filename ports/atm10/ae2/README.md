@@ -147,3 +147,10 @@ not close it); Escape closes it. The text is forgotten when the screen closes. N
 no search box drawn (the compass slot's name shows the search).
 
 - Speed cards (`ae2:speed_card`) in the bus's slots 1 to 4: 0 to 4 cards move 1, 2, 4, 8 or 16 items per operation (numbers to check against the original).
+
+## Capability for addons: `ae2:network_energy`
+
+Every AE2 block answers `ae2:network_energy` (`mod_ae2::network_energy::NETWORK_ENERGY`, a mod-own `CapabilityKey<dyn EnergyHandler>`
+that another crate declares with the same name: `CapabilityKey::new("ae2:network_energy")`): the energy of the block's whole network
+as one handler (amount and capacity = the cells', insert fills them, extract drains them). It is not `horizon:energy`,
+so other mods' cables do not drain a network by touching a cable. `ae2:patterns` is not built (nothing needs it yet).

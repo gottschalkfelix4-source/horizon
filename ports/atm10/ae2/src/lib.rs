@@ -19,6 +19,7 @@ pub mod bus;
 pub mod cells;
 pub mod crafting;
 pub mod interface;
+pub mod network_energy;
 pub mod search;
 pub mod terminal;
 pub mod view;
@@ -584,6 +585,9 @@ impl Hooks for Mod {
             }
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);
+            r.block_entity_capability(&network_energy::NETWORK_ENERGY, &built, |_, at: mod_api::BlockSide| {
+                Some(Box::new(network_energy::NetworkEnergy { level: at.level, pos: at.pos }) as Box<dyn mod_api::EnergyHandler>)
+            });
         }
         let mut handlers = r.payload_handlers();
         let mut payloads = handlers.registrar("1");
