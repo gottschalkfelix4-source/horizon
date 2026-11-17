@@ -14,6 +14,7 @@ use mod_api::{
     LevelSide, HostTransaction, ModContainer, ModEnergyBuffer, Registrar, RegistrationContext, ServerHost, Tag,
 };
 
+pub mod bus;
 pub mod cells;
 pub mod terminal;
 pub mod view;
@@ -35,6 +36,23 @@ fn set_int(nbt: &mut Compound, key: &str, v: i32) {
 pub(crate) fn offset(pos: [i32; 3], dir: Direction) -> [i32; 3] {
     let n = dir.normal();
     [pos[0] + n[0], pos[1] + n[1], pos[2] + n[2]]
+}
+
+/// The devices of `nodes` that have a channel.
+pub(crate) fn channels(host: &dyn Host, level: LevelRef, nodes: &[[i32; 3]]) -> Vec<[i32; 3]> {
+    let (mut users, mut controller) = (Vec::new(), false);
+    for &n in nodes {
+        match id_at(host, level, n).as_deref().and_then(parse_block) {
+            Some(Kind::Device(Device::Controller)) => controller = true,
+            Some(Kind::Device(d)) if d.needs_channel() => users.push(n),
+            _ => {}
+        }
+    }
+    channelled(users, channel_capacity(controller))
+}
+
+fn kind_at_pos(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<Kind> {
+    id_at(host, level, pos).as_deref().and_then(parse_block)
 }
 
 pub(crate) fn id_at(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<String> {
@@ -212,11 +230,16 @@ fn tick_network(
             .collect()
     })?;
     let nodes: Vec<[i32; 3]> = keyed.into_iter().map(|(_, p)| p).collect();
+    let has_channel = channels(&*host, level, &nodes);
     let (mut cells, mut acceptors, mut drives, mut idle) = (Vec::new(), Vec::new(), Vec::new(), 0i64);
     for &n in &nodes {
         match id_at(&*host, level, n).as_deref().and_then(parse_block) {
             Some(Kind::Device(Device::EnergyAcceptor)) => acceptors.push(n),
-            Some(Kind::Device(Device::Drive)) => drives.push(n),
+            Some(Kind::Device(Device::Drive)) => {
+                if has_channel.contains(&n) {
+                    drives.push(n);
+                }
+            }
             Some(Kind::Device(d)) if d.is_cell() => cells.push(n),
             Some(k) => idle += k.idle_centi_fe(),
             None => {}
@@ -271,6 +294,11 @@ impl BlockEntityPart for Network {
     fn block_entity_tick(&self, host: &mut dyn ServerHost, event: &mut BlockEntityTickEvent<'_>) {
         let pos = event.pos;
         let Some(level) = host.level(host.dimension()) else { return };
+        if let Some(Kind::Device(d)) = kind_at_pos(&*host, level, pos).filter(|k| matches!(k, Kind::Device(d) if d.is_bus())) {
+            bus::tick(host, level, pos, d, &event.entity.nbt);
+            *event.reply = BlockEntityTickReply::Unchanged;
+            return;
+        }
         let carried = int(&event.entity.nbt, "drain_rem") as i64;
         let Some((nodes, powered, stored, rem, storage)) = tick_network(host, level, pos, carried) else {
             *event.reply = BlockEntityTickReply::Unchanged;
@@ -316,6 +344,20 @@ impl BlockPart for Terminal {
 
     fn use_without_item(&self, host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
         terminal::open(host, event.click.player, event.click.pos)
+    }
+}
+
+/// The import and export buses: their filter is set by using them.
+struct Bus;
+
+#[mod_api::horizon_part]
+impl BlockPart for Bus {
+    fn use_item_on(&self, host: &mut dyn ServerHost, event: &mut UseItemOnEvent<'_>) -> Option<InteractionResult> {
+        bus::use_item_on(host, event)
+    }
+
+    fn use_without_item(&self, host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
+        bus::use_without_item(host, event)
     }
 }
 
@@ -375,6 +417,12 @@ impl Hooks for Mod {
                 }
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
+            if entity_type == "import_bus" || entity_type == "export_bus" {
+                for id in &ids {
+                    let key = r.block_key(id);
+                    r.block_part(key, Bus);
+                }
+            }
             if entity_type == "terminal" {
                 let key = r.block_key("ae2:terminal");
                 r.block_part(key, Terminal);
