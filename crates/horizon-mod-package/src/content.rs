@@ -1742,8 +1742,9 @@ fn check_block(file: &Block) -> Result<(), String> {
         return Err("pick_item is an item id, namespace:path".into());
     }
     if let Some(wall) = &file.wall_block {
-        if !sign || file.template.contains("_wall_") {
-            return Err("wall_block needs a standing or ceiling sign template".into());
+        let torch = file.template.ends_with("torch") && !file.template.contains("wall_");
+        if !(sign || torch) || file.template.contains("_wall_") {
+            return Err("wall_block needs a standing or ceiling sign or a standing torch template".into());
         }
         if !file.item {
             return Err("wall_block is where the item places the block, and item is false".into());
@@ -1765,7 +1766,10 @@ fn check_sign_walls(blocks: &[&Block]) -> Result<(), String> {
             continue;
         };
         let id = &sign.id;
-        let form = if sign.template.ends_with("_hanging_sign") {
+        let torch = sign.template.ends_with("torch");
+        let form = if torch {
+            "wall_torch"
+        } else if sign.template.ends_with("_hanging_sign") {
             "_wall_hanging_sign"
         } else {
             "_wall_sign"
@@ -1801,7 +1805,7 @@ fn check_sign_walls(blocks: &[&Block]) -> Result<(), String> {
                 b.sign_text_glow.unwrap_or(false),
             )
         }
-        if text(sign) != text(block) {
+        if !torch && text(sign) != text(block) {
             return Err(format!(
                 "{id}: wall_block {wall} declares a different sign_text_color or sign_text_glow"
             ));
@@ -3201,6 +3205,19 @@ capabilities = ["registries"]
             );
         }
         assert!(pair(r#", "sign_text_glow": true"#, "").is_err());
+
+        // A standing torch places a wall form of its own, a wall torch, the same way.
+        let torch = |wall_template: &str| {
+            let standing = br#"{"template": "minecraft:torch", "wall_block": "ruby:wall"}"#;
+            let wall = format!(r#"{{"template": "minecraft:{wall_template}", "item": false}}"#);
+            let files: &[(&str, &[u8])] = &[
+                ("data/ruby/horizon/block/torch.json", standing),
+                ("data/ruby/horizon/block/wall.json", wall.as_bytes()),
+            ];
+            hmod("torch-wall", MANIFEST_TEXT, files)
+        };
+        assert!(torch("wall_torch").is_ok());
+        assert!(torch("oak_wall_sign").unwrap_err().contains("needs a template"));
 
         // Declared in code, the same; nothing is added.
         let block = |id: &str, template: &str, item, wall_block: Option<&str>| Block {
