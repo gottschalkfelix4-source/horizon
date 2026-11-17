@@ -15,6 +15,9 @@ the later ones can sit on it.
 | Enrichment chamber | 50 J/tick, 200 ticks: ores to two dusts, fluorite ore to six gems, redstone/coal/diamond/glowstone/iron dust to enriched items | ported, recipe table hard-coded |
 | Crusher | Ingots to dusts, cobblestone to gravel to sand, bones, blaze rods, gems to dusts | ported, recipe table hard-coded |
 | Energized smelter | The engine's `minecraft:smelting` recipes, same power and time | ported |
+| Precision sawmill | Logs and stems to six planks (no sawdust chance yet) | ported |
+| Combiner | Dust and cobblestone into the metal's ore | ported |
+| Metallurgic infuser | Infusing items in the second slot fill an infuse tank (10 per item, 1000 max); makes infused/reinforced/atomic alloys, steel and bronze dust | ported, recipe table hard-coded |
 | `mekanism:chemicals` | `CapabilityKey` over `ResourceHandler<ChemicalResource>`, a one-tank block handler saved in the block entity | declared and unit-tested; no machine registers it yet |
 | Menus | Vanilla hopper menu (slots: input, output, energy item, two upgrades) | stand-in until mod menus with energy bars exist |
 | Generators, tools, additions | in the [Generators](../mekanismgenerators/), [Tools](../mekanismtools/) and [Additions](../mekanismadditions/) ports | | |

@@ -184,21 +184,61 @@ fn fits(host: &dyn Host, held: &Option<ItemStack>, id: &str, count: u32) -> Opti
     }
 }
 
-/// What `machine` makes of `input`, if it has a recipe.
-fn recipe(host: &mut dyn ServerHost, level: LevelRef, machine: Machine, input: &ItemStack) -> Option<(String, u32)> {
+/// The infuser's tank is this many units full at most.
+const INFUSE_CAPACITY: u32 = 1000;
+
+fn text(nbt: &Compound, key: &str) -> Option<String> {
+    match nbt.get(&key.into()) {
+        Some(Tag::String(s)) => Some(s.to_string_lossy()).filter(|s| !s.is_empty()),
+        _ => None,
+    }
+}
+
+fn single(id: &str, n: u32) -> Recipe {
+    Recipe { output: id.to_owned(), count: n, take: [1, 0], infuse: None }
+}
+
+/// What `machine` makes of its inputs, if it has a recipe.
+fn recipe(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    machine: Machine,
+    items: &[Option<ItemStack>],
+    nbt: &Compound,
+) -> Option<Recipe> {
+    let input = items[INPUT].as_ref()?;
     let id = input.item().id(&*host);
     match machine {
-        Machine::EnrichmentChamber => enrich(&id),
-        Machine::Crusher => crush(&id),
+        Machine::EnrichmentChamber => enrich(&id).map(|(o, n)| single(&o, n)),
+        Machine::Crusher => crush(&id).map(|(o, n)| single(&o, n)),
+        Machine::PrecisionSawmill => saw(&id),
+        Machine::Combiner => combine(&id, &items[INPUT2].as_ref()?.item().id(&*host)),
+        Machine::MetallurgicInfuser => {
+            infuse(&id, &text(nbt, "infuse_type")?, int(nbt, "infuse_amount").max(0) as u32)
+        }
         Machine::EnergizedSmelter => {
             let kind = Identifier::parse("minecraft:smelting").ok()?;
             let m = level
                 .recipe_for(host, &kind, &RecipeInput::Single(input.clone()))
                 .ok()
                 .flatten()?;
-            Some((m.output.item().id(&*host), m.output.count()))
+            Some(single(&m.output.item().id(&*host), m.output.count()))
         }
     }
+}
+
+/// The infuser takes an infusing item from its second slot into the tank when there is room.
+fn absorb_infuse(host: &dyn Host, nbt: &mut Compound, items: &mut [Option<ItemStack>]) {
+    let Some(stack) = items[INPUT2].as_ref() else { return };
+    let Some((ty, n)) = infuse_of(&stack.item().id(host)) else { return };
+    let held = int(nbt, "infuse_amount").max(0) as u32;
+    let current = text(nbt, "infuse_type");
+    if held > 0 && current.as_deref() != Some(ty) || held + n > INFUSE_CAPACITY {
+        return;
+    }
+    nbt.insert("infuse_type".into(), Tag::String(ty.into()));
+    set_int(nbt, "infuse_amount", (held + n) as i32);
+    items[INPUT2] = items[INPUT2].take().and_then(|i| i.shrink(1));
 }
 
 fn tick_machine(
@@ -208,20 +248,29 @@ fn tick_machine(
     nbt: &mut Compound,
     items: &mut Vec<Option<ItemStack>>,
 ) {
-    if items.len() < SLOTS {
-        items.resize(SLOTS, None);
+    if items.len() < machine.slots() {
+        items.resize(machine.slots(), None);
+    }
+    if machine == Machine::MetallurgicInfuser {
+        absorb_infuse(&*host, nbt, items);
     }
     let mut work = Work { progress: int(nbt, "progress") };
-    let result = items[INPUT]
-        .clone()
-        .and_then(|input| recipe(host, level, machine, &input))
-        .and_then(|(id, n)| fits(&*host, &items[OUTPUT], &id, n));
+    let found = recipe(host, level, machine, items, nbt);
+    // the stack the recipe makes, if it fits and both inputs hold what it takes
+    let result = found.as_ref().and_then(|r| {
+        let enough = items[INPUT].as_ref().is_some_and(|i| i.count() >= r.take[0])
+            && (r.take[1] == 0 || items[INPUT2].as_ref().is_some_and(|i| i.count() >= r.take[1]));
+        if !enough {
+            return None;
+        }
+        fits(&*host, &items[OUTPUT], &r.output, r.count)
+    });
     let energy = int(nbt, "energy");
     let s = step(&mut work, result.is_some(), energy, machine.fe_per_tick(), machine.ticks());
     set_int(nbt, "energy", energy - s.spent);
     set_int(nbt, "progress", work.progress);
     if s.finished {
-        if let Some(out) = result {
+        if let (Some(out), Some(r)) = (result, found) {
             items[OUTPUT] = match items[OUTPUT].take() {
                 None => Some(out),
                 Some(mut held) => {
@@ -229,7 +278,17 @@ fn tick_machine(
                     Some(held)
                 }
             };
-            items[INPUT] = items[INPUT].take().and_then(|i| i.shrink(1));
+            items[INPUT] = items[INPUT].take().and_then(|i| i.shrink(r.take[0]));
+            if r.take[1] > 0 {
+                items[INPUT2] = items[INPUT2].take().and_then(|i| i.shrink(r.take[1]));
+            }
+            if let Some((_, cost)) = r.infuse {
+                let left = (int(nbt, "infuse_amount") - cost as i32).max(0);
+                set_int(nbt, "infuse_amount", left);
+                if left == 0 {
+                    nbt.remove(&"infuse_type".into());
+                }
+            }
         }
     }
 }
@@ -315,22 +374,23 @@ fn buffer_of(kind: Kind) -> ModEnergyBuffer {
     }
 }
 
-/// The slots a machine keeps: input, output, an energy item, two upgrades; vanilla's hopper menu
-/// shows them until Mekanism's own screens exist.
-fn container_of() -> ModContainer {
+/// The slots a machine keeps (input, output, an energy item, two upgrades, and for two-input
+/// machines the second input); vanilla's hopper or 3x3 menu shows them until Mekanism's own
+/// screens exist. Hoppers feed the inputs and empty the output only.
+fn container_of(m: Machine) -> ModContainer {
+    let mut inputs = vec![INPUT, 2, 3, 4];
+    let top = if m.second_input() {
+        inputs.push(INPUT2);
+        vec![INPUT, INPUT2]
+    } else {
+        vec![INPUT]
+    };
     ModContainer {
-        slots: SLOTS,
-        faces: [
-            vec![OUTPUT],
-            vec![INPUT],
-            vec![INPUT],
-            vec![INPUT],
-            vec![INPUT],
-            vec![INPUT],
-        ],
-        inputs: vec![INPUT, 2, 3, 4],
+        slots: m.slots(),
+        faces: [vec![OUTPUT], top.clone(), top.clone(), top.clone(), top.clone(), top],
+        inputs,
         outputs: vec![OUTPUT],
-        menu: Some("minecraft:hopper".into()),
+        menu: Some(m.menu().into()),
     }
 }
 
@@ -354,8 +414,8 @@ impl Hooks for Mod {
                 if !matches!(kind, Kind::Cable(_)) {
                     r.block_energy(&key, buffer_of(kind));
                 }
-                if matches!(kind, Kind::Machine(_)) {
-                    r.block_container(&key, container_of());
+                if let Kind::Machine(m) = kind {
+                    r.block_container(&key, container_of(m));
                 }
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
