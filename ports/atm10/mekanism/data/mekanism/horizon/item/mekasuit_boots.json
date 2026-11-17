@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:netherite_boots",
+  "components": {
+    "minecraft:unbreakable": {},
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanism:mekasuit_boots",
+        "amount": 4,
+        "operation": "add_value",
+        "slot": "feet"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanism:mekasuit_boots",
+        "amount": 3.0,
+        "operation": "add_value",
+        "slot": "feet"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "mekanism:mekasuit_boots",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "feet"
+      }
+    ]
+  }
+}

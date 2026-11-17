@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:netherite_leggings",
+  "components": {
+    "minecraft:unbreakable": {},
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanism:mekasuit_pants",
+        "amount": 7,
+        "operation": "add_value",
+        "slot": "legs"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanism:mekasuit_pants",
+        "amount": 3.0,
+        "operation": "add_value",
+        "slot": "legs"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "mekanism:mekasuit_pants",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "legs"
+      }
+    ]
+  }
+}

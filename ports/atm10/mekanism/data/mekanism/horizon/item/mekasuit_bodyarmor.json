@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:netherite_chestplate",
+  "components": {
+    "minecraft:unbreakable": {},
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanism:mekasuit_bodyarmor",
+        "amount": 9,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanism:mekasuit_bodyarmor",
+        "amount": 3.0,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "mekanism:mekasuit_bodyarmor",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}
