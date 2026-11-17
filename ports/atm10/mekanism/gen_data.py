@@ -93,3 +93,6 @@ with open(f"{base}/fluid/brine.json", "w") as f:
 
 for n in ["fusion_reactor_frame", "fusion_reactor_port"]:
     block(n, "minecraft:iron_block", 3.5, 9.0)
+
+for n in ["sps_casing", "sps_port"]:
+    block(n, "minecraft:iron_block", 3.5, 9.0)
