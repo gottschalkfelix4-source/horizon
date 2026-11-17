@@ -43,30 +43,92 @@ pub fn stock_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]]) -> BTreeM
     stock
 }
 
-/// A pattern for the first shaped or shapeless crafting recipe that makes `id`.
-pub fn encode(host: &dyn Host, id: &str) -> Option<Pattern> {
-    for kind in ["minecraft:crafting_shaped", "minecraft:crafting_shapeless"] {
+/// Why `encode` found nothing.
+#[derive(Debug, PartialEq, Eq)]
+pub enum EncodeError {
+    NoRecipe,
+    /// The recipe has an ingredient that names no item (a tag nothing is in).
+    EmptyIngredient,
+}
+
+/// The item an ingredient stands for: its first in display order, else the first by id.
+fn pick(items: &std::collections::HashSet<String>, order: &[String]) -> Option<String> {
+    order.first().cloned().or_else(|| items.iter().min().cloned())
+}
+
+fn recipe_result(json: &mod_api::serde_json::Value) -> Option<(String, u32)> {
+    let r = json.get("result")?;
+    match r {
+        mod_api::serde_json::Value::String(id) => Some((id.clone(), 1)),
+        _ => Some((r.get("id")?.as_str()?.to_string(), r.get("count").and_then(|c| c.as_u64()).unwrap_or(1) as u32)),
+    }
+}
+
+/// The ingredients of a shaped or shapeless recipe file, one per used slot.
+fn json_ingredients(host: &dyn Host, json: &mod_api::serde_json::Value) -> Vec<mod_api::Ingredient> {
+    let parse = |v: &mod_api::serde_json::Value| host.recipe_ingredient(&v.to_string()).ok().flatten();
+    let mut out = Vec::new();
+    if let (Some(rows), Some(key)) = (json.get("pattern").and_then(|p| p.as_array()), json.get("key")) {
+        for row in rows.iter().filter_map(|r| r.as_str()) {
+            for c in row.chars().filter(|c| *c != ' ') {
+                if let Some(i) = key.get(c.to_string()).and_then(|v| parse(v)) {
+                    out.push(i);
+                }
+            }
+        }
+    } else if let Some(list) = json.get("ingredients").and_then(|i| i.as_array()) {
+        out.extend(list.iter().filter_map(|v| parse(v)));
+    }
+    out
+}
+
+/// A pattern for the first crafting recipe (shaped, shapeless or any `crafting` kind) that makes `id`.
+pub fn encode(host: &dyn Host, id: &str) -> Result<Pattern, EncodeError> {
+    let mut err = EncodeError::NoRecipe;
+    for kind in ["minecraft:crafting_shaped", "minecraft:crafting_shapeless", "minecraft:crafting"] {
         for recipe in host.recipes_of_type(kind).iter() {
-            let Some(result) = recipe.results.first() else { continue };
-            if result.item().id(host) != id {
+            // the typed parts are empty for some recipes: the recipe's file says the same
+            let (result_id, out_n) = match recipe.results.first() {
+                Some(r) => (r.item().id(host), r.count()),
+                None => match recipe_result(&recipe.json) {
+                    Some(r) => r,
+                    None => continue,
+                },
+            };
+            if result_id != id {
                 continue;
+            }
+            let mut ingredients = recipe.ingredients.clone();
+            if ingredients.is_empty() {
+                ingredients = json_ingredients(host, &recipe.json);
             }
             let mut inputs: BTreeMap<String, u32> = BTreeMap::new();
             let mut whole = true;
-            for ingredient in &recipe.ingredients {
-                match ingredient.order.first() {
-                    Some(item) => *inputs.entry(item.clone()).or_insert(0) += 1,
-                    // an empty cell of a shaped recipe has no items at all
-                    None if ingredient.items.is_empty() => {}
+            for ingredient in &ingredients {
+                if ingredient.items.is_empty() && ingredient.order.is_empty() {
+                    // an empty cell of a shaped recipe
+                    continue;
+                }
+                match pick(&ingredient.items, &ingredient.order) {
+                    Some(item) => *inputs.entry(item).or_insert(0) += 1,
                     None => whole = false,
                 }
             }
             if whole && !inputs.is_empty() {
-                return Some(Pattern { inputs: inputs.into_iter().collect(), out: id.to_string(), out_n: result.count() });
+                return Ok(Pattern { inputs: inputs.into_iter().collect(), out: id.to_string(), out_n });
             }
+            err = EncodeError::EmptyIngredient;
         }
     }
-    None
+    Err(err)
+}
+
+/// How many crafting recipes the game has loaded (for a message when none fits).
+pub fn crafting_recipe_count(host: &dyn Host) -> usize {
+    ["minecraft:crafting_shaped", "minecraft:crafting_shapeless", "minecraft:crafting"]
+        .iter()
+        .map(|k| host.recipes_of_type(k).len())
+        .sum()
 }
 
 fn tell(host: &mut dyn ServerHost, player: u128, msg: &str) {

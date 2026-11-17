@@ -6,7 +6,7 @@
 //! the export bus puts out the item named by its filter (nothing without one). Right-click a bus with
 //! an item to set its filter to that item, with an empty hand to clear it.
 use mod_api::{
-    Compound, Direction, HostTransaction, Identifier, InteractionResult, ItemResource, ItemStack, ITEMS,
+    Compound, Direction, Hand, HostTransaction, Identifier, InteractionResult, ItemPlace, ItemResource, ItemStack, ITEMS,
     LevelRef, ResourceHandler, ServerHost, Tag, Text, UseItemOnEvent, UseWithoutItemEvent,
 };
 
@@ -115,10 +115,19 @@ fn set_filter(host: &mut dyn ServerHost, pos: [i32; 3], player: u128, held: Opti
     Some(InteractionResult::SuccessServer)
 }
 
+/// What the player holds in `hand`: the click's own stack, else a read of the hand.
+fn held(host: &mut dyn ServerHost, click_stack: Option<&ItemStack>, player: u128, hand: Hand) -> Option<ItemStack> {
+    click_stack.cloned().or_else(|| ItemPlace::PlayerHand { player, hand }.stack(host))
+}
+
 pub fn use_item_on(host: &mut dyn ServerHost, event: &mut UseItemOnEvent<'_>) -> Option<InteractionResult> {
-    set_filter(host, event.click.pos, event.click.player, event.click.stack)
+    let click = event.click;
+    let stack = held(&mut *host, click.stack, click.player, click.hand);
+    set_filter(host, click.pos, click.player, stack.as_ref())
 }
 
 pub fn use_without_item(host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
-    set_filter(host, event.click.pos, event.click.player, None)
+    let click = event.click;
+    let stack = held(&mut *host, click.stack, click.player, click.hand);
+    set_filter(host, click.pos, click.player, stack.as_ref())
 }

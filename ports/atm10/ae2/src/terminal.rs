@@ -121,6 +121,15 @@ fn render(host: &dyn Host, level: LevelRef, v: &View, n: &Net) -> (usize, Vec<Op
     let mut slots: Vec<Option<ItemStack>> = vec![None; 54];
     for (i, (id, n)) in here.iter().enumerate() {
         slots[i] = stack_of(host, id, *n);
+        if *n == 0 {
+            // a stack cannot hold none: a craftable item that is not stored shows one, marked
+            slots[i] = slots[i].take().map(|mut s| {
+                let mut patch = Compound::new();
+                patch.insert("minecraft:lore".into(), Tag::List(vec![Tag::String("Craftable: none stored".into())]));
+                let _ = s.apply_components(&patch);
+                s
+            });
+        }
     }
     let pages = view::pages(shown.len());
     let control = |id: &str, name: String| stack_of(host, id, 1).map(|s| named(s, &name));
@@ -258,12 +267,18 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
                     let made = crate::autocraft::encode(&*host, &id);
                     let key = host.item_key(&Identifier::parse(crate::autocraft::PATTERN).unwrap());
                     match (made, key.and_then(|k| ItemStack::new(k, 1))) {
-                        (Some(p), Some(mut stack)) if blank.count() == 1 => {
+                        (Ok(p), Some(mut stack)) if blank.count() == 1 => {
                             p.write_to(&mut stack);
                             let _ = put(host, &cursor_place, Some(stack));
                         }
-                        (Some(_), _) => notify(host, event.uuid, "Use one blank pattern at a time"),
-                        (None, _) => notify(host, event.uuid, "No crafting recipe makes this item"),
+                        (Ok(_), _) => notify(host, event.uuid, "Use one blank pattern at a time"),
+                        (Err(crate::autocraft::EncodeError::EmptyIngredient), _) => {
+                            notify(host, event.uuid, "The recipe has an ingredient with no item")
+                        }
+                        (Err(_), _) => {
+                            let n = crate::autocraft::crafting_recipe_count(&*host);
+                            notify(host, event.uuid, &format!("No crafting recipe makes {id} ({n} crafting recipes loaded)"))
+                        }
                     }
                 }
             }
