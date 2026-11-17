@@ -17,4 +17,3 @@ horizon-mod-api = { path = "../../../crates/horizon-mod-api" }
 # between mods"), under the same `jei` name; drop this line when packaging if it refuses it.
 jei = { package = "mod-jei", path = "../jei" }
 
-[workspace]

@@ -3,7 +3,7 @@
   "properties": {
     "hardness": 0.5,
     "explosion_resistance": 0.5,
-    "sounds": "minecraft:wool"
+    "sounds": "minecraft:white_wool"
   },
   "state_properties": {
     "servings": {

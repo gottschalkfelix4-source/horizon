@@ -1,12 +1,12 @@
 {
   "template": "minecraft:paper",
   "components": {
-    "minecraft:max_stack_size": 1,
     "minecraft:custom_data": {
       "industrialforegoing:addon": {
         "kind": "processing",
         "tier": 1
       }
     }
-  }
+  },
+  "max_stack_size": 1
 }

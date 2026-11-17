@@ -14,4 +14,3 @@ path = "src/lib.rs"
 horizon-mod-api = { path = "../../../crates/horizon-mod-api" }
 log = "0.4"
 
-[workspace]

@@ -14,4 +14,3 @@ path = "src/lib.rs"
 horizon-mod-api = { path = "../../../crates/horizon-mod-api" }
 serde_json = "1"
 
-[workspace]
