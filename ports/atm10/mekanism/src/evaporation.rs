@@ -12,6 +12,9 @@ use mod_api::{
 use crate::mb::{self, is_air, long, set_long};
 
 pub const VALVE: &str = "mekanism:thermal_evaporation_valve";
+/// The output valve: only brine leaves through it. The plain valve only takes water in, so
+/// brine cannot flow back out through the inlet into the tank that feeds it.
+pub const OUTLET: &str = "mekanism:thermal_evaporation_outlet";
 pub const CASING: &str = "mekanism:thermal_evaporation_block";
 pub const WATER: &str = "minecraft:water";
 pub const BRINE: &str = "mekanism:brine";
@@ -33,6 +36,7 @@ fn clamp(v: i64) -> u32 {
 
 struct Valve {
     at: BlockSide,
+    out: bool,
 }
 
 impl Valve {
@@ -71,7 +75,7 @@ impl ResourceHandler<FluidResource> for Valve {
     fn insert(&self, host: &mut dyn ServerHost, _tx: &Transaction, i: usize, r: &FluidResource, amount: u32) -> u32 {
         // water in only
         let Some(key) = r.to_stack(1).key() else { return 0 };
-        if i != 0 || key.id(&*host) != WATER {
+        if self.out || i != 0 || key.id(&*host) != WATER {
             return 0;
         }
         let Some((_, d)) = mb::master(host, self.at) else { return 0 };
@@ -84,7 +88,7 @@ impl ResourceHandler<FluidResource> for Valve {
     fn extract(&self, host: &mut dyn ServerHost, _tx: &Transaction, i: usize, r: &FluidResource, amount: u32) -> u32 {
         // brine out only
         let Some(key) = r.to_stack(1).key() else { return 0 };
-        if i != 1 || key.id(&*host) != BRINE {
+        if !self.out || i != 1 || key.id(&*host) != BRINE {
             return 0;
         }
         let Some((_, d)) = mb::master(host, self.at) else { return 0 };
@@ -104,11 +108,11 @@ impl BlockPart for Plant {}
 #[mod_api::horizon_part]
 impl BlockEntityPart for Plant {
     fn block_entity(&self, _: LevelSide<'_>, event: &mut BlockEntityEvent<'_>) -> Option<Compound> {
-        (event.block == VALVE).then(Compound::new)
+        (event.block == VALVE || event.block == OUTLET).then(Compound::new)
     }
 
     fn block_entity_ticks(&self, _: &dyn Host, event: &mut BlockEntityTicksEvent<'_>) {
-        if event.block == VALVE {
+        if event.block == VALVE || event.block == OUTLET {
             event.ticks = true;
         }
     }
@@ -118,7 +122,7 @@ impl BlockEntityPart for Plant {
             host,
             event,
             VALVE,
-            |id| matches!(id, Some(CASING | VALVE)),
+            |id| matches!(id, Some(CASING | VALVE | OUTLET)),
             is_air,
             |host, level, found, nbt| {
                 set_long(nbt, "capacity", found.interior.len() as i64 * PER_BLOCK);
@@ -149,7 +153,10 @@ pub fn register(r: &mut dyn Registrar) {
     let _ = r.declare_fluid("brine");
     let built = r.block_entity_type("thermal_evaporation_valve").blocks(&[VALVE]).build();
     let _ = r.block_entity_part(&built, Plant);
-    r.block_entity_capability(&FLUIDS, &built, |_, at| Some(Box::new(Valve { at })));
+    r.block_entity_capability(&FLUIDS, &built, |_, at| Some(Box::new(Valve { at, out: false })));
+    let outlet = r.block_entity_type("thermal_evaporation_outlet").blocks(&[OUTLET]).build();
+    let _ = r.block_entity_part(&outlet, Plant);
+    r.block_entity_capability(&FLUIDS, &outlet, |_, at| Some(Box::new(Valve { at, out: true })));
 }
 
 #[cfg(test)]
