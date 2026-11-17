@@ -9,7 +9,8 @@
 //! the NeoForge original is in README.md.
 use mod_api::{
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
-    BlockEntityTicksEvent, BlockPart, Compound, Direction, Hooks, Host, HostBlockStates,
+    BlockEntityTicksEvent, BlockPart, BlockState, BlockUpdateFlags, Compound, Direction, Flow, HostSide,
+    InteractionResult, RightClickBlockEvent, Hooks, Host, HostBlockStates,
     HostTransaction, ITEMS, ItemStack, LevelRef, LevelSide, ModContainer, Registrar,
     RegistrationContext, ServerHost, Tag, move_resources,
 };
@@ -688,8 +689,42 @@ fn apply(nbt: &mut Compound, solution: &kinetics::Solution, pos: Pos) {
 #[derive(Default)]
 struct Mod;
 
+/// Whether `id` is a stripped log or stripped wood.
+fn is_stripped_log(id: &str) -> bool {
+    id.starts_with("minecraft:stripped_") && (id.ends_with("_log") || id.ends_with("_wood") || id.ends_with("_stem") || id.ends_with("_hyphae"))
+}
+
 #[mod_api::horizon_mod]
 impl Hooks for Mod {
+    /// Andesite alloy used on a stripped log makes andesite casing, as in the original.
+    fn right_click_block(&self, host: HostSide, event: &mut RightClickBlockEvent<'_>) -> Flow {
+        let HostSide::Server(host) = host else { return Flow::Continue };
+        let click = event.click;
+        let Some(stack) = click.stack else { return Flow::Continue };
+        if stack.item().id(&*host) != "create:andesite_alloy" {
+            return Flow::Continue;
+        }
+        let Some(level) = host.level(click.dimension.key().id()) else { return Flow::Continue };
+        let on_log = level
+            .block_state(&*host, click.pos)
+            .is_some_and(|b| is_stripped_log(&b.block().id(&*host)));
+        if !on_log {
+            return Flow::Continue;
+        }
+        let Some(key) = host.block_key("create:andesite_casing") else { return Flow::Continue };
+        let Ok(state) = BlockState::of(&host.block_states(), key, &[]) else { return Flow::Continue };
+        let _ = level.set_block(host, click.pos, state, BlockUpdateFlags::NEIGHBORS | BlockUpdateFlags::CLIENTS);
+        if let Some(player) = host.player(click.player) {
+            if !player.is_creative(&*host).unwrap_or(false) {
+                if let Some(living) = host.living(player.entity()) {
+                    let _ = living.set_hand_item(host, click.hand, stack.clone().shrink(1));
+                }
+            }
+        }
+        *event.cancellation_result = InteractionResult::Success;
+        Flow::Cancel
+    }
+
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         let ids: Vec<String> = Kind::ALL
             .iter()
@@ -786,5 +821,18 @@ impl Hooks for Mod {
                 slot_limit: 0,
             },
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_stripped_log;
+
+    #[test]
+    fn only_stripped_logs_take_the_casing() {
+        assert!(is_stripped_log("minecraft:stripped_oak_log"));
+        assert!(is_stripped_log("minecraft:stripped_crimson_hyphae"));
+        assert!(!is_stripped_log("minecraft:oak_log"));
+        assert!(!is_stripped_log("minecraft:oak_planks"));
     }
 }
