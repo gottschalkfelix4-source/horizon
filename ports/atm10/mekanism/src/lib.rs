@@ -149,6 +149,19 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
                 // another mod's block with energy (a generator, a cell): it gives and takes
                 None => {
                     let side = dir.opposite();
+                    // the multiblocks' ports are one-way: the phase shifter and the boiler only
+                    // take, the turbine and the fusion reactor only give
+                    match mb::id_at(&*host, level, n).as_deref() {
+                        Some(sps::PORT | steam::BOILER_VALVE) => {
+                            sinks.push((n, side));
+                            continue;
+                        }
+                        Some(steam::TURBINE_VALVE | fusion::PORT) => {
+                            sources.push((n, side));
+                            continue;
+                        }
+                        _ => {}
+                    }
                     if level.capability(host, &ENERGY, n, Some(side)).is_some() {
                         sources.push((n, side));
                         foreign.push((n, side));
