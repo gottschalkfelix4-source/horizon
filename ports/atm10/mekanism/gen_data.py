@@ -76,3 +76,7 @@ for t in ["basic", "advanced", "elite", "ultimate"]:
 
 block("dynamic_tank", "minecraft:iron_block", 3.5, 9.0)
 block("dynamic_valve", "minecraft:iron_block", 3.5, 9.0)
+
+for n in ["boiler_casing", "boiler_valve", "superheating_element", "turbine_casing", "turbine_valve",
+          "turbine_rotor", "turbine_blade", "electromagnetic_coil"]:
+    block(n, "minecraft:iron_block", 3.5, 9.0)
