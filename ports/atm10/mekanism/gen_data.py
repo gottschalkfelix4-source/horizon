@@ -73,3 +73,6 @@ block("induction_port", "minecraft:iron_block", 3.5, 9.0)
 for t in ["basic", "advanced", "elite", "ultimate"]:
     block(f"{t}_induction_cell", "minecraft:iron_block", 3.5, 9.0)
     block(f"{t}_induction_provider", "minecraft:iron_block", 3.5, 9.0)
+
+block("dynamic_tank", "minecraft:iron_block", 3.5, 9.0)
+block("dynamic_valve", "minecraft:iron_block", 3.5, 9.0)
