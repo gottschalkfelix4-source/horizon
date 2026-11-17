@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "create:shaft",
+    "create:cogwheel",
+    "create:large_cogwheel",
+    "create:gearbox",
+    "create:water_wheel",
+    "create:windmill_bearing",
+    "create:creative_motor"
+  ]
+}
