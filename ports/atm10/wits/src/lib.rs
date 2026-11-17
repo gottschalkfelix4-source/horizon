@@ -179,7 +179,7 @@ mod tests {
             let file = std::fs::read_to_string(format!("{root}/{structure}.json"))
                 .unwrap_or_else(|_| panic!("missing predicate for {structure}"));
             let json: serde_json::Value = serde_json::from_str(&file).unwrap();
-            assert_eq!(json["condition"], "minecraft:location_check");
+            assert_eq!(json["type"], "minecraft:location_check");
             assert_eq!(
                 json["predicate"]["structures"],
                 format!("minecraft:{structure}")

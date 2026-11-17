@@ -1,42 +1,40 @@
 {
-  "type": "minecraft:block",
   "pools": [
     {
-      "rolls": 1,
       "entries": [
         {
-          "type": "minecraft:item",
-          "name": "mysticalagriculture:stone_seeds"
-        }
-      ]
-    },
-    {
-      "rolls": 1,
-      "conditions": [
-        {
-          "condition": "minecraft:block_state_property",
-          "block": "mysticalagriculture:stone_crop",
-          "properties": {
-            "age": "7"
-          }
+          "name": "mysticalagriculture:stone_seeds",
+          "type": "minecraft:item"
         }
       ],
+      "rolls": 1
+    },
+    {
+      "condition": {
+        "block": "mysticalagriculture:stone_crop",
+        "properties": {
+          "age": "7"
+        },
+        "type": "minecraft:block_state_property"
+      },
       "entries": [
         {
-          "type": "minecraft:item",
-          "name": "mysticalagriculture:stone_essence",
-          "functions": [
+          "modifier": [
             {
-              "function": "minecraft:set_count",
               "count": {
-                "type": "minecraft:uniform",
+                "max": 2,
                 "min": 1,
-                "max": 2
-              }
+                "type": "minecraft:uniform"
+              },
+              "type": "minecraft:set_count"
             }
-          ]
+          ],
+          "name": "mysticalagriculture:stone_essence",
+          "type": "minecraft:item"
         }
-      ]
+      ],
+      "rolls": 1
     }
-  ]
+  ],
+  "type": "minecraft:block"
 }

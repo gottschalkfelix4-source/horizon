@@ -1,4 +1,4 @@
 {
-  "condition": "minecraft:location_check",
+  "type": "minecraft:location_check",
   "predicate": { "structures": "minecraft:nether_fossil" }
 }
