@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "mekanismgenerators:advanced_solar_generator",
+    "mekanismgenerators:bio_generator",
+    "mekanismgenerators:heat_generator",
+    "mekanismgenerators:solar_generator",
+    "mekanismgenerators:wind_generator"
+  ]
+}
