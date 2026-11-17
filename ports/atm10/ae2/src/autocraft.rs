@@ -145,6 +145,7 @@ pub fn request(
     drives: &[[i32; 3]],
     providers: &[[i32; 3]],
     assemblers: usize,
+    inv: &[(String, u64)],
     want: &str,
     n: u64,
 ) {
@@ -152,7 +153,10 @@ pub fn request(
         return tell(host, player, "Autocrafting needs a molecular assembler with a channel");
     }
     let patterns = patterns_of(&*host, level, providers);
-    let stock = stock_of(&*host, level, drives);
+    let mut stock = stock_of(&*host, level, drives);
+    for (id, n) in inv {
+        *stock.entry(id.clone()).or_insert(0) += n;
+    }
     let steps = match plan(&patterns, &stock, want, n) {
         Ok(s) => s,
         Err(e) => return tell(host, player, &e),

@@ -11,7 +11,7 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 | 1 | Cables (glass, covered, smart, dense covered, dense smart; fluix and 16 colours), controller, energy acceptor, energy cell, dense energy cell, network scan and power model; crystals, dusts, processors as data | ported, numbers to check; not run in the game |
 | 2 | Drive (ten cell slots), item storage cells 1k to 256k with contents saved in the stack, `network_insert` / `network_extract` over a network's cells, storage summary on the leader | ported, not run in the game. Not yet: ME chest, fluid cells, cell workbench and partitioning, inscriber and presses, charger, certus growth |
 | 3 | ME terminal (six-row view: 45 listed items by count, paging, take out and put in, search by item on the cursor); channels | ported, not run in the game. Not yet: text search (client hooks), crafting and pattern terminal, channels |
-| 4 | Import and export bus, channels | ported, not run in the game. Not yet: storage bus, interface, annihilation and formation planes, P2P, upgrade cards |
+| 4 | Import and export bus, channels, storage bus, interface | ported, not run in the game. Not yet: annihilation and formation planes, P2P, upgrade cards, priorities |
 | 5 | Autocrafting: patterns, pattern provider, molecular assembler, recursive plans | ported, not run in the game. Stand-ins: no crafting CPU, no timing, the assembler is only the capacity a request needs; no pattern terminal, no processing patterns |
 | 6 | Spatial IO, wireless access points and terminals, quantum bridge, meteorites, world generation | not yet |
 
@@ -117,3 +117,14 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   The crafts run at once, step by step; a craft that cannot start returns what it took; a result no cell has room for goes
   to the player. Not modelled: crafting CPUs and their storage, crafting time and the assembler's power draw per craft (it
   draws 2 AE/tick idle), processing patterns, amounts other than one.
+
+## Storage bus and interface
+
+- `ae2:storage_bus`: the inventories (item capability of blocks outside the network) next to it become part of the
+  network's storage: the terminal lists their contents with the cells', insertion goes to the cells first and then
+  to those inventories, extraction takes from the cells first and then from them. No filters or priorities; plain
+  stacks only. Needs power and a channel.
+- `ae2:interface`: shows the network to its neighbours as an inventory of 54 virtual slots (the network's items, most first);
+  a hopper or another mod's bus taking from it takes from the network, anything put in goes into the network. Not
+  transactional: a rolled-back outer transaction does not undo what reached the cells. No stocking (AE2's configured
+  requests) yet.

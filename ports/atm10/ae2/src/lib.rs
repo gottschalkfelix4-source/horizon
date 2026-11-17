@@ -18,6 +18,7 @@ pub mod autocraft;
 pub mod bus;
 pub mod cells;
 pub mod crafting;
+pub mod interface;
 pub mod terminal;
 pub mod view;
 pub mod rules;
@@ -55,6 +56,55 @@ pub(crate) fn channels(host: &dyn Host, level: LevelRef, nodes: &[[i32; 3]]) -> 
 
 fn kind_at_pos(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<Kind> {
     id_at(host, level, pos).as_deref().and_then(parse_block)
+}
+
+/// The inventories (item capabilities of blocks outside the network) a storage bus at `pos` reaches.
+pub(crate) fn bus_inventories(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    pos: [i32; 3],
+) -> Vec<mod_api::Capability<dyn mod_api::ResourceHandler<mod_api::ItemResource>>> {
+    let mut out = Vec::new();
+    for dir in Direction::ALL {
+        let other = offset(pos, dir);
+        if id_at(&*host, level, other).as_deref().and_then(parse_block).is_some() {
+            continue;
+        }
+        if let Some(cap) = level.capability(host, &mod_api::ITEMS, other, Some(dir.opposite())) {
+            out.push(cap);
+        }
+    }
+    out
+}
+
+fn is_storage_bus(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> bool {
+    matches!(kind_at_pos(host, level, pos), Some(Kind::Device(Device::StorageBus)))
+}
+
+/// What the inventories behind the storage buses of `drives` hold (plain stacks only).
+pub(crate) fn inventory_stock(host: &mut dyn ServerHost, level: LevelRef, drives: &[[i32; 3]]) -> Vec<(String, u64)> {
+    let mut all: Vec<(String, u64)> = Vec::new();
+    for &d in drives {
+        if !is_storage_bus(&*host, level, d) {
+            continue;
+        }
+        for cap in bus_inventories(host, level, d) {
+            for i in 0..cap.size(host) {
+                let Some(res) = cap.resource(host, i) else { continue };
+                let Some(stack) = res.to_stack(1) else { continue };
+                if stack.components().is_some_and(|c| !c.as_nbt().is_empty()) {
+                    continue;
+                }
+                let id = stack.item().id(&*host);
+                let n = cap.amount(host, i) as u64;
+                match all.iter_mut().find(|(k, _)| *k == id) {
+                    Some((_, c)) => *c += n,
+                    None => all.push((id, n)),
+                }
+            }
+        }
+    }
+    all
 }
 
 pub(crate) fn id_at(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<String> {
@@ -179,7 +229,29 @@ pub fn network_insert(
         }
         Ok::<(), ()>(())
     });
+    // then the inventories behind storage buses
+    if left > 0 && plain_item(&*host, item) {
+        'buses: for &d in drives {
+            if !is_storage_bus(&*host, level, d) {
+                continue;
+            }
+            let Some(res) = bus::resource_of(&*host, item) else { break };
+            for cap in bus_inventories(host, level, d) {
+                let put = host
+                    .transaction(|host, tx| Ok::<u32, ()>(cap.insert_any(host, tx, &res, left.min(u32::MAX as u64) as u32)))
+                    .unwrap_or(0);
+                left -= put as u64;
+                if left == 0 {
+                    break 'buses;
+                }
+            }
+        }
+    }
     n - left
+}
+
+fn plain_item(host: &dyn Host, id: &str) -> bool {
+    mod_api::Identifier::parse(id).ok().and_then(|i| host.item_key(&i)).is_some()
 }
 
 /// Takes up to `n` of `item` out of the network's cells; how many came out.
@@ -209,6 +281,23 @@ pub fn network_extract(
         }
         Ok::<(), ()>(())
     });
+    if left > 0 {
+        'buses: for &d in drives {
+            if !is_storage_bus(&*host, level, d) {
+                continue;
+            }
+            let Some(res) = bus::resource_of(&*host, item) else { break };
+            for cap in bus_inventories(host, level, d) {
+                let got = host
+                    .transaction(|host, tx| Ok::<u32, ()>(cap.extract_any(host, tx, &res, left.min(u32::MAX as u64) as u32)))
+                    .unwrap_or(0);
+                left -= got as u64;
+                if left == 0 {
+                    break 'buses;
+                }
+            }
+        }
+    }
     n - left
 }
 
@@ -452,6 +541,15 @@ impl Hooks for Mod {
                         },
                     );
                 }
+            }
+            if entity_type == "interface" {
+                let built = r.block_entity_type("interface").blocks(&["ae2:interface"]).build();
+                let _ = r.block_entity_part(&built, Network);
+                r.block_entity_capability(&mod_api::ITEMS, &built, |_, at: mod_api::BlockSide| {
+                    Some(Box::new(interface::Interface { level: at.level, pos: at.pos })
+                        as Box<dyn mod_api::ResourceHandler<mod_api::ItemResource>>)
+                });
+                continue;
             }
             if entity_type == "terminal" {
                 let key = r.block_key("ae2:terminal");
