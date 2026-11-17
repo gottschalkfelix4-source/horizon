@@ -5,8 +5,8 @@ Horizon client mod. Written from the mod's observed behaviour and public descrip
 
 ## What it does
 
-Controlling puts a search box and filter buttons on vanilla's Key Binds screen. Horizon's mod API can
-neither change that screen nor rebind a key, so this port shows the same list on a screen of its own,
+Controlling puts a search box and filter buttons on vanilla's Key Binds screen. Horizon's mod API cannot
+change that screen, so this port shows the same list, with rebinding, on a screen of its own,
 opened from a **Search keys** button in the top right corner of the options screens (in a world) or from
 its key (`Search Key Binds`, unbound by default, under Controlling in Controls).
 
@@ -18,28 +18,20 @@ its key (`Search Key Binds`, unbound by default, under Controlling in Controls).
 | Sort: none (by category, with headings) / A-Z / Z-A | ported |
 | Conflicting keys in red | ported; debug keys (F3 + key) only clash with each other |
 | Free keys: the keyboard keys no binding uses | ported |
-| The list over vanilla's own Key Binds screen, with its rebinding | needs API |
-| Click a row to rebind, reset one binding | needs API |
-| Reset All | needs API (drawn greyed out) |
-| Other mods' bindings in the list | needs API: only vanilla's and Horizon's are listed |
+| The list over vanilla's own Key Binds screen | needs API (own screen instead) |
+| Click a key button, then press a key or mouse button to rebind; Escape unbinds | ported (a mod's binding keeps Shift/Ctrl/Alt) |
+| Reset one binding (per-row Reset, shown when off its default) | ported |
+| Reset All | ported |
+| Other mods' bindings in the list | ported (`key_bindings`; conflicts use key, modifiers and conflict context) |
 
-Code: `src/search.rs` (conflicts, search, filters, sort, free keys; unit tests), `src/keys.rs` (the
-mappings and keyboard keys walked), `src/lib.rs` (the screen). Texts: `assets/controlling/lang/en_us.json`.
+Code: `src/search.rs` (conflicts, search, filters, sort, free keys, rebinding and Reset All plans; unit tests), `src/keys.rs` (the
+keyboard keys walked), `src/lib.rs` (the screen). Texts: `assets/controlling/lang/en_us.json`.
 
 ## Needs from Horizon
 
-1. **Every key binding, readable and writable.** In `crates/horizon-mod-vocab/src/host/client_input.rs`
-   (`ClientInputClientHost`):
-   ```rust
-   /// Side: client. Every mapping Controls lists, vanilla's, Horizon's and every mod's, in its order.
-   fn key_bindings(&self) -> Vec<KeyBindingView>;
-   /// Side: client. Rebinds `id` (`key.jump`, or `<mod id>:<id>`) as Controls does and saves it;
-   /// `key.keyboard.unknown` unbinds it.
-   fn set_key_binding(&mut self, id: &str, key: &str, modifiers: ClientModifiers) -> Result<(), MappingError>;
-   ```
-   with `KeyBindingView { id, label: Text, category: String, key: String, modifiers: ClientModifiers,
-   default_key: String, default_modifiers: ClientModifiers, context: KeyConflictContext, owner: Option<String> }`
-   in `client/key_mapping.rs`. It would list other mods' keys, and turn on rebinding and Reset All.
+1. ~~Every key binding, readable and writable~~ **done**: `key_bindings` and `set_key_binding` list and
+   rebind every binding. The screen hooks hold the host read-only, so a rebind is queued and made on the
+   next client tick.
 2. **Know the Key Binds page.** `ScreenView::id` reports `options` for every options page. An id per page
    (`options.key_binds`) would let the search box sit on vanilla's own screen, as Controlling's does, and
    keep the **Search keys** button off the other pages.
@@ -54,6 +46,7 @@ mappings and keyboard keys walked), `src/lib.rs` (the screen). Texts: `assets/co
 2. The buttons' labels, order and cycle, and whether the sort keeps category headings.
 3. Which conflicts it marks: NeoForge conflict contexts and key modifiers; the debug keys.
 4. The free keys list: which keys it walks, and whether mouse buttons count.
+5. Rebinding details: whether Escape unbinds, whether modifiers are kept, and whether a conflicting rebind asks.
 
 ## Build
 

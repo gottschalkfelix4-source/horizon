@@ -2,11 +2,12 @@
 //!
 //! Written from Controlling's observed behaviour and public description, never from its code
 //! (docs/modpacks.md, "Licences"). Controlling adds a search box and filter buttons to vanilla's
-//! Key Binds screen. Horizon's mod API cannot change that screen nor rebind a key (README, "Needs
-//! from Horizon"), so this port opens the same list as its own screen: from a "Search keys"
+//! Key Binds screen. Horizon's mod API cannot change that screen (README, "Needs from Horizon"),
+//! so this port opens the same list as its own screen, with rebinding: from a "Search keys"
 //! button on the options screens, or from its own key. The list logic is in `search.rs`.
 use std::sync::Mutex;
 
+use mod_api::ClientModifiers;
 use mod_api::client::widgets::{Button, Outcome, TextField, WidgetId, Widgets};
 use mod_api::{
     ClientHost, ClientTickPostEvent, Flow, Hooks, KeyRegistration, Registrar, RegistrationContext,
@@ -28,6 +29,21 @@ const LIST_TOP: f32 = 72.0;
 /// The "Search keys" button drawn on the options screens: its size, from the top right corner.
 const OPEN_BUTTON: [f32; 2] = [100.0, 20.0];
 
+/// The width of the name column, then the key button and the per-row Reset button.
+const NAME_W: f32 = 150.0;
+const KEY_X: f32 = 154.0;
+const KEY_W: f32 = 100.0;
+const RESET_X: f32 = 258.0;
+const RESET_W: f32 = 52.0;
+
+/// A change of the game's bindings asked from a screen hook, made on the next client tick (the hooks
+/// hold the host read-only).
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Change {
+    Set(String, String, u32),
+    ResetAll,
+}
+
 /// The widgets of the screen, by role.
 struct Ids {
     search: WidgetId,
@@ -35,6 +51,7 @@ struct Ids {
     by: WidgetId,
     sort: WidgetId,
     free: WidgetId,
+    reset_all: WidgetId,
     done: WidgetId,
 }
 
@@ -51,6 +68,22 @@ struct State {
     /// Asked from a screen hook, done on the next client tick (which may open screens).
     open: bool,
     close: bool,
+    /// The binding waiting for its new key (the player clicked its key button).
+    listening: Option<String>,
+    /// Binding changes waiting for the next client tick.
+    changes: Vec<Change>,
+}
+
+/// One row of the list.
+struct Line {
+    /// The binding's id; `None` for a category heading.
+    id: Option<String>,
+    name: String,
+    key: String,
+    color: u32,
+    heading: bool,
+    /// Whether Reset has something to put back.
+    changed: bool,
 }
 
 fn tr(host: &dyn ClientHost, key: &str) -> String {
@@ -61,22 +94,33 @@ fn label(key: &str, value: &str) -> Text {
     Text::translate(key, vec![Text::translate(value, Vec::new())])
 }
 
-/// The bindings as the game has them now.
+/// The bindings as the game has them now: vanilla's, Horizon's and every mod's.
 fn read_bindings(host: &dyn ClientHost) -> Vec<Binding> {
-    let not_bound = tr(host, "key.keyboard.unknown");
-    keys::MAPPINGS
-        .iter()
-        .filter_map(|&(id, category)| {
-            let mapping = host.mapping(id).ok().flatten()?;
-            let key = host.text_string(&mapping.label).ok()?;
-            Some(Binding {
-                id: id.to_owned(),
-                name: tr(host, id),
-                category: category.to_owned(),
-                category_name: tr(host, &format!("key.categories.{category}")),
-                unbound: key.is_empty() || key == not_bound,
+    host.key_bindings()
+        .into_iter()
+        .map(|v| {
+            let category_name = if v.category.is_empty() {
+                tr(host, "controlling.category.none")
+            } else {
+                tr(host, &v.category)
+            };
+            let key = search::key_label(&tr(host, &v.key), v.modifiers.bits, |m| {
+                tr(host, &format!("controlling.modifier.{m}"))
+            });
+            Binding {
+                name: host.text_string(&v.label).unwrap_or_else(|_| v.id.clone()),
+                id: v.id,
+                category: v.category,
+                category_name,
+                unbound: v.key == search::UNBOUND,
                 key,
-            })
+                key_id: v.key,
+                modifiers: v.modifiers.bits,
+                default_key: v.default_key,
+                default_modifiers: v.default_modifiers.bits,
+                context: v.context,
+                owner: v.owner,
+            }
         })
         .collect()
 }
@@ -103,13 +147,10 @@ impl State {
         ));
         let bottom = size[1] - 26.0;
         let free = w.add_button(Button::new([x, bottom, 100.0, 20.0], Text::literal("")));
-        // Controlling's "Reset All": it needs a way to rebind (README), so it stays greyed out.
-        let mut reset = Button::new(
+        let reset_all = w.add_button(Button::new(
             [x + 105.0, bottom, 100.0, 20.0],
             Text::translate("controls.resetAll", Vec::new()),
-        );
-        reset.active = false;
-        w.add_button(reset);
+        ));
         let done = w.add_button(Button::new(
             [x + 210.0, bottom, 100.0, 20.0],
             Text::translate("gui.done", Vec::new()),
@@ -122,6 +163,7 @@ impl State {
                 by,
                 sort,
                 free,
+                reset_all,
                 done,
             },
         ));
@@ -182,6 +224,8 @@ impl State {
                     self.query.sort = self.query.sort.next();
                 } else if id == ids.free {
                     self.free_keys = !self.free_keys;
+                } else if id == ids.reset_all {
+                    self.changes.push(Change::ResetAll);
                 } else if id == ids.done {
                     self.close = true;
                 }
@@ -192,35 +236,97 @@ impl State {
         }
     }
 
-    /// The lines the list draws: a category heading (`true`) or a binding, with its colour.
-    fn lines(&self, host: &dyn ClientHost) -> Vec<(String, String, u32, bool)> {
+    /// The lines the list draws.
+    fn lines(&self, host: &dyn ClientHost) -> Vec<Line> {
         let bindings = read_bindings(host);
         if self.free_keys {
-            let names: Vec<(String, String)> = keys::keyboard_keys()
+            let ids = keys::keyboard_keys();
+            return search::free_keys(&ids, &bindings)
                 .into_iter()
-                .map(|id| {
-                    let name = tr(host, &id);
-                    (id, name)
+                .map(|id| Line {
+                    id: None,
+                    name: tr(host, id),
+                    key: String::new(),
+                    color: 0xFFFF_FFFF,
+                    heading: false,
+                    changed: false,
                 })
-                .collect();
-            return search::free_keys(&names, &bindings)
-                .into_iter()
-                .map(|id| (tr(host, id), String::new(), 0xFFFF_FFFF, false))
                 .collect();
         }
         let clash = search::conflicts(&bindings);
         let mut lines = Vec::new();
-        let mut category = "";
+        let mut category = None;
         for i in search::filter(&bindings, &self.query) {
             let b = &bindings[i];
-            if self.query.sort == search::Sort::None && b.category != category {
-                category = &b.category;
-                lines.push((b.category_name.clone(), String::new(), 0xFFFF_FFFF, true));
+            if self.query.sort == search::Sort::None && category != Some(&b.category) {
+                category = Some(&b.category);
+                lines.push(Line {
+                    id: None,
+                    name: b.category_name.clone(),
+                    key: String::new(),
+                    color: 0xFFFF_FFFF,
+                    heading: true,
+                    changed: false,
+                });
             }
-            let color = if clash[i] { 0xFFFF_5555 } else { 0xFFFF_FFFF };
-            lines.push((b.name.clone(), b.key.clone(), color, false));
+            let listening = self.listening.as_deref() == Some(b.id.as_str());
+            lines.push(Line {
+                id: Some(b.id.clone()),
+                name: b.name.clone(),
+                key: if listening {
+                    format!("> {} <", b.key)
+                } else {
+                    b.key.clone()
+                },
+                color: if listening {
+                    0xFFFF_FF55
+                } else if clash[i] {
+                    0xFFFF_5555
+                } else {
+                    0xFFFF_FFFF
+                },
+                heading: false,
+                changed: b.changed(),
+            });
         }
         lines
+    }
+
+    /// The list row at `at`, with the part of it hit: the key button or the Reset button.
+    fn row_at(&self, host: &dyn ClientHost, at: [f32; 2]) -> Option<(String, bool)> {
+        let bottom = self.size[1] - 32.0;
+        if at[1] < LIST_TOP || at[1] >= bottom {
+            return None;
+        }
+        let left = (self.size[0] / 2.0 - 155.0).floor();
+        let lines = self.lines(host);
+        let line = lines.get(((at[1] - LIST_TOP + self.scroll) / ROW).floor() as usize)?;
+        let id = line.id.clone()?;
+        let dx = at[0] - left;
+        if (KEY_X..KEY_X + KEY_W).contains(&dx) {
+            Some((id, false))
+        } else if line.changed && (RESET_X..RESET_X + RESET_W).contains(&dx) {
+            Some((id, true))
+        } else {
+            None
+        }
+    }
+
+    /// The player picked `key` for the binding being listened for.
+    fn finish_listening(&mut self, host: &dyn ClientHost, key: &str, held: u32) {
+        let Some(id) = self.listening.take() else {
+            return;
+        };
+        let Some(binding) = read_bindings(host).into_iter().find(|b| b.id == id) else {
+            return;
+        };
+        // Escape unbinds, as on Key Binds.
+        let (key, modifiers) = if key == "key.keyboard.escape" {
+            (search::UNBOUND.to_owned(), 0)
+        } else {
+            search::rebind(&binding, key, held)
+        };
+        self.changes.push(Change::Set(id, key, modifiers));
     }
 }
 
@@ -266,12 +372,24 @@ impl Hooks for Mod {
 
     fn client_tick_post(&self, host: &mut dyn ClientHost, _: &mut ClientTickPostEvent) {
         let clicked = host.consume_click(MOD_ID, "open");
-        let (open, close) = self.with(|s| {
-            let asked = (s.open || clicked, s.close);
+        let (open, close, changes) = self.with(|s| {
+            let asked = (s.open || clicked, s.close, std::mem::take(&mut s.changes));
             s.open = false;
             s.close = false;
             asked
         });
+        for change in changes {
+            match change {
+                Change::Set(id, key, modifiers) => {
+                    let _ = host.set_key_binding(&id, &key, ClientModifiers::new(modifiers));
+                }
+                Change::ResetAll => {
+                    for (id, key, modifiers) in search::reset_plan(&read_bindings(host)) {
+                        let _ = host.set_key_binding(&id, &key, ClientModifiers::new(modifiers));
+                    }
+                }
+            }
+        }
         if close {
             host.mod_screen_close(MOD_ID);
         }
@@ -312,7 +430,9 @@ impl Hooks for Mod {
             s.scroll = s.scroll.clamp(0.0, max_scroll);
             let left = (size[0] / 2.0 - 155.0).floor();
             let _ = draw.push_clip([0.0, LIST_TOP, size[0], bottom - LIST_TOP]);
-            for (i, (name, key, color, heading)) in lines.iter().enumerate() {
+            for (i, line) in lines.iter().enumerate() {
+                let (name, key, color, heading) =
+                    (&line.name, &line.key, &line.color, &line.heading);
                 let y = LIST_TOP + i as f32 * ROW - s.scroll;
                 if y + ROW < LIST_TOP || y > bottom {
                     continue;
@@ -321,9 +441,37 @@ impl Hooks for Mod {
                     let hw = draw.text_width(name);
                     draw.text(name, [(size[0] - hw) / 2.0, y + 3.0], 0xFFFF_FFFF, false);
                 } else {
+                    if line.id.is_none() {
+                        draw.text(name, [left, y + 3.0], 0xFFFF_FFFF, false);
+                        continue;
+                    }
+                    let _ = draw.push_clip([left, y, NAME_W, ROW]);
                     draw.text(name, [left, y + 3.0], 0xFFFF_FFFF, false);
+                    let _ = draw.pop_clip();
+                    let at = event.screen.mouse;
+                    let key_rect = [left + KEY_X, y, KEY_W, ROW - 2.0];
+                    let _ = draw.widget_button(
+                        key_rect,
+                        &Text::literal(""),
+                        true,
+                        inside(key_rect, at) || s.listening == line.id,
+                    );
                     let kw = draw.text_width(key);
-                    draw.text(key, [left + 310.0 - kw, y + 3.0], *color, false);
+                    draw.text(
+                        key,
+                        [left + KEY_X + (KEY_W - kw) / 2.0, y + 2.0],
+                        *color,
+                        true,
+                    );
+                    if line.changed {
+                        let rect = [left + RESET_X, y, RESET_W, ROW - 2.0];
+                        let _ = draw.widget_button(
+                            rect,
+                            &Text::translate("controls.reset", Vec::new()),
+                            true,
+                            inside(rect, at),
+                        );
+                    }
                 }
             }
             let _ = draw.pop_clip();
@@ -362,16 +510,40 @@ impl Hooks for Mod {
             return Flow::Continue;
         }
         self.with(|s| {
+            if s.listening.is_some() {
+                // A mouse button picks the key, as on Key Binds.
+                s.finish_listening(
+                    host,
+                    &search::mouse_key(event.button as u32),
+                    event.modifiers,
+                );
+                return Flow::Cancel;
+            }
             let Some((w, _)) = &mut s.widgets else {
                 return Flow::Continue;
             };
             let outcome = w.mouse_pressed(host, at, event.button, event.modifiers);
             s.act(outcome);
             if outcome.handled() {
-                Flow::Cancel
-            } else {
-                Flow::Continue
+                return Flow::Cancel;
             }
+            if event.button == 0 && !s.free_keys {
+                match s.row_at(host, at) {
+                    Some((id, false)) => {
+                        s.listening = Some(id);
+                        return Flow::Cancel;
+                    }
+                    Some((id, true)) => {
+                        if let Some(b) = read_bindings(host).into_iter().find(|b| b.id == id) {
+                            s.changes
+                                .push(Change::Set(id, b.default_key, b.default_modifiers));
+                        }
+                        return Flow::Cancel;
+                    }
+                    None => {}
+                }
+            }
+            Flow::Continue
         })
     }
 
@@ -396,6 +568,10 @@ impl Hooks for Mod {
             return Flow::Continue;
         }
         self.with(|s| {
+            if s.listening.is_some() {
+                s.finish_listening(host, event.key, event.modifiers);
+                return Flow::Cancel;
+            }
             let Some((w, _)) = &mut s.widgets else {
                 return Flow::Continue;
             };

@@ -4708,8 +4708,9 @@ impl Game<'_> {
         mod_id: &str,
         name: &str,
     ) -> Option<(String, ClientModifiers)> {
-        let (_, registration) = mod_api::__private::key_mappings()
-            .iter()
+        let (_, registration) = self
+            .declared_mod_mappings()
+            .into_iter()
             .find(|(owner, mapping)| *owner == mod_id && mapping.id == name)?;
         let (key, modifiers) = self.settings.mods.binding(
             mod_id,

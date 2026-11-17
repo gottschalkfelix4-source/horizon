@@ -410,6 +410,16 @@ impl ModKeys {
         self.index(owner, id)
             .is_some_and(|index| self.keys[index].state.consume_click())
     }
+    /// `KeyMapping.click` of mod `owner`'s mapping `id`, without holding it: false for an
+    /// unregistered one.
+    pub fn click(&mut self, owner: &str, id: &str) -> bool {
+        let Some(index) = self.index(owner, id) else {
+            return false;
+        };
+        self.keys[index].state.click();
+        self.idle = false;
+        true
+    }
     /// `KeyMapping.releaseAll` (a screen opened): every mapping is up and its
     /// pending clicks are gone.
     pub fn release_all(&mut self) {
@@ -499,6 +509,16 @@ mod tests {
         keys.input("key.keyboard.z", KeyAction::Press, false, true, 0);
         keys.input("key.mouse.left", KeyAction::Press, true, true, 0);
         assert!(!keys.consume_click("m", "zoom") && !keys.consume_click("m", "grab"));
+    }
+    /// A press of a binding adds one click and holds nothing; an unknown one adds none.
+    #[test]
+    fn a_pressed_binding_adds_one_click_without_holding() {
+        let mut keys = keys();
+        assert!(keys.click("m", "zoom"));
+        assert!(!keys.is_down("m", "zoom", 0, false));
+        assert!(keys.consume_click("m", "zoom"));
+        assert!(!keys.consume_click("m", "zoom"));
+        assert!(!keys.click("m", "nope"));
     }
     /// A rebinding moves a mapping to its new key and keeps its pending clicks.
     #[test]
