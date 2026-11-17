@@ -25,6 +25,7 @@ use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
 pub mod matrix;
 pub mod multiblock;
 pub mod rules;
+pub mod tank;
 use rules::*;
 
 fn int(nbt: &Compound, key: &str) -> i32 {
@@ -707,6 +708,7 @@ impl Hooks for Mod {
             groups.push((m.name(), vec![format!("mekanism:{}", m.name())]));
         }
         matrix::register(r);
+        tank::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
