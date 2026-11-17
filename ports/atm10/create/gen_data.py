@@ -44,6 +44,7 @@ ITEMS = {
     "cinder_flour": ("minecraft:gunpowder", "Cinder Flour"),
     "zinc_ingot": ("minecraft:iron_ingot", "Zinc Ingot"),
     "blaze_cake": ("minecraft:cake", "Blaze Cake"),
+    "brass_nugget": ("minecraft:gold_nugget", "Brass Nugget"),
     "brass_ingot": ("minecraft:gold_ingot", "Brass Ingot"),
 }
 base = "data/create/horizon/block"
