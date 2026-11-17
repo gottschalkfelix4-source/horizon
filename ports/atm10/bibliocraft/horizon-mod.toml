@@ -4,5 +4,5 @@ version = "1.6.5-horizon.1"
 description = "Bookcases, shelves, tool racks and display blocks that hold items. A Horizon port of Bibliocraft Legacy (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Minecraftschurli and IchHabeHunger54 (BiblioCraft originally by Nuchaz)"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

@@ -4,5 +4,5 @@ version = "2.3.17-horizon.1"
 description = "Multi-floor underground dungeons: a staircase from the surface down through floors of rooms, with spawners and loot chests. A Horizon port of Dungeon Crawl (GPL-3.0) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: xiroc"]
 api = "0.2"
-side = "server"
-capabilities = []
+side = "both"
+capabilities = ["registries"]

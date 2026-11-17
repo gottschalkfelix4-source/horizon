@@ -4,5 +4,5 @@ version = "41.10-horizon.1"
 description = "The world's Aura kept per chunk, the Flower Generator that turns flowers into Aura, and the Environmental Eye that reads it. A Horizon port of Nature's Aura (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Ellpeck"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

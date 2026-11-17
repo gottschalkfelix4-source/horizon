@@ -4,5 +4,5 @@ version = "8.0.28-horizon.1"
 description = "Essence crops, seeds and inferium essence. A Horizon port of Mystical Agriculture (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: BlakeBr0"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

@@ -4,5 +4,5 @@ version = "0.1.9-horizon.1"
 description = "Labels stuck on containers move items from extract labels to insert labels of the same name. A Horizon port of Transfer Labels (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Transfer Labels authors"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

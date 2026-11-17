@@ -4,4 +4,5 @@ version = "9.0.4-horizon.1"
 description = "Server admin commands under /cu: entity counts and hot chunks, entity removal, loaded chunks, unstuck, cross-dimension teleport, inventory read and remove, memory use, and an optional ground-item clear. A Horizon port of Crash Utilities (MIT) written from its public description."
 authors = ["Port: gottschalkfelix4-source", "Original: Darkere"]
 api = "0.2"
-side = "server"
+side = "both"
+capabilities = ["registries"]

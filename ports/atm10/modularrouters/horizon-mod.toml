@@ -4,5 +4,5 @@ version = "13.2.7-horizon.1"
 description = "A router block whose modules move, place, break, drop and vacuum items. A Horizon port of Modular Routers (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: desht"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

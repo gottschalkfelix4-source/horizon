@@ -4,5 +4,5 @@ version = "1.21-6.0.11-horizon.1"
 description = "Machine frame, dimensional shards, filter module and information screen shared by the RFTools mods. A Horizon port of RFToolsBase (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: McJty"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

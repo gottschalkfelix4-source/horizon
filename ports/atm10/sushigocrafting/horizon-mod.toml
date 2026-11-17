@@ -4,5 +4,5 @@ version = "0.6.6-horizon.1"
 description = "Sushi ingredients, rolling and the finished rolls. A Horizon port of Sushi Go Crafting (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: the Sushi Go Crafting authors"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

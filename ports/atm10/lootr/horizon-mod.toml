@@ -4,5 +4,5 @@ version = "1.21.1-1.11.38.127-horizon.1"
 description = "Loot containers that hold their own loot for every player who opens them. A Horizon port of Lootr (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Noobanidus"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

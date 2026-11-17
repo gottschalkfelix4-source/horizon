@@ -4,5 +4,5 @@ version = "1.4.1-horizon.1"
 description = "The Otherside portal: a reinforced deepslate frame lit with the Heart of the Deep, and travel through it. A Horizon port of Deeper and Darker (AGPL-3.0) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: KyaniteMods"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

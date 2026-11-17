@@ -5,3 +5,4 @@ description = "Turns off the server's 'moved too quickly' check for players, gli
 authors = ["Port: gottschalkfelix4-source"]
 api = "0.2"
 side = "server"
+capabilities = ["registries"]

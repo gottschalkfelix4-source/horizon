@@ -4,5 +4,5 @@ version = "1.11.42-horizon.1"
 description = "Draw redstone tracks on any block face with a pen, and relay blocks. A Horizon port of Redstone Pen (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: wile"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

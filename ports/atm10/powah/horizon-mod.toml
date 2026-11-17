@@ -4,5 +4,5 @@ version = "6.2.10-horizon.1"
 description = "Energy cells, cables, generators in seven tiers, the reactor, the energizing orb and ender cells. A Horizon port of Powah (LGPL-3.0) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: owmii"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

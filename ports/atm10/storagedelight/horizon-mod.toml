@@ -4,5 +4,5 @@ version = "26.09.17-1.21-neoforge-horizon.1"
 description = "Food storage blocks for the kitchen. A Horizon port of Storage Delight (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: the Storage Delight authors"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

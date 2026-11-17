@@ -4,4 +4,5 @@ version = "1.21-10.3.0-horizon.1"
 description = "Rule files in config/incontrol/ that allow or deny mob spawns and change experience drops. A Horizon port of InControl (MIT) written from its public documentation."
 authors = ["Port: gottschalkfelix4-source", "Original: McJty"]
 api = "0.2"
-side = "server"
+side = "both"
+capabilities = ["registries"]

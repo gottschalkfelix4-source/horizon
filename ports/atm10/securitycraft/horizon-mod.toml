@@ -4,5 +4,5 @@ version = "1.10.2.1-horizon.1"
 description = "Reinforced blocks that only their owner can break, and that explosions cannot. A Horizon port of SecurityCraft (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Geforce132, bl4ckscor3"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

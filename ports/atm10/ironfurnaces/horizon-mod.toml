@@ -4,5 +4,5 @@ version = "4.3.2-horizon.1"
 description = "Faster furnaces in tiers from copper to unobtainium. A Horizon port of Iron Furnaces (Apache-2.0) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: XenoMustache"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

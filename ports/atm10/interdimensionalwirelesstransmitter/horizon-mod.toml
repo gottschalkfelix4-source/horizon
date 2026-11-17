@@ -4,5 +4,5 @@ version = "1.21.1-0.1.5-horizon.1"
 description = "Transmitter and receiver blocks that share a redstone signal on one frequency across dimensions. A Horizon port of Interdimensional Wireless Transmitter (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: the Interdimensional Wireless Transmitter authors"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

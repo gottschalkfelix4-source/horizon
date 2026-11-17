@@ -5,4 +5,4 @@ description = "Keeps the server log free of a line for every villager that dies.
 authors = ["Port: gottschalkfelix4-source", "Original: Serilum"]
 api = "0.2"
 side = "server"
-capabilities = []
+capabilities = ["registries"]

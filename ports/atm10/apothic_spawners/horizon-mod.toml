@@ -5,4 +5,4 @@ description = "Spawner modifiers: right-click a monster spawner with an item to 
 authors = ["Port: gottschalkfelix4-source", "Original: Shadows_of_Fire"]
 api = "0.2"
 side = "server"
-capabilities = []
+capabilities = ["registries"]

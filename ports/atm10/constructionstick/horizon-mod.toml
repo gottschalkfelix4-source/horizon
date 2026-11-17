@@ -4,5 +4,5 @@ version = "1.5.0-horizon.1"
 description = "Construction sticks: right-click a block face to grow its connected surface by one layer from your inventory. A Horizon port of Construction Sticks (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: the Construction Sticks authors (after Construction Wand by Theta-Dev)"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

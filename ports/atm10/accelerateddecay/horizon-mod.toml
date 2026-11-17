@@ -5,4 +5,4 @@ description = "Leaves cut off from their logs decay within moments instead of mi
 authors = ["Port: gottschalkfelix4-source", "Original: ErrorMikey"]
 api = "0.2"
 side = "server"
-capabilities = []
+capabilities = ["registries"]

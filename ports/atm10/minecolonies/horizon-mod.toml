@@ -4,5 +4,5 @@ version = "1.1.1403-1.21.1-horizon.1"
 description = "Found a colony with a Town Hall: it claims the chunks around it, and only its owner and officers may build or break there. A Horizon port of MineColonies (GPL-3.0-or-later) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: ldtteam (MineColonies team)"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

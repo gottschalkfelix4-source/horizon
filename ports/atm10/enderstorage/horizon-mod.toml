@@ -4,5 +4,5 @@ version = "2.13.0.191-horizon.1"
 description = "Ender chests and tanks shared by a three-colour frequency, optionally owned by one player. A Horizon port of EnderStorage (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: covers1624 (originally ChickenBones)"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

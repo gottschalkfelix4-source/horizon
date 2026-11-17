@@ -8,4 +8,4 @@ side = "client"
 capabilities = ["registries"]
 
 [dependencies]
-jei = "^19"
+jei = ">=19.64.0-horizon.1"

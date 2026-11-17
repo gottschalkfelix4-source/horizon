@@ -4,5 +4,5 @@ version = "13.2.5-horizon.1"
 description = "Seven wearable artifacts (Night Vision Goggles, Snorkel, Cross Necklace, Running Shoes, Bunny Hoppers, Power Glove, Feral Claws) and their effects. A first slice of a Horizon port of Artifacts (MIT), written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: ochotonida"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]

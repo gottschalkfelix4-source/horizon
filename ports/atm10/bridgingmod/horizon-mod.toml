@@ -5,3 +5,4 @@ description = "Reach-around block placement for bridging: shows where a block go
 authors = ["Port: gottschalkfelix4-source", "Original: Bridging Mod authors"]
 api = "0.2"
 side = "client"
+capabilities = ["registries"]

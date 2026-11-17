@@ -4,5 +4,5 @@ version = "6.5.1-horizon.1"
 description = "Data models that learn from kills, the simulation chamber and the loot fabricator. A Horizon port of Hostile Neural Networks (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Shadows_of_Fire"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]
