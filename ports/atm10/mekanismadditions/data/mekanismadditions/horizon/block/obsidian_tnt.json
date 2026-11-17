@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:tnt",
+  "properties": {
+    "hardness": 0.0,
+    "explosion_resistance": 1200.0
+  },
+  "item": true
+}

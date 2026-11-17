@@ -17,7 +17,7 @@ the later ones can sit on it.
 | Energized smelter | The engine's `minecraft:smelting` recipes, same power and time | ported |
 | `mekanism:chemicals` | `CapabilityKey` over `ResourceHandler<ChemicalResource>`, a one-tank block handler saved in the block entity | declared and unit-tested; no machine registers it yet |
 | Menus | Vanilla hopper menu (slots: input, output, energy item, two upgrades) | stand-in until mod menus with energy bars exist |
-| Generators | in the [Mekanism Generators port](../mekanismgenerators/) | | |
+| Generators, tools, additions | in the [Generators](../mekanismgenerators/), [Tools](../mekanismtools/) and [Additions](../mekanismadditions/) ports | | |
 | Factories, tiers of machines, upgrades, side configuration, security, QIO, teleporters, digital miner, multiblocks (generators, turbine, fission, fusion, SPS), tools and armor, Additions, gas machines, pipes (pressurized, logistical, mechanical, thermodynamic), jetpack/mekasuit, chemical/fluid processing | | not yet |
 
 ## Needs from Horizon

@@ -1,0 +1,16 @@
+id = "mekanismadditions"
+name = "Mekanism Additions"
+version = "10.7.0-horizon.1"
+description = "Plastic blocks, glow panels and balloons in sixteen colours. A Horizon port of Mekanism Additions (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Aidan C. Brady and the Mekanism team"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[dependencies]
+mekanism = ">=10.7.0-horizon.1"
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

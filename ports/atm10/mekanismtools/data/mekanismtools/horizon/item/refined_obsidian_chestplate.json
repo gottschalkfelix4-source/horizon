@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:iron_chestplate",
+  "components": {
+    "minecraft:max_damage": 1280,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanismtools:refined_obsidian_chestplate",
+        "amount": 10,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanismtools:refined_obsidian_chestplate",
+        "amount": 5.0,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "mekanismtools:refined_obsidian_chestplate",
+        "amount": 0.2,
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}

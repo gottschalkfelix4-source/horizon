@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_helmet",
+  "components": {
+    "minecraft:max_damage": 440,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanismtools:steel_helmet",
+        "amount": 3,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanismtools:steel_helmet",
+        "amount": 2.0,
+        "operation": "add_value",
+        "slot": "head"
+      }
+    ]
+  }
+}

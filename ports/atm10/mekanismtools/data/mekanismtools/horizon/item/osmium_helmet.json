@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_helmet",
+  "components": {
+    "minecraft:max_damage": 396,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanismtools:osmium_helmet",
+        "amount": 3,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanismtools:osmium_helmet",
+        "amount": 1.0,
+        "operation": "add_value",
+        "slot": "head"
+      }
+    ]
+  }
+}

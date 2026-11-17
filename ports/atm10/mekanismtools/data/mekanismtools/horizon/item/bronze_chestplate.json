@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_chestplate",
+  "components": {
+    "minecraft:max_damage": 480,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "mekanismtools:bronze_chestplate",
+        "amount": 7,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "mekanismtools:bronze_chestplate",
+        "amount": 1.0,
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}
