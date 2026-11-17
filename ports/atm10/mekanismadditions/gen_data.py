@@ -9,8 +9,10 @@ COLORS = ["black", "red", "green", "brown", "blue", "purple", "cyan", "light_gra
           "lime", "yellow", "light_blue", "magenta", "orange", "white"]
 
 
-def block(name, template, hardness, resistance, light=None):
+def block(name, template, hardness, resistance, light=None, friction=None):
     props = {"hardness": hardness, "explosion_resistance": resistance}
+    if friction:
+        props["friction"] = friction
     if light:
         props["light"] = light
     with open(f"{base}/block/{name}.json", "w") as f:
@@ -20,7 +22,7 @@ def block(name, template, hardness, resistance, light=None):
 
 for c in COLORS:
     block(f"{c}_plastic_block", "minecraft:stone", 5.0, 6.0)
-    block(f"{c}_slick_plastic_block", "minecraft:stone", 5.0, 6.0)
+    block(f"{c}_slick_plastic_block", "minecraft:stone", 5.0, 6.0, None, 0.98)
     block(f"{c}_plastic_glow_block", "minecraft:stone", 5.0, 6.0, 15)
     block(f"{c}_reinforced_plastic_block", "minecraft:stone", 50.0, 1200.0)
     block(f"{c}_plastic_road", "minecraft:stone", 5.0, 6.0)

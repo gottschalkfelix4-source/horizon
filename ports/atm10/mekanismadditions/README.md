@@ -6,7 +6,8 @@ Written from observed behaviour, not from the mod's code. Data only for now: `ge
 | Part | Status |
 |---|---|
 | Plastic, slick, glow, reinforced, transparent plastic blocks and plastic roads in 16 colours; glow panels; balloons (items); obsidian TNT (a block) | declared, placeholders for look and numbers; no stairs, slabs or fences, no recipes |
-| Slick plastic's speed, road speed boost, glow panel placement on walls, balloon entities, obsidian TNT's blast | not yet (need code) |
+| Slick plastic blocks are slippery (friction 0.98, a stand-in) | declared |
+| Road speed boost, glow panel placement on walls, balloon entities, obsidian TNT's blast | not yet (need code) |
 | Baby mobs, walkie-talkie, jetpack-style items | not yet |
 
 ## To check against the NeoForge original

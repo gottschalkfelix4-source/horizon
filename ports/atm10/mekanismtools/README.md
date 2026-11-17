@@ -21,3 +21,7 @@ file per tool and armor piece, `src/lib.rs` has no behaviour.
 ```sh
 sh ../dev-sdk.sh && cargo test && python3 gen_data.py
 ```
+
+## Paxels
+
+Pickaxe, axe and shovel in one, in the six materials (`gen_data.py`): mining speed 5 to 9 by material and twice the tool durability, both from memory; to check against the original.
