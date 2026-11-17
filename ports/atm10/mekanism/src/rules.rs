@@ -187,10 +187,14 @@ pub enum Machine {
     ChemicalInjectionChamber,
     ElectrolyticSeparator,
     ChemicalInfuser,
+    ChemicalOxidizer,
+    IsotopicCentrifuge,
 }
 
 impl Machine {
-    pub const ALL: [Machine; 10] = [
+    pub const ALL: [Machine; 12] = [
+        Machine::ChemicalOxidizer,
+        Machine::IsotopicCentrifuge,
         Machine::PurificationChamber,
         Machine::ChemicalInjectionChamber,
         Machine::ElectrolyticSeparator,
@@ -215,6 +219,8 @@ impl Machine {
             Machine::ChemicalInjectionChamber => "chemical_injection_chamber",
             Machine::ElectrolyticSeparator => "electrolytic_separator",
             Machine::ChemicalInfuser => "chemical_infuser",
+            Machine::ChemicalOxidizer => "chemical_oxidizer",
+            Machine::IsotopicCentrifuge => "isotopic_centrifuge",
         }
     }
 
@@ -234,7 +240,7 @@ impl Machine {
     /// Whether it has item slots (the separator and the chemical infuser work on fluids and
     /// chemicals only).
     pub fn has_items(self) -> bool {
-        !matches!(self, Machine::ElectrolyticSeparator | Machine::ChemicalInfuser)
+        !matches!(self, Machine::ElectrolyticSeparator | Machine::ChemicalInfuser | Machine::IsotopicCentrifuge)
     }
 
     /// The chemical an item machine spends while it works, and how much per tick.
@@ -363,7 +369,25 @@ pub fn inject(item: &str) -> Option<(String, u32)> {
 /// The chemical infuser: two chemicals into one (either way round), 1 mB each per mB made.
 pub fn combine_chemicals(a: &str, b: &str) -> Option<&'static str> {
     let pair = |x: &str, y: &str| (a == x && b == y) || (a == y && b == x);
+    if pair("mekanism:uranium_oxide", "mekanism:hydrogen_fluoride") {
+        return Some("mekanism:uranium_hexafluoride");
+    }
     pair("mekanism:hydrogen", "mekanism:chlorine").then_some("mekanism:hydrogen_chloride")
+}
+
+/// The chemical oxidizer: an item into a chemical, (chemical, mB).
+pub fn oxidize(item: &str) -> Option<(&'static str, u32)> {
+    Some(match name_of(item) {
+        "dust_uranium" | "ingot_uranium" | "yellow_cake_uranium" => ("mekanism:uranium_oxide", 250),
+        "fluorite_gem" => ("mekanism:hydrogen_fluoride", 250),
+        "dust_sulfur" => ("mekanism:sulfur_dioxide", 250),
+        _ => return None,
+    })
+}
+
+/// The isotopic centrifuge: uranium hexafluoride into fissile fuel, mB for mB.
+pub fn centrifuge(chemical: &str) -> Option<&'static str> {
+    (chemical == "mekanism:uranium_hexafluoride").then_some("mekanism:fissile_fuel")
 }
 
 /// The electrolytic separator: what a fluid splits into, (fluid, mB spent, first chemical and mB,
@@ -578,6 +602,19 @@ mod tests {
         assert_eq!(factory_id(Tier::Basic, Machine::EnergizedSmelter).as_deref(), Some("mekanism:basic_smelting_factory"));
         assert_eq!(factory_id(Tier::Basic, Machine::Combiner), None);
         assert_eq!(Tier::Ultimate.lanes(), 9);
+    }
+
+    #[test]
+    fn the_nuclear_chain_reaches_fissile_fuel() {
+        assert_eq!(oxidize("mekanism:dust_uranium"), Some(("mekanism:uranium_oxide", 250)));
+        assert_eq!(oxidize("mekanism:fluorite_gem"), Some(("mekanism:hydrogen_fluoride", 250)));
+        assert_eq!(oxidize("minecraft:dirt"), None);
+        assert_eq!(
+            combine_chemicals("mekanism:hydrogen_fluoride", "mekanism:uranium_oxide"),
+            Some("mekanism:uranium_hexafluoride")
+        );
+        assert_eq!(centrifuge("mekanism:uranium_hexafluoride"), Some("mekanism:fissile_fuel"));
+        assert_eq!(centrifuge("mekanism:oxygen"), None);
     }
 
     #[test]

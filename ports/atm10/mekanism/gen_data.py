@@ -55,9 +55,9 @@ for c in ["basic", "advanced", "elite", "ultimate"]:
     for pipe in ["mechanical_pipe", "pressurized_tube", "logistical_transporter"]:
         block(f"{c}_{pipe}", "minecraft:iron_bars", 1.0, 6.0)
 # the furnace template is what makes a click open the container's menu (as Powah's furnator)
-for m in ["enrichment_chamber", "crusher", "energized_smelter", "precision_sawmill", "combiner", "metallurgic_infuser", "purification_chamber", "chemical_injection_chamber"]:
+for m in ["enrichment_chamber", "crusher", "energized_smelter", "precision_sawmill", "combiner", "metallurgic_infuser", "purification_chamber", "chemical_injection_chamber", "chemical_oxidizer"]:
     block(m, "minecraft:furnace", 3.5, 16.0)
-for m in ["electrolytic_separator", "chemical_infuser"]:
+for m in ["electrolytic_separator", "chemical_infuser", "isotopic_centrifuge"]:
     block(m, "minecraft:iron_block", 3.5, 16.0)
 block("steel_casing", "minecraft:iron_block", 3.5, 9.0)
 item("hdpe_pellet"); item("hdpe_sheet"); item("bio_fuel", "minecraft:wheat")

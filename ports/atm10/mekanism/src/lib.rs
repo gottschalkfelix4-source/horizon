@@ -192,6 +192,32 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
     }
 }
 
+/// How long (in ticks) a pair of endpoints keeps its direction: once one fed the other, the other
+/// may not feed it back for this long, whatever the levels say.
+const SETTLE: i32 = 200;
+
+/// The pipe network's memory of the last move of each pair, in the lowest pipe's saved data.
+struct Memory<'a> {
+    nbt: &'a mut Compound,
+    now: i32,
+}
+
+impl Memory<'_> {
+    fn key(from: [i32; 3], to: [i32; 3]) -> String {
+        format!("m{}_{}_{}>{}_{}_{}", from[0], from[1], from[2], to[0], to[1], to[2])
+    }
+
+    /// Whether the pair `from` to `to` may move: not if the other way moved lately.
+    fn allows(&self, from: [i32; 3], to: [i32; 3]) -> bool {
+        let last = int(self.nbt, &Self::key(to, from));
+        last == 0 || self.now - last >= SETTLE
+    }
+
+    fn moved(&mut self, from: [i32; 3], to: [i32; 3]) {
+        set_int(self.nbt, &Self::key(from, to), self.now);
+    }
+}
+
 /// How full an endpoint is, 0 to 1: occupied slots of an item handler, the fullest tank of a fluid
 /// or chemical one. An endpoint with nothing in it to be full of counts as full, so nothing moves
 /// into it.
@@ -223,6 +249,7 @@ fn move_network<R: 'static>(
     ends: &[([i32; 3], Direction)],
     mut budget: u32,
     items: bool,
+    memory: &mut Memory<'_>,
 ) {
     let machine_end = |host: &dyn Host, p: [i32; 3]| {
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
@@ -242,7 +269,11 @@ fn move_network<R: 'static>(
                 continue;
             };
             let mut want = budget;
-            if !machine_end(&*host, from.0) && !machine_end(&*host, to.0) {
+            let stores = !machine_end(&*host, from.0) && !machine_end(&*host, to.0);
+            if stores && !memory.allows(from.0, to.0) {
+                continue;
+            }
+            if stores {
                 if items {
                     let (a, b) = (fill_of(host, &*src, true), fill_of(host, &*dst, true));
                     if a <= b {
@@ -269,6 +300,9 @@ fn move_network<R: 'static>(
                     move_resources(host, &src, &dst, |_| true, want, tx).map_err(|_| ())
                 })
                 .unwrap_or(0);
+            if moved > 0 && stores {
+                memory.moved(from.0, to.0);
+            }
             budget -= moved.min(budget);
         }
     }
@@ -276,7 +310,7 @@ fn move_network<R: 'static>(
 
 /// One tick of the pipe network `pos` belongs to, run only by its lowest pipe: what the blocks
 /// touching it give is moved to the others, at the lowest tier's rate.
-fn tick_pipe(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], family: Family) {
+fn tick_pipe(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], family: Family, nbt: &mut Compound) {
     let pipes = network_of(&*host, level, pos, |k| matches!(k, Kind::Pipe(f, _) if f == family));
     if pipes.first() != Some(&pos) {
         return;
@@ -294,10 +328,14 @@ fn tick_pipe(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], family: 
             }
         }
     }
+    // a clock for the network's memory of which way each pair last moved
+    let now = int(nbt, "clock") + 1;
+    set_int(nbt, "clock", now);
+    let mut memory = Memory { nbt, now };
     match family {
-        Family::Pipe => move_network(host, level, &FLUIDS, &ends, rate, false),
-        Family::Tube => move_network(host, level, &CHEMICALS, &ends, rate, false),
-        Family::Transporter => move_network(host, level, &ITEMS, &ends, rate, true),
+        Family::Pipe => move_network(host, level, &FLUIDS, &ends, rate, false, &mut memory),
+        Family::Tube => move_network(host, level, &CHEMICALS, &ends, rate, false, &mut memory),
+        Family::Transporter => move_network(host, level, &ITEMS, &ends, rate, true, &mut memory),
     }
 }
 
@@ -371,7 +409,8 @@ fn recipe(
         Machine::Crusher => crush(&id).map(|(o, n)| single(&o, n)),
         Machine::PurificationChamber => purify(&id).map(|(o, n)| single(&o, n)),
         Machine::ChemicalInjectionChamber => inject(&id).map(|(o, n)| single(&o, n)),
-        Machine::ElectrolyticSeparator | Machine::ChemicalInfuser => None,
+        Machine::ElectrolyticSeparator | Machine::ChemicalInfuser | Machine::IsotopicCentrifuge => None,
+        Machine::ChemicalOxidizer => None,
         Machine::PrecisionSawmill => saw(&id),
         Machine::Combiner => combine(&id, &second?.item().id(&*host)),
         Machine::MetallurgicInfuser => {
@@ -411,6 +450,9 @@ fn tank_specs(m: Machine) -> &'static [TankSpec] {
     const PURIFY: [TankSpec; 1] = [spec("in", true, Some("mekanism:oxygen"))];
     const INJECT: [TankSpec; 1] = [spec("in", true, Some("mekanism:hydrogen_chloride"))];
     const SEPARATE: [TankSpec; 2] = [spec("first", false, None), spec("second", false, None)];
+    const OXIDIZE: [TankSpec; 1] = [spec("out", false, None)];
+    const CENTRIFUGE: [TankSpec; 2] =
+        [spec("in", true, Some("mekanism:uranium_hexafluoride")), spec("out", false, None)];
     const INFUSE: [TankSpec; 3] =
         [spec("left", true, None), spec("right", true, None), spec("out", false, None)];
     match m {
@@ -418,6 +460,8 @@ fn tank_specs(m: Machine) -> &'static [TankSpec] {
         Machine::ChemicalInjectionChamber => &INJECT,
         Machine::ElectrolyticSeparator => &SEPARATE,
         Machine::ChemicalInfuser => &INFUSE,
+        Machine::ChemicalOxidizer => &OXIDIZE,
+        Machine::IsotopicCentrifuge => &CENTRIFUGE,
         _ => &[],
     }
 }
@@ -503,6 +547,20 @@ fn tick_chemical(m: Machine, nbt: &mut Compound) {
             out.save(nbt, "out");
             true
         }
+        Machine::IsotopicCentrifuge => {
+            let (mut inp, mut out) = (Tank::load(nbt, "in"), Tank::load(nbt, "out"));
+            let Some(c) = inp.chemical.clone() else { return };
+            let Some(result) = centrifuge(&c) else { return };
+            // 5 mB a tick
+            let n = inp.amount.min(5);
+            if n == 0 || out.fill(result, n, 10_000) != n {
+                return;
+            }
+            inp.drain(&c, n);
+            inp.save(nbt, "in");
+            out.save(nbt, "out");
+            true
+        }
         _ => false,
     };
     if made {
@@ -564,6 +622,27 @@ fn tick_factory(
     set_int(nbt, "energy", energy);
 }
 
+/// The oxidizer turns one item at a time into a chemical (200 ticks of work, as the other
+/// machines), when the output tank has room and holds the same chemical or is empty.
+fn tick_oxidizer(host: &dyn Host, nbt: &mut Compound, items: &mut [Option<ItemStack>]) {
+    let energy = int(nbt, "energy");
+    let need = Machine::ChemicalOxidizer.fe_per_tick();
+    let made = items[INPUT].as_ref().and_then(|i| oxidize(&i.item().id(host)));
+    let mut out = Tank::load(nbt, "out");
+    let ok = made.is_some_and(|(chem, n)| {
+        (out.amount == 0 || out.chemical.as_deref() == Some(chem)) && out.amount + n <= 10_000
+    });
+    let mut work = Work { progress: int(nbt, "progress") };
+    let s = step(&mut work, ok, energy, need, Machine::ChemicalOxidizer.ticks());
+    set_int(nbt, "energy", energy - s.spent);
+    set_int(nbt, "progress", work.progress);
+    if let (true, Some((chem, n))) = (s.finished, made) {
+        out.fill(chem, n, 10_000);
+        out.save(nbt, "out");
+        items[INPUT] = items[INPUT].take().and_then(|i| i.shrink(1));
+    }
+}
+
 fn tick_machine(
     host: &mut dyn ServerHost,
     level: LevelRef,
@@ -576,6 +655,10 @@ fn tick_machine(
     }
     if machine == Machine::MetallurgicInfuser {
         absorb_infuse(&*host, nbt, items);
+    }
+    if machine == Machine::ChemicalOxidizer {
+        tick_oxidizer(host, nbt, items);
+        return;
     }
     let mut work = Work { progress: int(nbt, "progress") };
     let second = items.get(INPUT2).cloned().flatten().filter(|_| machine.second_input());
@@ -655,7 +738,7 @@ impl BlockEntityPart for Machines {
         let mut items = event.entity.items.clone();
         match kind {
             Kind::Cable(t) => tick_cable(host, level, pos, t),
-            Kind::Pipe(f, _) => tick_pipe(host, level, pos, f),
+            Kind::Pipe(f, _) => tick_pipe(host, level, pos, f, &mut nbt),
             Kind::Factory(t, m) => {
                 tick_factory(host, level, t, m, &mut nbt, &mut items);
                 let lit = i32::from((0..t.lanes()).any(|l| int(&nbt, &format!("progress_{l}")) > 0));
