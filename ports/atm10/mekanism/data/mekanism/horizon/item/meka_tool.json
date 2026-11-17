@@ -1,7 +1,6 @@
 {
   "template": "minecraft:netherite_pickaxe",
   "components": {
-    "minecraft:unbreakable": {},
     "minecraft:tool": {
       "rules": [
         {
