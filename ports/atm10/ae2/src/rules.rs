@@ -60,11 +60,17 @@ pub enum Device {
     EnergyAcceptor,
     EnergyCell,
     DenseEnergyCell,
+    Drive,
 }
 
 impl Device {
-    pub const ALL: [Device; 4] =
-        [Device::Controller, Device::EnergyAcceptor, Device::EnergyCell, Device::DenseEnergyCell];
+    pub const ALL: [Device; 5] = [
+        Device::Controller,
+        Device::EnergyAcceptor,
+        Device::EnergyCell,
+        Device::DenseEnergyCell,
+        Device::Drive,
+    ];
 
     pub fn name(self) -> &'static str {
         match self {
@@ -72,13 +78,14 @@ impl Device {
             Device::EnergyAcceptor => "energy_acceptor",
             Device::EnergyCell => "energy_cell",
             Device::DenseEnergyCell => "dense_energy_cell",
+            Device::Drive => "drive",
         }
     }
 
     /// FE a block holds: cells 200k and 1.6M AE, the acceptor a small buffer to hand on.
     pub fn capacity_fe(self) -> i32 {
         match self {
-            Device::Controller => 0,
+            Device::Controller | Device::Drive => 0,
             Device::EnergyAcceptor => 800,
             Device::EnergyCell => 200_000 * FE_PER_AE,
             Device::DenseEnergyCell => 1_600_000 * FE_PER_AE,
