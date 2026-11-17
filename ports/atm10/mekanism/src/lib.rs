@@ -22,6 +22,7 @@ use mod_api::{
 
 pub mod chemical;
 use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
+pub mod fission;
 pub mod matrix;
 pub mod mb;
 pub mod multiblock;
@@ -784,6 +785,7 @@ impl Hooks for Mod {
         matrix::register(r);
         tank::register(r);
         steam::register(r);
+        fission::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
