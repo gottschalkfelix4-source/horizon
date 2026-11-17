@@ -51,3 +51,14 @@ for t in ["1k", "4k", "16k", "64k", "256k"]:
         f.write("\n")
 item("cell_component_1k"); item("cell_component_4k"); item("cell_component_16k"); item("cell_component_64k"); item("cell_component_256k")
 item("empty_storage_cell")
+
+# block tags: every block is mined with a pickaxe, the ores need a stone one
+tag_dir = "data/minecraft/tags/block"
+os.makedirs(f"{tag_dir}/mineable", exist_ok=True)
+names = sorted(f[:-5] for f in os.listdir(f"{base}/block"))
+with open(f"{tag_dir}/mineable/pickaxe.json", "w") as f:
+    json.dump({"values": [f"ae2:{n}" for n in names]}, f, indent=2)
+    f.write("\n")
+with open(f"{tag_dir}/needs_stone_tool.json", "w") as f:
+    json.dump({"values": [f"ae2:{n}" for n in names if n.endswith("quartz_ore")]}, f, indent=2)
+    f.write("\n")
