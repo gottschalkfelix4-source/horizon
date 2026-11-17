@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "b": "justdirethings:upgrade_blank",
+    "f": "justdirethings:ferricore_ingot"
+  },
+  "pattern": [
+    "f f",
+    "fbf",
+    " f "
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:template_ferricore"
+  }
+}

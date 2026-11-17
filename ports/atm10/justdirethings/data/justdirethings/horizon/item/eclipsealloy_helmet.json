@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:iron_helmet",
+  "components": {
+    "minecraft:max_damage": 660,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:eclipsealloy_helmet",
+        "amount": 5,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:eclipsealloy_helmet",
+        "amount": 4.0,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "justdirethings:eclipsealloy_helmet",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "head"
+      }
+    ]
+  }
+}

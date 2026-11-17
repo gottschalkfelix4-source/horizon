@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "group": "justdirethings",
+  "ingredients": [
+    "justdirethings:clickert2"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:clickert2"
+  }
+}

@@ -503,3 +503,33 @@ mod menu and an item part, both of which the API has.
 - A per-slot stack limit for mod containers: a belt holds one item, but hoppers, funnels and `item replace` put several in
   because the slot takes a whole stack. Proposed: `ModContainer::slot_limit: u32` (`crates/horizon-mod-vocab/src/item/containers.rs`),
   honoured by the items capability and `/item replace`.
+
+## mysticalagradditions
+
+- Fuel values for items from data: a content item takes `minecraft:cooking_fuel` as a component (Just Dire Things'
+  port does), but NeoForge's `neoforge:furnace_fuels` data map file of an original is not read, so a pack's
+  fuels must be converted by script; the burn times of this mod's coals are not in its data (it sets them in code).
+- Mod recipe serializers of another mod's machines (`mysticalagriculture:infusion`, `awakening`, `reprocessor`,
+  `farmland_till`) wait for the Mystical Agriculture port to register them.
+- Fluids from files for molten metals and their buckets.
+
+## createaddition
+
+- Rotation from another mod's network: a native mod cannot make a block part of Create's kinetic network
+  (it lives in the Create crate), so the motor and alternator only exchange `speed_x1000` through saved data.
+  Proposed: a kinetic capability in the mod API (`KINETIC`: speed, stress capacity/impact, axis) that
+  mods register on blocks, the way `ENERGY` is, so Create's solver and its add-ons share one network.
+- Another mod's recipe types read from a machine (Create's `mixing`, `pressing`, `mechanical_crafting`...): the
+  engine side exists (`register_recipe_type`), the Create port would have to read add-ons' files.
+- Items near a block as machine input (the coil charges items lying around it): an area item query
+  (`LevelRef::item_entities_in`) with a way to set an item entity's stack.
+
+## justdirethings
+
+- Per-item upgrade state with hooks: the original's tools carry abilities (Tree Feller, Ore Miner, Hammer, Flight...)
+  that other code reads while mining. A native mod has block-break hooks but no way to run on a held tool's use
+  with its own component and to change a mining result (area breaking, auto-smelt drops). Proposed: a
+  `break_block_extra` hook that may break further blocks and replace drops for the tool in hand.
+- Fluids from files (the mod's nine fluids and buckets), as for the other ports.
+- Smithing and `ability` style recipes that keep the base item's components (an upgrade added to a tool): a
+  recipe type whose result copies the base stack and edits a component.

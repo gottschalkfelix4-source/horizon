@@ -1,0 +1,13 @@
+id = "createaddition"
+name = "Create Crafts & Additions"
+version = "1.7.2-horizon.1"
+description = "Electric motor, alternator, accumulator, connectors, creative generator and the Tesla coil that charges items, with the original's recipes. A Horizon port of Create Crafts & Additions (MIT) written from its data files and observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: mrh0"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

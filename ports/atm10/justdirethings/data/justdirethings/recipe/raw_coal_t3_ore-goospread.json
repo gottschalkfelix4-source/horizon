@@ -1,0 +1,15 @@
+{
+  "type": "justdirethings:goospread",
+  "id": "justdirethings:coal_block_t3",
+  "input": {
+    "Name": "justdirethings:coalblock_t2"
+  },
+  "output": {
+    "Name": "justdirethings:raw_coal_t3_ore",
+    "Properties": {
+      "facing": "north"
+    }
+  },
+  "crafting_duration": 4800,
+  "tier_requirement": 3
+}

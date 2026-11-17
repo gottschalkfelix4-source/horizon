@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_chestplate",
+  "components": {
+    "minecraft:max_damage": 576,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:blazegold_chestplate",
+        "amount": 8,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:blazegold_chestplate",
+        "amount": 2.0,
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}

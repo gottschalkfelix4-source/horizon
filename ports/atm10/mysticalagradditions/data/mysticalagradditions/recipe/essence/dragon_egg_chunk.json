@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE",
+    "EEE",
+    "EEE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:dragon_egg_essence"
+  },
+  "result": {
+    "id": "mysticalagradditions:dragon_egg_chunk"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:iron_leggings",
+  "components": {
+    "minecraft:max_damage": 900,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:eclipsealloy_leggings",
+        "amount": 8,
+        "operation": "add_value",
+        "slot": "legs"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:eclipsealloy_leggings",
+        "amount": 4.0,
+        "operation": "add_value",
+        "slot": "legs"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "justdirethings:eclipsealloy_leggings",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "legs"
+      }
+    ]
+  }
+}

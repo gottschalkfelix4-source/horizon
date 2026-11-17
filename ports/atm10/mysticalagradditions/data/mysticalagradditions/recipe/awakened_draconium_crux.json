@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "draconicevolution"
+    }
+  ],
+  "pattern": [
+    "EHE",
+    "WDW",
+    "EWE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:insanium_essence",
+    "H": "draconicevolution:dragon_heart",
+    "W": "draconicevolution:awakened_draconium_block",
+    "D": "#c:storage_blocks/diamond"
+  },
+  "result": {
+    "id": "mysticalagradditions:awakened_draconium_crux"
+  }
+}

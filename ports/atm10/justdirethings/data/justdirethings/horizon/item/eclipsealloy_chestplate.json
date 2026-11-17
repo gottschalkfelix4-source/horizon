@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:iron_chestplate",
+  "components": {
+    "minecraft:max_damage": 960,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:eclipsealloy_chestplate",
+        "amount": 11,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:eclipsealloy_chestplate",
+        "amount": 4.0,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "justdirethings:eclipsealloy_chestplate",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}

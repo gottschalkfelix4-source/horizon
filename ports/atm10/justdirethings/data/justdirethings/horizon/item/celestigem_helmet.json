@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:iron_helmet",
+  "components": {
+    "minecraft:max_damage": 484,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:celestigem_helmet",
+        "amount": 4,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:celestigem_helmet",
+        "amount": 3.0,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "justdirethings:celestigem_helmet",
+        "amount": 0.05,
+        "operation": "add_value",
+        "slot": "head"
+      }
+    ]
+  }
+}

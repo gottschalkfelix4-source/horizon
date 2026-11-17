@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "justdirethings",
+  "key": {
+    "d": "minecraft:ender_eye",
+    "f": "justdirethings:celestigem",
+    "o": "justdirethings:fluidcollectort1",
+    "r": "minecraft:redstone"
+  },
+  "pattern": [
+    "fdf",
+    "dod",
+    "frf"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:fluidcollectort2"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "justdirethings",
+  "key": {
+    "d": "minecraft:bucket",
+    "f": "justdirethings:ferricore_ingot",
+    "l": "minecraft:lapis_lazuli",
+    "o": "minecraft:dropper",
+    "r": "minecraft:redstone"
+  },
+  "pattern": [
+    "fdf",
+    "lol",
+    "frf"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:fluidplacert1"
+  }
+}

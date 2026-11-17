@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "EEE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:withering_soul"
+  },
+  "result": {
+    "id": "minecraft:wither_skeleton_skull",
+    "count": 3
+  }
+}

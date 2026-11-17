@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "justdirethings",
+  "key": {
+    "g": "minecraft:glass",
+    "i": "justdirethings:ferricore_ingot"
+  },
+  "pattern": [
+    " i ",
+    "igi",
+    " i "
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:fluid_canister"
+  }
+}

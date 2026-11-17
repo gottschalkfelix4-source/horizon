@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "draconicevolution"
+    }
+  ],
+  "pattern": [
+    "EEE",
+    "EEE",
+    "EEE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:awakened_draconium_essence"
+  },
+  "result": {
+    "id": "draconicevolution:awakened_draconium_nugget",
+    "count": 3
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smithing_transform",
+  "addition": "justdirethings:eclipsealloy_ingot",
+  "base": "justdirethings:celestigem_chestplate",
+  "result": {
+    "count": 1,
+    "id": "justdirethings:eclipsealloy_chestplate"
+  },
+  "template": "justdirethings:template_eclipsealloy"
+}

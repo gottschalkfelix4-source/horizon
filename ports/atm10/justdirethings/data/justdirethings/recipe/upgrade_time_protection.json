@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "b": "justdirethings:upgrade_blank",
+    "f": "justdirethings:time_crystal",
+    "s": "minecraft:shield"
+  },
+  "pattern": [
+    " s ",
+    "fbf",
+    " s "
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:upgrade_time_protection"
+  }
+}

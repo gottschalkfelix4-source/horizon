@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:wheat",
+  "item": false,
+  "pick_item": "mysticalagradditions:nitro_crystal_seeds"
+}

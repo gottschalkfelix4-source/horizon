@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "powah"
+    }
+  ],
+  "pattern": [
+    "EEE",
+    "ESE",
+    "EEE"
+  ],
+  "key": {
+    "E": "mysticalagradditions:nitro_crystal_essence",
+    "S": "minecraft:nether_star"
+  },
+  "result": {
+    "id": "powah:crystal_nitro",
+    "count": 12
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    "mysticalagradditions:insanium_coal_block"
+  ],
+  "result": {
+    "id": "mysticalagradditions:insanium_coal",
+    "count": 9
+  }
+}

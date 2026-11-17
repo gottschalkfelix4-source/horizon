@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "justdirethings",
+  "key": {
+    "d": "justdirethings:celestigem",
+    "e": "minecraft:ender_pearl",
+    "f": "justdirethings:blazegold_ingot",
+    "h": "minecraft:redstone"
+  },
+  "pattern": [
+    " d ",
+    "heh",
+    "fff"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:energytransmitter"
+  }
+}
