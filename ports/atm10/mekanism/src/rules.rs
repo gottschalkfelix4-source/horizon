@@ -54,6 +54,16 @@ impl Tier {
         }) * 20
     }
 
+    /// How many items a factory of this tier works on at once (3, 5, 7, 9).
+    pub fn lanes(self) -> usize {
+        match self {
+            Tier::Basic => 3,
+            Tier::Advanced => 5,
+            Tier::Elite => 7,
+            Tier::Ultimate => 9,
+        }
+    }
+
     /// A universal cable's most per tick, in FE.
     pub fn cable_rate(self) -> i32 {
         fe(match self {
@@ -132,6 +142,8 @@ pub enum Kind {
     Cable(Tier),
     Pipe(Family, Tier),
     Machine(Machine),
+    /// A factory of `Tier` running its machine's recipe in `lanes` lanes at once.
+    Factory(Tier, Machine),
 }
 
 pub fn parse_block(id: &str) -> Option<Kind> {
@@ -147,7 +159,19 @@ pub fn parse_block(id: &str) -> Option<Kind> {
             return Tier::from_name(t).map(|t| Kind::Pipe(f, t));
         }
     }
+    if let Some(rest) = name.strip_suffix("_factory") {
+        let (t, what) = rest.split_once('_')?;
+        let tier = Tier::from_name(t)?;
+        return Machine::ALL
+            .into_iter()
+            .find(|m| m.factory_name() == Some(what))
+            .map(|m| Kind::Factory(tier, m));
+    }
     Machine::ALL.into_iter().find(|m| m.name() == name).map(Kind::Machine)
+}
+
+pub fn factory_id(t: Tier, m: Machine) -> Option<String> {
+    Some(format!("mekanism:{}_{}_factory", t.name(), m.factory_name()?))
 }
 
 /// The first processing machines: one input, one output, run by energy.
@@ -192,6 +216,19 @@ impl Machine {
             Machine::ElectrolyticSeparator => "electrolytic_separator",
             Machine::ChemicalInfuser => "chemical_infuser",
         }
+    }
+
+    /// The word its factory is named by (`basic_smelting_factory`); none for machines without one.
+    pub fn factory_name(self) -> Option<&'static str> {
+        Some(match self {
+            Machine::EnergizedSmelter => "smelting",
+            Machine::EnrichmentChamber => "enriching",
+            Machine::Crusher => "crushing",
+            Machine::PrecisionSawmill => "sawing",
+            Machine::PurificationChamber => "purifying",
+            Machine::ChemicalInjectionChamber => "injecting",
+            _ => return None,
+        })
     }
 
     /// Whether it has item slots (the separator and the chemical infuser work on fluids and
@@ -529,6 +566,18 @@ mod tests {
         );
         assert_eq!(combine_chemicals("mekanism:oxygen", "mekanism:hydrogen"), None);
         assert_eq!(electrolyse("minecraft:water").map(|r| r.0), Some(2));
+    }
+
+    #[test]
+    fn factories_are_named_by_tier_and_work() {
+        assert_eq!(
+            parse_block("mekanism:elite_crushing_factory"),
+            Some(Kind::Factory(Tier::Elite, Machine::Crusher))
+        );
+        assert_eq!(parse_block("mekanism:basic_combining_factory"), None);
+        assert_eq!(factory_id(Tier::Basic, Machine::EnergizedSmelter).as_deref(), Some("mekanism:basic_smelting_factory"));
+        assert_eq!(factory_id(Tier::Basic, Machine::Combiner), None);
+        assert_eq!(Tier::Ultimate.lanes(), 9);
     }
 
     #[test]

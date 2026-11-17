@@ -136,7 +136,7 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
                     sources.push((n, dir.opposite()));
                     cubes.push((n, dir.opposite()));
                 }
-                Some(Kind::Machine(_)) => sinks.push((n, dir.opposite())),
+                Some(Kind::Machine(_) | Kind::Factory(..)) => sinks.push((n, dir.opposite())),
                 // another mod's block with energy (a generator, a cell): it gives and takes
                 None => {
                     let side = dir.opposite();
@@ -237,7 +237,7 @@ fn tick_cube(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: Ti
         if budget == 0 {
             break;
         }
-        if matches!(kind_at(&*host, level, n), Some(Kind::Machine(_))) {
+        if matches!(kind_at(&*host, level, n), Some(Kind::Machine(_) | Kind::Factory(..))) {
             budget -= route(host, level, (pos, dir), (n, dir.opposite()), budget);
         }
     }
@@ -270,15 +270,16 @@ fn single(id: &str, n: u32) -> Recipe {
     Recipe { output: id.to_owned(), count: n, take: [1, 0], infuse: None }
 }
 
-/// What `machine` makes of its inputs, if it has a recipe.
+/// What `machine` makes of its inputs, if it has a recipe: `input` is the first, `second` the
+/// second (combiner, infuser).
 fn recipe(
     host: &mut dyn ServerHost,
     level: LevelRef,
     machine: Machine,
-    items: &[Option<ItemStack>],
+    input: &ItemStack,
+    second: Option<&ItemStack>,
     nbt: &Compound,
 ) -> Option<Recipe> {
-    let input = items[INPUT].as_ref()?;
     let id = input.item().id(&*host);
     match machine {
         Machine::EnrichmentChamber => enrich(&id).map(|(o, n)| single(&o, n)),
@@ -287,7 +288,7 @@ fn recipe(
         Machine::ChemicalInjectionChamber => inject(&id).map(|(o, n)| single(&o, n)),
         Machine::ElectrolyticSeparator | Machine::ChemicalInfuser => None,
         Machine::PrecisionSawmill => saw(&id),
-        Machine::Combiner => combine(&id, &items[INPUT2].as_ref()?.item().id(&*host)),
+        Machine::Combiner => combine(&id, &second?.item().id(&*host)),
         Machine::MetallurgicInfuser => {
             infuse(&id, &text(nbt, "infuse_type")?, int(nbt, "infuse_amount").max(0) as u32)
         }
@@ -424,6 +425,60 @@ fn tick_chemical(m: Machine, nbt: &mut Compound) {
     }
 }
 
+/// One tick of a factory: `lanes` inputs (slots 0..lanes), their outputs (lanes..2*lanes), then the
+/// energy item and two upgrades. Every lane runs its own operation, all spending from one buffer
+/// and one chemical tank.
+fn tick_factory(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    tier: Tier,
+    machine: Machine,
+    nbt: &mut Compound,
+    items: &mut Vec<Option<ItemStack>>,
+) {
+    let lanes = tier.lanes();
+    if items.len() < lanes * 2 + 3 {
+        items.resize(lanes * 2 + 3, None);
+    }
+    let mut energy = int(nbt, "energy");
+    for lane in 0..lanes {
+        let out = lanes + lane;
+        let key = format!("progress_{lane}");
+        let mut work = Work { progress: int(nbt, &key) };
+        let found = items[lane]
+            .clone()
+            .and_then(|input| recipe(host, level, machine, &input, None, nbt));
+        let result = found.as_ref().and_then(|r| {
+            if items[lane].as_ref().is_none_or(|i| i.count() < r.take[0]) {
+                return None;
+            }
+            fits(&*host, &items[out], &r.output, r.count)
+        });
+        let result = result.filter(|_| has_chemical(machine, nbt));
+        let s = step(&mut work, result.is_some(), energy, machine.fe_per_tick(), machine.ticks());
+        energy -= s.spent;
+        if let (Some((chem, per)), true) = (machine.chemical_use(), s.spent > 0) {
+            let mut tank = Tank::load(nbt, "in");
+            tank.drain(chem, per);
+            tank.save(nbt, "in");
+        }
+        set_int(nbt, &key, work.progress);
+        if s.finished {
+            if let (Some(made), Some(r)) = (result, found) {
+                items[out] = match items[out].take() {
+                    None => Some(made),
+                    Some(mut held) => {
+                        let _ = held.grow(made.count());
+                        Some(held)
+                    }
+                };
+                items[lane] = items[lane].take().and_then(|i| i.shrink(r.take[0]));
+            }
+        }
+    }
+    set_int(nbt, "energy", energy);
+}
+
 fn tick_machine(
     host: &mut dyn ServerHost,
     level: LevelRef,
@@ -438,7 +493,10 @@ fn tick_machine(
         absorb_infuse(&*host, nbt, items);
     }
     let mut work = Work { progress: int(nbt, "progress") };
-    let found = recipe(host, level, machine, items, nbt);
+    let second = items.get(INPUT2).cloned().flatten().filter(|_| machine.second_input());
+    let found = items[INPUT]
+        .clone()
+        .and_then(|input| recipe(host, level, machine, &input, second.as_ref(), nbt));
     // the stack the recipe makes, if it fits and both inputs hold what it takes
     let result = found.as_ref().and_then(|r| {
         let enough = items[INPUT].as_ref().is_some_and(|i| i.count() >= r.take[0])
@@ -513,6 +571,7 @@ impl BlockEntityPart for Machines {
         match kind {
             Kind::Cable(t) => tick_cable(host, level, pos, t),
             Kind::Pipe(f, _) => tick_pipe(host, level, pos, f),
+            Kind::Factory(t, m) => tick_factory(host, level, t, m, &mut nbt, &mut items),
             Kind::Cube(t) => tick_cube(host, level, pos, t, int(&nbt, "energy")),
             Kind::Machine(m) => {
                 if m.has_items() {
@@ -559,6 +618,16 @@ fn buffer_of(kind: Kind) -> ModEnergyBuffer {
             extract_faces: none,
         },
         Kind::Pipe(..) => ModEnergyBuffer::default(),
+        Kind::Factory(t, m) => {
+            let buffer = m.buffer() * t.lanes() as i32;
+            ModEnergyBuffer {
+                capacity: buffer,
+                max_insert: buffer,
+                max_extract: 0,
+                insert_faces: all,
+                extract_faces: none,
+            }
+        }
         Kind::Machine(m) => ModEnergyBuffer {
             capacity: m.buffer(),
             max_insert: m.buffer(),
@@ -566,6 +635,28 @@ fn buffer_of(kind: Kind) -> ModEnergyBuffer {
             insert_faces: all,
             extract_faces: none,
         },
+    }
+}
+
+/// A factory's slots: inputs, outputs, an energy item, two upgrades, shown by a 3x3-row chest
+/// menu. Hoppers feed the inputs from above and the sides, and take from the outputs.
+fn factory_container(t: Tier) -> ModContainer {
+    let lanes = t.lanes();
+    let inputs: Vec<usize> = (0..lanes).collect();
+    let outputs: Vec<usize> = (lanes..lanes * 2).collect();
+    ModContainer {
+        slots: lanes * 2 + 3,
+        faces: [
+            outputs.clone(),
+            inputs.clone(),
+            inputs.clone(),
+            inputs.clone(),
+            inputs.clone(),
+            inputs.clone(),
+        ],
+        inputs,
+        outputs,
+        menu: Some("minecraft:generic_9x3".into()),
     }
 }
 
@@ -603,6 +694,14 @@ impl Hooks for Mod {
             groups.push((f.entity_type(), Tier::ALL.iter().map(|t| pipe_id(f, *t)).collect()));
         }
         for m in Machine::ALL {
+            if m.factory_name().is_some() {
+                groups.push((
+                    m.factory_name().unwrap_or(""),
+                    Tier::ALL.iter().filter_map(|t| factory_id(*t, m)).collect(),
+                ));
+            }
+        }
+        for m in Machine::ALL {
             groups.push((m.name(), vec![format!("mekanism:{}", m.name())]));
         }
         for (entity_type, ids) in groups {
@@ -611,6 +710,9 @@ impl Hooks for Mod {
                 let key = r.block_key(id);
                 if !matches!(kind, Kind::Cable(_) | Kind::Pipe(..)) {
                     r.block_energy(&key, buffer_of(kind));
+                }
+                if let Kind::Factory(t, _) = kind {
+                    r.block_container(&key, factory_container(t));
                 }
                 if let Kind::Machine(m) = kind {
                     if m.has_items() {
@@ -626,7 +728,11 @@ impl Hooks for Mod {
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
             let built = r.block_entity_type(entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Machines);
-            if let Some(Kind::Machine(m)) = ids.first().and_then(|id| parse_block(id)) {
+            let machine = match ids.first().and_then(|id| parse_block(id)) {
+                Some(Kind::Machine(m) | Kind::Factory(_, m)) => Some(m),
+                _ => None,
+            };
+            if let Some(m) = machine {
                 let specs = tank_specs(m);
                 if !specs.is_empty() {
                     r.block_entity_capability(&CHEMICALS, &built, move |_, at| {

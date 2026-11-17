@@ -61,3 +61,8 @@ for m in ["electrolytic_separator", "chemical_infuser"]:
     block(m, "minecraft:iron_block", 3.5, 16.0)
 block("steel_casing", "minecraft:iron_block", 3.5, 9.0)
 item("hdpe_pellet"); item("hdpe_sheet"); item("bio_fuel", "minecraft:wheat")
+
+# factories: furnace template, as the machines they run
+for t in ["basic", "advanced", "elite", "ultimate"]:
+    for w in ["smelting", "enriching", "crushing", "sawing", "purifying", "injecting"]:
+        block(f"{t}_{w}_factory", "minecraft:furnace", 3.5, 16.0)
