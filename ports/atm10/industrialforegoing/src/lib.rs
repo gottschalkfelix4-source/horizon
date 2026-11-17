@@ -723,7 +723,8 @@ impl Hooks for Mod {
                 faces.extend(&outputs);
                 r.block_container(
                     &key,
-                    ModContainer { slots, faces: all_faces(faces), inputs, outputs, menu: Some(menu.into()) },
+                    ModContainer { slots, faces: all_faces(faces), inputs, outputs, menu: Some(menu.into()),
+slot_limit: 0, },
                 );
             }
             if let Some((caps, fills, drains)) = tanks(*kind) {

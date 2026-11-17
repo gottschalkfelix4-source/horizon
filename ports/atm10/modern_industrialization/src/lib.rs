@@ -235,6 +235,7 @@ impl Hooks for Mod {
                 inputs: vec![FUEL],
                 outputs: Vec::new(),
                 menu: Some("minecraft:furnace".into()),
+                slot_limit: 0,
             },
         );
         // `ModFluidTanks` is non-exhaustive: built from its default, field by field.

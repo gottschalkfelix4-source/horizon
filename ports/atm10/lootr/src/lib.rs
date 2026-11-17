@@ -81,6 +81,7 @@ impl Hooks for Mod {
                 inputs: Vec::new(),
                 outputs: Vec::new(),
                 menu: Some(MENU.into()),
+                slot_limit: 0,
             },
         );
         let kind = r.block_entity_type("loot_chest").blocks(&[CHEST]).build();

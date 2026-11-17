@@ -93,6 +93,7 @@ impl Hooks for Mod {
                 inputs: every.clone(),
                 outputs: every,
                 menu: Some(MENU.into()),
+                slot_limit: 0,
             },
         );
         let kind = r.block_entity_type("library").blocks(&[LIBRARY]).build();

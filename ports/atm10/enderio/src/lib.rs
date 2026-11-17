@@ -290,6 +290,7 @@ impl Hooks for Mod {
                 inputs: INPUTS.to_vec(),
                 outputs: vec![OUTPUT],
                 menu: Some("minecraft:hopper".into()),
+                slot_limit: 0,
             },
         );
         r.block_energy(

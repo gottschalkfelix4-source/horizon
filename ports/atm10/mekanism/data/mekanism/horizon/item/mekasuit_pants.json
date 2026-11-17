@@ -1,7 +1,6 @@
 {
   "template": "minecraft:netherite_leggings",
   "components": {
-    "minecraft:unbreakable": {},
     "minecraft:attribute_modifiers": [
       {
         "type": "minecraft:armor",

@@ -65,6 +65,7 @@ impl Hooks for Mod {
                         inputs: every.clone(),
                         outputs: every.clone(),
                         menu: Some(shelf.menu().into()),
+                        slot_limit: 0,
                     },
                 );
             }

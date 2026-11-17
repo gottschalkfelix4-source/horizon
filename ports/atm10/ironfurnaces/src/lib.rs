@@ -295,6 +295,7 @@ impl Hooks for Mod {
                     inputs: vec![INPUT, FUEL],
                     outputs: vec![RESULT],
                     menu: Some("minecraft:furnace".into()),
+                    slot_limit: 0,
                 },
             );
         }

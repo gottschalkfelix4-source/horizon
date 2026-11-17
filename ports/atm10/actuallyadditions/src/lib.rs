@@ -244,6 +244,7 @@ impl Hooks for Mod {
                     inputs: ins,
                     outputs: outs,
                     menu: Some("minecraft:hopper".into()),
+                    slot_limit: 0,
                 },
             );
         }
