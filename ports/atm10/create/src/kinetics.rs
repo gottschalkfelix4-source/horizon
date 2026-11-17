@@ -129,7 +129,14 @@ pub fn link(from: &Node, to: &Node, d: [i32; 3]) -> Option<(f64, bool)> {
 /// Every position a network reaches from `start`, in discovery order.
 fn neighbours(node: &Node) -> Vec<[i32; 3]> {
     let mut out = Vec::new();
-    for d in [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]] {
+    for d in [
+        [1, 0, 0],
+        [-1, 0, 0],
+        [0, 1, 0],
+        [0, -1, 0],
+        [0, 0, 1],
+        [0, 0, -1],
+    ] {
         out.push(d);
     }
     if node.is_cog() {
@@ -179,7 +186,9 @@ pub fn solve(node_at: impl Fn(Pos) -> Option<Node>, start: Pos) -> Solution {
     // relative speed (signed) of each block when the network's first block turns at 1
     let mut rel: HashMap<Pos, f64> = HashMap::new();
     let mut out = Solution::default();
-    let Some(first) = node_at(start) else { return out };
+    let Some(first) = node_at(start) else {
+        return out;
+    };
     nodes.insert(start, first);
     rel.insert(start, 1.0);
     let mut queue = VecDeque::from([start]);
@@ -195,7 +204,9 @@ pub fn solve(node_at: impl Fn(Pos) -> Option<Node>, start: Pos) -> Solution {
                     n
                 }
             };
-            let Some((factor, flip)) = link(&node, &other, d) else { continue };
+            let Some((factor, flip)) = link(&node, &other, d) else {
+                continue;
+            };
             let there = here * factor * if flip { -1.0 } else { 1.0 };
             match rel.get(&to) {
                 Some(known) => {
@@ -226,7 +237,11 @@ pub fn solve(node_at: impl Fn(Pos) -> Option<Node>, start: Pos) -> Solution {
             }
         }
     }
-    let root = if out.conflict { 0.0 } else { root.unwrap_or(0.0) };
+    let root = if out.conflict {
+        0.0
+    } else {
+        root.unwrap_or(0.0)
+    };
     for (pos, node) in &nodes {
         let speed = rel[pos] * root;
         match node.part {
@@ -238,7 +253,8 @@ pub fn solve(node_at: impl Fn(Pos) -> Option<Node>, start: Pos) -> Solution {
     out.overstressed = out.stress > out.capacity + 1e-6;
     let run = !out.conflict && !out.overstressed;
     for pos in nodes.keys() {
-        out.speeds.insert(*pos, if run { rel[pos] * root } else { 0.0 });
+        out.speeds
+            .insert(*pos, if run { rel[pos] * root } else { 0.0 });
     }
     out
 }
@@ -257,7 +273,16 @@ mod tests {
     }
 
     fn crank(x: i32, rpm: f64) -> (Pos, Node) {
-        ([x, 0, 0], Node::new(Part::Source { rpm, capacity: 32.0 }, Axis::X))
+        (
+            [x, 0, 0],
+            Node::new(
+                Part::Source {
+                    rpm,
+                    capacity: 32.0,
+                },
+                Axis::X,
+            ),
+        )
     }
 
     fn load(x: i32, impact: f64) -> (Pos, Node) {
@@ -275,7 +300,11 @@ mod tests {
 
     #[test]
     fn a_shaft_beside_the_line_is_not_joined() {
-        let w = world(&[crank(0, 16.0), shaft(1), ([2, 1, 0], Node::new(Part::Shaft, Axis::X))]);
+        let w = world(&[
+            crank(0, 16.0),
+            shaft(1),
+            ([2, 1, 0], Node::new(Part::Shaft, Axis::X)),
+        ]);
         assert_eq!(solve(&w, [0, 0, 0]).speeds.len(), 2);
     }
 
@@ -289,7 +318,16 @@ mod tests {
     fn two_small_cogs_side_by_side_turn_the_other_way() {
         let c = |p: Pos| (p, Node::new(Part::Cog, Axis::Y));
         let w = world(&[
-            ([0, 0, 0], Node::new(Part::Source { rpm: 8.0, capacity: 32.0 }, Axis::Y)),
+            (
+                [0, 0, 0],
+                Node::new(
+                    Part::Source {
+                        rpm: 8.0,
+                        capacity: 32.0,
+                    },
+                    Axis::Y,
+                ),
+            ),
             c([0, 1, 0]),
             c([1, 1, 0]),
             c([2, 1, 0]),
@@ -303,7 +341,16 @@ mod tests {
     #[test]
     fn a_small_cog_on_a_large_one_turns_twice_as_fast() {
         let w = world(&[
-            ([0, 0, 0], Node::new(Part::Source { rpm: 8.0, capacity: 32.0 }, Axis::Y)),
+            (
+                [0, 0, 0],
+                Node::new(
+                    Part::Source {
+                        rpm: 8.0,
+                        capacity: 32.0,
+                    },
+                    Axis::Y,
+                ),
+            ),
             ([0, 1, 0], Node::new(Part::LargeCog, Axis::Y)),
             ([1, 1, 0], Node::new(Part::Cog, Axis::Y)),
         ]);
@@ -354,7 +401,16 @@ mod tests {
         // a small cog beside two large ones that also touch each other diagonally: the two paths
         // to the second large cog give opposite senses
         let w = world(&[
-            ([0, 0, 0], Node::new(Part::Source { rpm: 8.0, capacity: 32.0 }, Axis::Y)),
+            (
+                [0, 0, 0],
+                Node::new(
+                    Part::Source {
+                        rpm: 8.0,
+                        capacity: 32.0,
+                    },
+                    Axis::Y,
+                ),
+            ),
             ([0, 1, 0], Node::new(Part::LargeCog, Axis::Y)),
             ([1, 1, 0], Node::new(Part::Cog, Axis::Y)),
             ([1, 1, 1], Node::new(Part::LargeCog, Axis::Y)),
@@ -376,7 +432,14 @@ mod tests {
 
     #[test]
     fn too_many_consumers_stop_the_network() {
-        let w = world(&[crank(0, 8.0), load(1, 8.0), load(2, 8.0), load(3, 8.0), load(4, 8.0), load(5, 8.0)]);
+        let w = world(&[
+            crank(0, 8.0),
+            load(1, 8.0),
+            load(2, 8.0),
+            load(3, 8.0),
+            load(4, 8.0),
+            load(5, 8.0),
+        ]);
         let s = solve(&w, [0, 0, 0]);
         assert!(s.overstressed);
         assert!(s.speeds.values().all(|v| *v == 0.0));
@@ -400,7 +463,16 @@ mod tests {
     fn belt_blocks_in_a_row_turn_together() {
         let belt = |p: Pos| (p, Node::new(Part::Belt { impact: 0.0 }, Axis::X));
         let w = world(&[
-            ([-1, 0, 0], Node::new(Part::Source { rpm: 16.0, capacity: 32.0 }, Axis::X)),
+            (
+                [-1, 0, 0],
+                Node::new(
+                    Part::Source {
+                        rpm: 16.0,
+                        capacity: 32.0,
+                    },
+                    Axis::X,
+                ),
+            ),
             belt([0, 0, 0]),
             belt([0, 0, 1]),
             belt([0, 0, 2]),

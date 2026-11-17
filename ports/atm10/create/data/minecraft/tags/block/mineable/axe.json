@@ -11,6 +11,7 @@
     "create:millstone",
     "create:belt",
     "create:funnel",
+    "create:crushing_wheel",
     "create:depot",
     "create:basin",
     "create:mechanical_mixer",

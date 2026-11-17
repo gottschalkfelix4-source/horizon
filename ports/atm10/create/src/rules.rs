@@ -18,10 +18,11 @@ pub enum Kind {
     MechanicalMixer,
     Belt,
     Funnel,
+    CrushingWheel,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 14] = [
+    pub const ALL: [Kind; 15] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -36,6 +37,7 @@ impl Kind {
         Kind::MechanicalMixer,
         Kind::Belt,
         Kind::Funnel,
+        Kind::CrushingWheel,
     ];
 
     pub fn name(self) -> &'static str {
@@ -54,6 +56,7 @@ impl Kind {
             Kind::MechanicalMixer => "mechanical_mixer",
             Kind::Belt => "belt",
             Kind::Funnel => "funnel",
+            Kind::CrushingWheel => "crushing_wheel",
         }
     }
 }
@@ -83,7 +86,11 @@ pub const MIN_SAILS: usize = 8;
 
 /// A windmill's RPM: nothing below `MIN_SAILS`, then half a RPM per sail up to 16.
 pub fn windmill_rpm(sails: usize) -> f64 {
-    if sails < MIN_SAILS { 0.0 } else { (sails as f64 / 2.0).min(16.0).floor() }
+    if sails < MIN_SAILS {
+        0.0
+    } else {
+        (sails as f64 / 2.0).min(16.0).floor()
+    }
 }
 
 /// Stress a windmill bearing supports per RPM.
@@ -120,6 +127,20 @@ pub fn mill(id: &str) -> Option<(&'static str, u32)> {
     })
 }
 
+/// Stress per RPM a crushing wheel uses.
+pub const CRUSHER_IMPACT: f64 = 8.0;
+
+/// What a crushing wheel makes of one item: `(output id, count)`.
+pub fn crush(id: &str) -> Option<(&'static str, u32)> {
+    Some(match id {
+        "minecraft:raw_iron" => ("create:crushed_raw_iron", 1),
+        "minecraft:raw_copper" => ("create:crushed_raw_copper", 1),
+        "minecraft:raw_gold" => ("create:crushed_raw_gold", 1),
+        "minecraft:cobblestone" => ("minecraft:gravel", 1),
+        _ => return None,
+    })
+}
+
 /// What a press makes of one item lying on a depot.
 pub fn press(id: &str) -> Option<&'static str> {
     Some(match id {
@@ -141,7 +162,11 @@ pub const BASIN_SLOTS: usize = 9;
 pub fn mix(held: &[String]) -> Option<(Vec<&'static str>, &'static str, u32)> {
     let has = |id: &str| held.iter().any(|h| h == id);
     if has("minecraft:iron_nugget") && has("minecraft:andesite") {
-        return Some((vec!["minecraft:iron_nugget", "minecraft:andesite"], "create:andesite_alloy", 1));
+        return Some((
+            vec!["minecraft:iron_nugget", "minecraft:andesite"],
+            "create:andesite_alloy",
+            1,
+        ));
     }
     None
 }
@@ -173,7 +198,11 @@ pub const FUNNEL_ITEMS: u32 = 1;
 /// progress starts over). A block that stands still loses no progress.
 pub fn advance(progress: f64, speed: f64, work: f64) -> (f64, bool) {
     let next = progress + speed.abs();
-    if next >= work { (0.0, true) } else { (next, false) }
+    if next >= work {
+        (0.0, true)
+    } else {
+        (next, false)
+    }
 }
 
 #[cfg(test)]
@@ -240,8 +269,14 @@ mod tests {
     fn a_mixer_needs_both_ingredients() {
         let one = vec!["minecraft:andesite".to_string()];
         assert!(mix(&one).is_none());
-        let both = vec!["minecraft:andesite".to_string(), "minecraft:iron_nugget".to_string()];
-        assert_eq!(mix(&both).map(|m| (m.1, m.2)), Some(("create:andesite_alloy", 1)));
+        let both = vec![
+            "minecraft:andesite".to_string(),
+            "minecraft:iron_nugget".to_string(),
+        ];
+        assert_eq!(
+            mix(&both).map(|m| (m.1, m.2)),
+            Some(("create:andesite_alloy", 1))
+        );
     }
 
     #[test]
@@ -251,5 +286,14 @@ mod tests {
         assert_eq!(belt_step(Axis::Z, -16.0), Some([-1, 0, 0]));
         assert_eq!(belt_step(Axis::Y, 16.0), None);
         assert_eq!(belt_step(Axis::X, 0.0), None);
+    }
+
+    #[test]
+    fn a_crushing_wheel_crushes_raw_ore() {
+        assert_eq!(
+            crush("minecraft:raw_iron"),
+            Some(("create:crushed_raw_iron", 1))
+        );
+        assert_eq!(crush("minecraft:iron_ingot"), None);
     }
 }

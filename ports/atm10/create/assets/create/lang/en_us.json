@@ -9,6 +9,7 @@
   "block.create.millstone": "Millstone",
   "block.create.belt": "Mechanical Belt",
   "block.create.funnel": "Andesite Funnel",
+  "block.create.crushing_wheel": "Crushing Wheel",
   "block.create.depot": "Depot",
   "block.create.basin": "Basin",
   "block.create.mechanical_mixer": "Mechanical Mixer",
@@ -19,5 +20,8 @@
   "item.create.copper_sheet": "Copper Sheet",
   "item.create.brass_sheet": "Brass Sheet",
   "item.create.andesite_alloy": "Andesite Alloy",
+  "item.create.crushed_raw_iron": "Crushed Raw Iron",
+  "item.create.crushed_raw_copper": "Crushed Raw Copper",
+  "item.create.crushed_raw_gold": "Crushed Raw Gold",
   "item.create.brass_ingot": "Brass Ingot"
 }
