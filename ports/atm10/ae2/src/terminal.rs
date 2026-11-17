@@ -51,6 +51,8 @@ pub(crate) struct Net {
     /// Pattern providers and molecular assemblers that have a channel.
     pub providers: Vec<[i32; 3]>,
     pub assemblers: usize,
+    /// Energy cells of the network.
+    pub cells: Vec<[i32; 3]>,
     /// What the inventories behind storage buses hold.
     pub inv: Vec<(String, u64)>,
 }
@@ -79,7 +81,7 @@ pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> 
         }
     }
     let inv = crate::inventory_stock(host, level, &drives);
-    Net { drives, powered: stored > 0, channel: has_channel.contains(&pos), providers, assemblers, inv }
+    Net { cells: cells.clone(), drives, powered: stored > 0, channel: has_channel.contains(&pos), providers, assemblers, inv }
 }
 
 /// The network's items, as the view lists them.
@@ -303,7 +305,7 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
                 let shown = view::filter(&all, search.as_deref());
                 let (_, here) = view::page_of(&shown, page);
                 if let Some((id, _)) = here.get(i).cloned() {
-                    crate::autocraft::request(host, level, event.uuid, &n.drives, &n.providers, n.assemblers, &n.inv, &id, 1);
+                    crate::autocraft::request(host, level, pos, event.uuid, &n.drives, &n.providers, n.assemblers, &n.inv, &id, 1);
                 }
             }
             (Slot::Item(i), mode @ (0 | 1)) => {

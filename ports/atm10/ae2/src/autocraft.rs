@@ -137,10 +137,32 @@ fn tell(host: &mut dyn ServerHost, player: u128, msg: &str) {
     }
 }
 
-/// Runs `n` of `want` for `player` over the network: plans, then crafts step by step.
+/// What one craft in an assembler costs, in FE (100 AE).
+pub const CRAFT_FE: u32 = 200;
+/// Ticks between rounds of crafting; each assembler makes one craft per round.
+pub const ROUND_TICKS: i64 = 20;
+
+/// A request being worked off: where it was made, who asked, what is left to craft.
+struct Job {
+    level: LevelRef,
+    pos: [i32; 3],
+    player: u128,
+    want: String,
+    /// Crafts still to do, in order: (pattern, how many times).
+    todo: std::collections::VecDeque<(Pattern, u64)>,
+}
+
+static JOBS: std::sync::Mutex<Vec<Job>> = std::sync::Mutex::new(Vec::new());
+
+fn jobs() -> std::sync::MutexGuard<'static, Vec<Job>> {
+    JOBS.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Plans `n` of `want` for `player` and queues it: the terminal at `pos` is the job's network.
 pub fn request(
     host: &mut dyn ServerHost,
     level: LevelRef,
+    pos: [i32; 3],
     player: u128,
     drives: &[[i32; 3]],
     providers: &[[i32; 3]],
@@ -161,39 +183,83 @@ pub fn request(
         Ok(s) => s,
         Err(e) => return tell(host, player, &e),
     };
-    for step in steps {
-        let pattern = &patterns[step.pattern];
-        for _ in 0..step.times {
-            let mut taken: Vec<(&String, u64)> = Vec::new();
-            let mut ok = true;
-            for (id, per) in &pattern.inputs {
-                let got = network_extract(host, level, drives, id, *per as u64);
-                taken.push((id, got));
-                if got < *per as u64 {
-                    ok = false;
-                    break;
-                }
+    let todo = steps.into_iter().map(|s| (patterns[s.pattern].clone(), s.times)).collect();
+    jobs().push(Job { level, pos, player, want: want.to_string(), todo });
+    tell(host, player, &format!("Crafting {want} started"));
+}
+
+/// Jobs queued (for a message).
+pub fn jobs_running() -> usize {
+    jobs().len()
+}
+
+/// One craft of `pattern`: its inputs out of the network, its result in (what has no room goes to
+/// `player`). Err when an input is missing (what was taken goes back).
+fn craft_once(host: &mut dyn ServerHost, level: LevelRef, player: u128, drives: &[[i32; 3]], pattern: &Pattern) -> Result<(), ()> {
+    let mut taken: Vec<(&String, u64)> = Vec::new();
+    for (id, per) in &pattern.inputs {
+        let got = network_extract(host, level, drives, id, *per as u64);
+        taken.push((id, got));
+        if got < *per as u64 {
+            for (id, got) in taken {
+                network_insert(host, level, drives, id, got);
             }
-            if !ok {
-                // a craft that cannot start returns what it took
-                for (id, got) in taken {
-                    network_insert(host, level, drives, id, got);
-                }
-                return tell(host, player, "Crafting stopped: the network ran out of an ingredient");
-            }
-            let put = network_insert(host, level, drives, &pattern.out, pattern.out_n as u64);
-            let left = pattern.out_n as u64 - put;
-            if left > 0 {
-                if let Some(stack) = host
-                    .item_key(&mod_api::Identifier::parse(&pattern.out).unwrap_or_else(|_| mod_api::Identifier::parse("minecraft:air").unwrap()))
-                    .and_then(|k| mod_api::ItemStack::new(k, left as u32))
-                {
-                    if let Some(p) = host.player(player) {
-                        let _ = p.give_stack(host, stack);
-                    }
-                }
+            return Err(());
+        }
+    }
+    let put = network_insert(host, level, drives, &pattern.out, pattern.out_n as u64);
+    let left = pattern.out_n as u64 - put;
+    if left > 0 {
+        let key = mod_api::Identifier::parse(&pattern.out).ok().and_then(|i| host.item_key(&i));
+        if let Some(stack) = key.and_then(|k| mod_api::ItemStack::new(k, left as u32)) {
+            if let Some(p) = host.player(player) {
+                let _ = p.give_stack(host, stack);
             }
         }
     }
-    tell(host, player, &format!("Crafted {want}"));
+    Ok(())
+}
+
+/// Called every server tick: every `ROUND_TICKS` each job does one craft per assembler of its
+/// network, each costing `CRAFT_FE` from the cells; a job without power or assembler waits.
+pub fn tick(host: &mut dyn ServerHost) {
+    if jobs().is_empty() {
+        return;
+    }
+    let Some(level) = host.level(host.dimension()) else { return };
+    if level.game_time(&*host).unwrap_or(0) % ROUND_TICKS != 0 {
+        return;
+    }
+    let mut all = std::mem::take(&mut *jobs());
+    all.retain_mut(|job| {
+        let n = crate::terminal::net(host, job.level, job.pos);
+        if !n.powered || n.assemblers == 0 {
+            return true;
+        }
+        for _ in 0..n.assemblers {
+            let Some((pattern, times)) = job.todo.front_mut() else { break };
+            if !crate::draw(host, job.level, &n.cells, CRAFT_FE) {
+                return true;
+            }
+            let pattern = pattern.clone();
+            if craft_once(host, job.level, job.player, &n.drives, &pattern).is_err() {
+                // the power it drew is not refunded: the craft was started
+                tell(host, job.player, &format!("Crafting {} stopped: the network ran out of an ingredient", job.want));
+                return false;
+            }
+            *times -= 1;
+            if *times == 0 {
+                job.todo.pop_front();
+            }
+        }
+        if job.todo.is_empty() {
+            tell(host, job.player, &format!("Crafted {}", job.want));
+            return false;
+        }
+        true
+    });
+    // jobs queued while this ran stay behind the old ones
+    let mut now = jobs();
+    all.append(&mut now);
+    *now = all;
 }

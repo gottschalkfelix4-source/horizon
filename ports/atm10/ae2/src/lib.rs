@@ -151,7 +151,7 @@ fn route(
 }
 
 /// Takes `fe` from the cells, all or nothing.
-fn draw(host: &mut dyn ServerHost, level: LevelRef, cells: &[[i32; 3]], fe: u32) -> bool {
+pub(crate) fn draw(host: &mut dyn ServerHost, level: LevelRef, cells: &[[i32; 3]], fe: u32) -> bool {
     if fe == 0 {
         return true;
     }
@@ -579,6 +579,10 @@ impl Hooks for Mod {
         }
         // one rule for the 9x1 menu: pattern provider and both buses (the block says which)
         r.menu_part("minecraft:generic_9x1", ProviderRules);
+    }
+
+    fn server_tick(&self, host: &mut dyn ServerHost, _: &mut mod_api::ServerTickEvent<'_>) {
+        autocraft::tick(host);
     }
 
     fn menu_clicked(&self, host: &mut dyn ServerHost, event: &mut MenuClickedEvent) {
