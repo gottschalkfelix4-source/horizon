@@ -9,7 +9,7 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 | Stage | Content | Status |
 |---|---|---|
 | 1 | Cables (glass, covered, smart, dense covered, dense smart; fluix and 16 colours), controller, energy acceptor, energy cell, dense energy cell, network scan and power model; crystals, dusts, processors as data | ported, numbers to check; not run in the game |
-| 2 | Drives, ME chest, storage cells (1k to 256k, items and fluids), cell workbench, inscriber and presses, charger, certus growth | not yet |
+| 2 | Drive (ten cell slots), item storage cells 1k to 256k with contents saved in the stack, `network_insert` / `network_extract` over a network's cells, storage summary on the leader | ported, not run in the game. Not yet: ME chest, fluid cells, cell workbench and partitioning, inscriber and presses, charger, certus growth |
 | 3 | ME terminal with search, crafting terminal, pattern terminal | not yet |
 | 4 | Import/export buses, storage bus, interface, annihilation and formation planes, p2p tunnels | not yet |
 | 5 | Autocrafting: patterns, pattern provider, molecular assembler, crafting CPU multiblock | not yet |
@@ -25,6 +25,15 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 - Power: 1 AE = 2 FE. Cell 200 000 AE, dense cell 1 600 000 AE, acceptor buffer 800 FE.
   Idle draw: controller 6 AE/tick, smart cable 0.1, dense smart cable 0.4 (glass and covered cables 0).
 - A network is powered when its cells hold the whole draw of the tick.
+
+## Stage 2 behaviour
+
+- A cell's contents are `{<item id>: <count>}` under `ae2_cell` in the stack's `minecraft:custom_data`. A 1k cell holds
+  8128 of one type: 1024 bytes, 8 per type (bytes/128), 8 items per byte, 63 types at most.
+- The drive keeps 18 slots (vanilla's 9x2 menu until a mod menu exists); only the first ten count.
+- The leader saves `types`, `items`, `bytes_used` and `bytes_total` of all cells in the network's drives.
+  Terminal and buses (stages 3 and 4) call `network_insert`/`network_extract`, each one transaction.
+- Not checked: the cell slot filter (any item can be put in the drive; non-cells are ignored).
 
 ## Not in stage 1
 

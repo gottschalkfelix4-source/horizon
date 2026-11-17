@@ -9,12 +9,14 @@
 //! tick: energy acceptors hand FE to the cells, the idle draw of cables and the controller is taken
 //! from the cells, and the result (`powered`, `nodes`, `stored`) is saved in that block's data.
 use mod_api::{
-    BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
+    BlockEntityEvent, BlockEntityPart, ItemStack, BlockEntityTickEvent, BlockEntityTickReply,
     BlockEntityTicksEvent, BlockPart, Compound, Direction, ENERGY, Hooks, Host, LevelRef,
-    LevelSide, HostTransaction, ModEnergyBuffer, Registrar, RegistrationContext, ServerHost, Tag,
+    LevelSide, HostTransaction, ModContainer, ModEnergyBuffer, Registrar, RegistrationContext, ServerHost, Tag,
 };
 
+pub mod cells;
 pub mod rules;
+use cells::*;
 use rules::*;
 
 fn int(nbt: &Compound, key: &str) -> i32 {
@@ -108,13 +110,93 @@ fn stored(host: &mut dyn ServerHost, level: LevelRef, cells: &[[i32; 3]]) -> i64
     sum
 }
 
+/// The cells in a network's drives: (drive position, slot, tier, stack).
+fn cells_of(
+    host: &dyn Host,
+    level: LevelRef,
+    drives: &[[i32; 3]],
+) -> Vec<([i32; 3], u32, CellTier, ItemStack)> {
+    let mut out = Vec::new();
+    for &d in drives {
+        let Some(be) = host.block_entity(level, d) else { continue };
+        for slot in 0..DRIVE_CELLS as u32 {
+            let Ok(Some(stack)) = be.item_slot(host, slot) else { continue };
+            if let Some(tier) = parse_cell(&stack.item().id(host)) {
+                out.push((d, slot, tier, stack));
+            }
+        }
+    }
+    out
+}
+
+/// Puts up to `n` of `item` into the network's cells (the first with room, in drive order);
+/// how many went in. Stage 3's terminal and the buses call this.
+pub fn network_insert(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    drives: &[[i32; 3]],
+    item: &str,
+    n: u64,
+) -> u64 {
+    let cells = cells_of(&*host, level, drives);
+    let mut left = n;
+    let _ = host.transaction(|host, tx| {
+        for (d, slot, tier, mut stack) in cells {
+            if left == 0 {
+                break;
+            }
+            let mut store = Store::of_stack(&stack);
+            let put = store.insert(tier, item, left);
+            if put == 0 {
+                continue;
+            }
+            store.write_to(&mut stack);
+            let be = host.block_entity(level, d).ok_or(())?;
+            be.set_item_slot(host, tx, slot, Some(stack)).map_err(|_| ())?;
+            left -= put;
+        }
+        Ok::<(), ()>(())
+    });
+    n - left
+}
+
+/// Takes up to `n` of `item` out of the network's cells; how many came out.
+pub fn network_extract(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    drives: &[[i32; 3]],
+    item: &str,
+    n: u64,
+) -> u64 {
+    let cells = cells_of(&*host, level, drives);
+    let mut left = n;
+    let _ = host.transaction(|host, tx| {
+        for (d, slot, _, mut stack) in cells {
+            if left == 0 {
+                break;
+            }
+            let mut store = Store::of_stack(&stack);
+            let got = store.extract(item, left);
+            if got == 0 {
+                continue;
+            }
+            store.write_to(&mut stack);
+            let be = host.block_entity(level, d).ok_or(())?;
+            be.set_item_slot(host, tx, slot, Some(stack)).map_err(|_| ())?;
+            left -= got;
+        }
+        Ok::<(), ()>(())
+    });
+    n - left
+}
+
 /// One tick of the network `pos` leads; returns what the leader saves.
 fn tick_network(
     host: &mut dyn ServerHost,
     level: LevelRef,
     pos: [i32; 3],
     carried: i64,
-) -> Option<(usize, bool, i64, i64)> {
+) -> Option<(usize, bool, i64, i64, [i32; 4])> {
     let nodes = led_network(pos, |p| {
         let Some(here) = id_at(&*host, level, p) else { return Vec::new() };
         Direction::ALL
@@ -123,10 +205,11 @@ fn tick_network(
             .filter(|n| id_at(&*host, level, *n).is_some_and(|o| connects(&here, &o)))
             .collect()
     })?;
-    let (mut cells, mut acceptors, mut idle) = (Vec::new(), Vec::new(), 0i64);
+    let (mut cells, mut acceptors, mut drives, mut idle) = (Vec::new(), Vec::new(), Vec::new(), 0i64);
     for &n in &nodes {
         match id_at(&*host, level, n).as_deref().and_then(parse_block) {
             Some(Kind::Device(Device::EnergyAcceptor)) => acceptors.push(n),
+            Some(Kind::Device(Device::Drive)) => drives.push(n),
             Some(Kind::Device(d)) if d.is_cell() => cells.push(n),
             Some(k) => idle += k.idle_centi_fe(),
             None => {}
@@ -142,7 +225,17 @@ fn tick_network(
     let ok = powered(stored(host, level, &cells), take) && draw(host, level, &cells, take as u32);
     // an unpowered network keeps the carried hundredths; nothing was taken
     let rem = if ok { rem } else { carried };
-    Some((nodes.len(), ok, stored(host, level, &cells), rem))
+    // what the drives' cells hold: types, items, bytes used and bytes in all
+    let (mut types, mut items, mut used, mut bytes) = (0u64, 0u64, 0u64, 0u64);
+    for (_, _, tier, stack) in cells_of(&*host, level, &drives) {
+        let s = Store::of_stack(&stack);
+        types += s.types() as u64;
+        items += s.total();
+        used += s.used_bytes(tier);
+        bytes += tier.bytes();
+    }
+    let c = |v: u64| v.min(i32::MAX as u64) as i32;
+    Some((nodes.len(), ok, stored(host, level, &cells), rem, [c(types), c(items), c(used), c(bytes)]))
 }
 
 /// One part for every AE2 block entity; the block's id says which kind it is.
@@ -171,7 +264,7 @@ impl BlockEntityPart for Network {
         let pos = event.pos;
         let Some(level) = host.level(host.dimension()) else { return };
         let carried = int(&event.entity.nbt, "drain_rem") as i64;
-        let Some((nodes, powered, stored, rem)) = tick_network(host, level, pos, carried) else {
+        let Some((nodes, powered, stored, rem, storage)) = tick_network(host, level, pos, carried) else {
             *event.reply = BlockEntityTickReply::Unchanged;
             return;
         };
@@ -180,6 +273,9 @@ impl BlockEntityPart for Network {
         set_int(&mut nbt, "powered", i32::from(powered));
         set_int(&mut nbt, "stored", stored.min(i32::MAX as i64) as i32);
         set_int(&mut nbt, "drain_rem", rem as i32);
+        for (k, v) in ["types", "items", "bytes_used", "bytes_total"].into_iter().zip(storage) {
+            set_int(&mut nbt, k, v);
+        }
         if nbt == event.entity.nbt {
             *event.reply = BlockEntityTickReply::Unchanged;
             return;
@@ -199,6 +295,19 @@ fn buffer_of(d: Device) -> Option<ModEnergyBuffer> {
         insert_faces: [true; 6],
         extract_faces: [true; 6],
     })
+}
+
+/// The drive: ten cell slots. Vanilla's 9x2 menu has 18, so the drive keeps 18 and only the first
+/// ten count (until the mod's own menu with ten slots exists).
+fn drive_container() -> ModContainer {
+    let all: Vec<usize> = (0..18).collect();
+    ModContainer {
+        slots: 18,
+        faces: std::array::from_fn(|_| Vec::new()),
+        inputs: all.clone(),
+        outputs: all,
+        menu: Some("minecraft:generic_9x2".into()),
+    }
 }
 
 #[derive(Default)]
@@ -224,6 +333,10 @@ impl Hooks for Mod {
                 }
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
+            if entity_type == "drive" {
+                let key = r.block_key("ae2:drive");
+                r.block_container(&key, drive_container());
+            }
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);
         }

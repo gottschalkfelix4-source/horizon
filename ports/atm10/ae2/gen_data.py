@@ -43,3 +43,9 @@ for p in ["calculation", "engineering", "logic", "silicon"]:
 for p in ["calculation", "engineering", "logic"]:
     item(f"{p}_processor")
 item("fluix_pearl", "minecraft:ender_pearl")
+
+block("drive", "minecraft:furnace", 2.2, 6.0)
+for t in ["1k", "4k", "16k", "64k", "256k"]:
+    item(f"item_storage_cell_{t}")
+item("cell_component_1k"); item("cell_component_4k"); item("cell_component_16k"); item("cell_component_64k"); item("cell_component_256k")
+item("empty_storage_cell")
