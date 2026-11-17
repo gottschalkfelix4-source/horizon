@@ -21,6 +21,7 @@ pub mod crafting;
 pub mod interface;
 pub mod terminal;
 pub mod view;
+pub mod wireless;
 pub mod rules;
 use cells::*;
 use rules::*;
@@ -577,6 +578,8 @@ impl Hooks for Mod {
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);
         }
+        let wt = r.item_key(wireless::ITEM);
+        r.item_part(wt, wireless::Terminal);
         // one rule for the 9x1 menu: pattern provider and both buses (the block says which)
         r.menu_part("minecraft:generic_9x1", ProviderRules);
     }
