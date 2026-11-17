@@ -236,9 +236,8 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
                         let id = c.item().id(&*host);
                         let took = network_insert(host, level, &n.drives, &id, want as u64) as u32;
                         if took > 0 {
-                            let mut rest = c.clone();
-                            let _ = rest.set_count(c.count() - took);
-                            let _ = put(host, &cursor_place, (rest.count() > 0).then_some(rest));
+                            // `shrink` leaves None when nothing is left (a count of 0 is not a stack)
+                            let _ = put(host, &cursor_place, c.clone().shrink(took));
                         }
                     }
                     // nothing held: a stack (or half) comes out
@@ -273,9 +272,7 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
                     let id = stack.item().id(&*host);
                     let took = network_insert(host, level, &n.drives, &id, stack.count() as u64) as u32;
                     if took > 0 {
-                        let mut rest = stack.clone();
-                        let _ = rest.set_count(stack.count() - took);
-                        let _ = put(host, &ItemPlace::MenuSlot { menu, slot: i }, (rest.count() > 0).then_some(rest));
+                        let _ = put(host, &ItemPlace::MenuSlot { menu, slot: i }, stack.clone().shrink(took));
                     }
                 }
             }
