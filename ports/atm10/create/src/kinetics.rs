@@ -63,6 +63,9 @@ pub enum Part {
     Source { rpm: f64, capacity: f64 },
     /// Uses `impact` stress per RPM.
     Consumer { impact: f64 },
+    /// A belt block: a consumer that also passes the rotation to the belt blocks in line with it
+    /// (across its axis, in the horizontal plane).
+    Belt { impact: f64 },
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -98,6 +101,13 @@ pub fn link(from: &Node, to: &Node, d: [i32; 3]) -> Option<(f64, bool)> {
         let reverse = |n: &Node| matches!(n.part, Part::Gearbox) && a == Axis::Y;
         let turns = reverse(from) != reverse(to);
         return Some((1.0, turns));
+    }
+    // belt blocks in a row turn together
+    if let (Part::Belt { .. }, Part::Belt { .. }) = (from.part, to.part) {
+        if from.axis == to.axis && d[1] == 0 && d[from.axis.index()] == 0 {
+            return Some((1.0, false));
+        }
+        return None;
     }
     // cogwheel teeth: parallel axes, offset in the plane they turn in
     if from.is_cog() && to.is_cog() && from.axis == to.axis && d[from.axis.index()] == 0 {
@@ -221,7 +231,7 @@ pub fn solve(node_at: impl Fn(Pos) -> Option<Node>, start: Pos) -> Solution {
         let speed = rel[pos] * root;
         match node.part {
             Part::Source { capacity, .. } => out.capacity += capacity * speed.abs(),
-            Part::Consumer { impact } => out.stress += impact * speed.abs(),
+            Part::Consumer { impact } | Part::Belt { impact } => out.stress += impact * speed.abs(),
             _ => {}
         }
     }
@@ -384,5 +394,22 @@ mod tests {
     fn the_leader_is_the_lowest_position() {
         let w = world(&[crank(0, 8.0), shaft(1), shaft(-1)]);
         assert_eq!(solve(&w, [1, 0, 0]).leader(), Some([-1, 0, 0]));
+    }
+
+    #[test]
+    fn belt_blocks_in_a_row_turn_together() {
+        let belt = |p: Pos| (p, Node::new(Part::Belt { impact: 0.0 }, Axis::X));
+        let w = world(&[
+            ([-1, 0, 0], Node::new(Part::Source { rpm: 16.0, capacity: 32.0 }, Axis::X)),
+            belt([0, 0, 0]),
+            belt([0, 0, 1]),
+            belt([0, 0, 2]),
+            belt([1, 0, 3]),
+        ]);
+        let s = solve(&w, [0, 0, 2]);
+        assert!(near(s.speeds[&[0, 0, 0]], 16.0));
+        assert!(near(s.speeds[&[0, 0, 2]], 16.0));
+        // not in line: stays out
+        assert!(!s.speeds.contains_key(&[1, 0, 3]));
     }
 }
