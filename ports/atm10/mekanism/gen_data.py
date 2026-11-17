@@ -110,7 +110,6 @@ def meka(name, template, comps):
 rules = [{"blocks": f"#minecraft:mineable/{k}", "correct_for_drops": True, "speed": 24.0}
          for k in ("pickaxe", "axe", "shovel", "hoe")]
 meka("meka_tool", "minecraft:netherite_pickaxe", {
-    "minecraft:unbreakable": {},
     "minecraft:tool": {"rules": rules, "default_mining_speed": 1.0, "damage_per_block": 0},
     "minecraft:attribute_modifiers": [
         {"type": "minecraft:attack_damage", "id": "minecraft:base_attack_damage", "amount": 8.0,
@@ -120,7 +119,7 @@ meka("meka_tool", "minecraft:netherite_pickaxe", {
 for piece, slot, tpl, pts in [("helmet", "head", "helmet", 4), ("bodyarmor", "chest", "chestplate", 9),
                               ("pants", "legs", "leggings", 7), ("boots", "feet", "boots", 4)]:
     meka(f"mekasuit_{piece}", f"minecraft:netherite_{tpl}", {
-        "minecraft:unbreakable": {},
+        "minecraft:max_damage": 1000000,
         "minecraft:attribute_modifiers": [
             {"type": "minecraft:armor", "id": f"mekanism:mekasuit_{piece}", "amount": pts,
              "operation": "add_value", "slot": slot},

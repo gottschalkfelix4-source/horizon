@@ -186,6 +186,7 @@ pub fn register(r: &mut dyn Registrar) {
             inputs: vec![],
             outputs: (0..SLOTS).collect(),
             menu: Some("minecraft:generic_9x3".into()),
+            slot_limit: 0,
         },
     );
     let built = r.block_entity_type("digital_miner").blocks(&[BLOCK]).build();
