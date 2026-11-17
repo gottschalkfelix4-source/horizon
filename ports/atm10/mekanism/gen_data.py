@@ -129,3 +129,5 @@ for piece, slot, tpl, pts in [("helmet", "head", "helmet", 4), ("bodyarmor", "ch
              "operation": "add_value", "slot": slot}]})
 
 block("qio_drive_array", "minecraft:iron_block", 3.5, 9.0)
+
+block("charge_station", "minecraft:furnace", 3.5, 9.0)
