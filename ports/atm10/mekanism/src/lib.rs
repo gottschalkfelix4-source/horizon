@@ -27,6 +27,7 @@ pub mod digital_miner;
 pub mod fission;
 pub mod fusion;
 pub mod meka;
+pub mod qio;
 pub mod sps;
 pub mod teleporter;
 pub mod matrix;
@@ -327,7 +328,7 @@ fn move_network<R: 'static>(
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
             || matches!(
                 mb::id_at(host, level, p).as_deref(),
-                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | evaporation::OUTLET | fusion::PORT | sps::PORT | digital_miner::BLOCK)
+                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | evaporation::OUTLET | fusion::PORT | sps::PORT | digital_miner::BLOCK | qio::ARRAY)
             )
     };
     for (i, &from) in ends.iter().enumerate() {
@@ -968,6 +969,7 @@ impl Hooks for Mod {
         digital_miner::register(r);
         teleporter::register(r);
         meka::register(r);
+        qio::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
