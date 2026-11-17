@@ -51,6 +51,8 @@ pub(crate) struct Net {
     /// Pattern providers and molecular assemblers that have a channel.
     pub providers: Vec<[i32; 3]>,
     pub assemblers: usize,
+    /// What the inventories behind storage buses hold.
+    pub inv: Vec<(String, u64)>,
 }
 
 pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> Net {
@@ -59,7 +61,7 @@ pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> 
     let (mut drives, mut cells, mut providers, mut assemblers) = (Vec::new(), Vec::new(), Vec::new(), 0usize);
     for &n in &nodes {
         match id_at(&*host, level, n).as_deref().and_then(parse_block) {
-            Some(Kind::Device(Device::Drive)) => {
+            Some(Kind::Device(Device::Drive | Device::StorageBus)) => {
                 if has_channel.contains(&n) {
                     drives.push(n);
                 }
@@ -76,11 +78,12 @@ pub(crate) fn net(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3]) -> 
             stored += cap.amount(host) as u64;
         }
     }
-    Net { drives, powered: stored > 0, channel: has_channel.contains(&pos), providers, assemblers }
+    let inv = crate::inventory_stock(host, level, &drives);
+    Net { drives, powered: stored > 0, channel: has_channel.contains(&pos), providers, assemblers, inv }
 }
 
 /// The network's items, as the view lists them.
-fn items_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]], patterns: &[crate::crafting::Pattern]) -> Vec<(String, u64)> {
+fn items_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]], patterns: &[crate::crafting::Pattern], inv: &[(String, u64)]) -> Vec<(String, u64)> {
     let mut all: Vec<(String, u64)> = Vec::new();
     for (_, _, _, stack) in cells_of(host, level, drives) {
         for (id, n) in Store::of_stack(&stack).items {
@@ -88,6 +91,12 @@ fn items_of(host: &dyn Host, level: LevelRef, drives: &[[i32; 3]], patterns: &[c
                 Some((_, c)) => *c += n,
                 None => all.push((id, n)),
             }
+        }
+    }
+    for (id, n) in inv {
+        match all.iter_mut().find(|(i, _)| i == id) {
+            Some((_, c)) => *c += n,
+            None => all.push((id.clone(), *n)),
         }
     }
     // what a pattern makes is listed even when none is stored
@@ -112,10 +121,15 @@ fn stack_of(host: &dyn Host, id: &str, count: u64) -> Option<ItemStack> {
     ItemStack::new(key, count.min(max).max(1) as u32)
 }
 
+/// The network's items as a neighbour sees them (no patterns).
+pub(crate) fn listing_of(host: &dyn Host, level: LevelRef, n: &Net) -> Vec<(String, u64)> {
+    items_of(host, level, &n.drives, &[], &n.inv)
+}
+
 /// The 54 slots of the view for `page` and `search`.
 fn render(host: &dyn Host, level: LevelRef, v: &View, n: &Net) -> (usize, Vec<Option<ItemStack>>) {
     let patterns = crate::autocraft::patterns_of(host, level, &n.providers);
-    let all = items_of(host, level, &n.drives, &patterns);
+    let all = items_of(host, level, &n.drives, &patterns, &n.inv);
     let shown = view::filter(&all, v.search.as_deref());
     let (page, here) = view::page_of(&shown, v.page);
     let mut slots: Vec<Option<ItemStack>> = vec![None; 54];
@@ -260,7 +274,7 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
             // a blank pattern on the cursor: the item becomes a pattern for it
             (Slot::Item(i), 0) if cursor.as_ref().is_some_and(|c| c.item().id(&*host) == crate::autocraft::BLANK) => {
                 let patterns = crate::autocraft::patterns_of(&*host, level, &n.providers);
-                let all = items_of(&*host, level, &n.drives, &patterns);
+                let all = items_of(&*host, level, &n.drives, &patterns, &n.inv);
                 let shown = view::filter(&all, search.as_deref());
                 let (_, here) = view::page_of(&shown, page);
                 if let (Some((id, _)), Some(blank)) = (here.get(i).cloned(), cursor.clone()) {
@@ -285,17 +299,17 @@ pub fn clicked(host: &mut dyn ServerHost, event: &MenuClickedEvent) {
             // middle click on an item: craft one of it
             (Slot::Item(i), 3) => {
                 let patterns = crate::autocraft::patterns_of(&*host, level, &n.providers);
-                let all = items_of(&*host, level, &n.drives, &patterns);
+                let all = items_of(&*host, level, &n.drives, &patterns, &n.inv);
                 let shown = view::filter(&all, search.as_deref());
                 let (_, here) = view::page_of(&shown, page);
                 if let Some((id, _)) = here.get(i).cloned() {
-                    crate::autocraft::request(host, level, event.uuid, &n.drives, &n.providers, n.assemblers, &id, 1);
+                    crate::autocraft::request(host, level, event.uuid, &n.drives, &n.providers, n.assemblers, &n.inv, &id, 1);
                 }
             }
             (Slot::Item(i), mode @ (0 | 1)) => {
                 let (shown, _) = {
                     let patterns = crate::autocraft::patterns_of(&*host, level, &n.providers);
-                    let all = items_of(&*host, level, &n.drives, &patterns);
+                    let all = items_of(&*host, level, &n.drives, &patterns, &n.inv);
                     let shown = view::filter(&all, search.as_deref());
                     let (p, here) = view::page_of(&shown, page);
                     (here.get(i).cloned(), p)

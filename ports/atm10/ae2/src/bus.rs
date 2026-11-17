@@ -27,7 +27,7 @@ fn plain(stack: &ItemStack) -> bool {
     stack.components().is_none_or(|c| c.as_nbt().is_empty())
 }
 
-fn resource_of(host: &dyn ServerHost, id: &str) -> Option<ItemResource> {
+pub(crate) fn resource_of(host: &dyn ServerHost, id: &str) -> Option<ItemResource> {
     let key = host.item_key(&Identifier::parse(id).ok()?)?;
     Some(ItemResource::of(&ItemStack::new(key, 1)?))
 }

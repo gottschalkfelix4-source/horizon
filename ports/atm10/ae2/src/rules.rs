@@ -66,10 +66,12 @@ pub enum Device {
     ExportBus,
     PatternProvider,
     MolecularAssembler,
+    StorageBus,
+    Interface,
 }
 
 impl Device {
-    pub const ALL: [Device; 10] = [
+    pub const ALL: [Device; 12] = [
         Device::Controller,
         Device::EnergyAcceptor,
         Device::EnergyCell,
@@ -80,6 +82,8 @@ impl Device {
         Device::ExportBus,
         Device::PatternProvider,
         Device::MolecularAssembler,
+        Device::StorageBus,
+        Device::Interface,
     ];
 
     pub fn name(self) -> &'static str {
@@ -94,6 +98,8 @@ impl Device {
             Device::ExportBus => "export_bus",
             Device::PatternProvider => "pattern_provider",
             Device::MolecularAssembler => "molecular_assembler",
+            Device::StorageBus => "storage_bus",
+            Device::Interface => "interface",
         }
     }
 
@@ -106,7 +112,9 @@ impl Device {
             | Device::ImportBus
             | Device::ExportBus
             | Device::PatternProvider
-            | Device::MolecularAssembler => 0,
+            | Device::MolecularAssembler
+            | Device::StorageBus
+            | Device::Interface => 0,
             Device::EnergyAcceptor => 800,
             Device::EnergyCell => 200_000 * FE_PER_AE,
             Device::DenseEnergyCell => 1_600_000 * FE_PER_AE,
@@ -124,6 +132,8 @@ impl Device {
             // the provider draws 0.1 AE, the assembler 2 AE per tick
             Device::PatternProvider => 20,
             Device::MolecularAssembler => 400,
+            // the storage bus draws 0.1 AE per tick
+            Device::StorageBus | Device::Interface => 20,
             _ => 0,
         }
     }
@@ -138,6 +148,8 @@ impl Device {
                 | Device::ExportBus
                 | Device::PatternProvider
                 | Device::MolecularAssembler
+                | Device::StorageBus
+                | Device::Interface
         )
     }
 
