@@ -452,7 +452,6 @@ impl Hooks for Mod {
                         },
                     );
                 }
-                r.menu_part("minecraft:generic_9x1", ProviderRules);
             }
             if entity_type == "terminal" {
                 let key = r.block_key("ae2:terminal");
@@ -471,7 +470,6 @@ impl Hooks for Mod {
                         menu: Some("minecraft:generic_9x1".into()),
                     },
                 );
-                r.menu_part("minecraft:generic_9x1", ProviderRules);
             }
             if entity_type == "drive" {
                 let key = r.block_key("ae2:drive");
@@ -481,6 +479,8 @@ impl Hooks for Mod {
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);
         }
+        // one rule for the 9x1 menu: pattern provider and both buses (the block says which)
+        r.menu_part("minecraft:generic_9x1", ProviderRules);
     }
 
     fn menu_clicked(&self, host: &mut dyn ServerHost, event: &mut MenuClickedEvent) {
