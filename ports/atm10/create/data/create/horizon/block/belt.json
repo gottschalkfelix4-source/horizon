@@ -1,0 +1,8 @@
+{
+  "template": "minecraft:stripped_oak_log",
+  "properties": {
+    "hardness": 0.8,
+    "explosion_resistance": 3.0
+  },
+  "item": true
+}

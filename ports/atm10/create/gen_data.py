@@ -13,9 +13,10 @@ BLOCKS = {
     "water_wheel": ("minecraft:oak_log", 2.0, 3.0, "Water Wheel"),
     "windmill_bearing": ("minecraft:observer", 3.0, 6.0, "Windmill Bearing"),
     "creative_motor": ("minecraft:observer", 3.0, 6.0, "Creative Motor"),
-    "millstone": ("minecraft:stripped_oak_log", 3.0, 6.0, "Millstone"),
+    "millstone": ("minecraft:furnace", 3.0, 6.0, "Millstone"),
+    "belt": ("minecraft:stripped_oak_log", 0.8, 3.0, "Mechanical Belt"),
     "depot": ("minecraft:stone", 3.0, 6.0, "Depot"),
-    "basin": ("minecraft:stone", 3.0, 6.0, "Basin"),
+    "basin": ("minecraft:furnace", 3.0, 6.0, "Basin"),
     "mechanical_mixer": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Mixer"),
     "mechanical_press": ("minecraft:stripped_oak_log", 3.0, 6.0, "Mechanical Press"),
 }
