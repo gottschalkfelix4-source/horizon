@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smithing_transform",
+  "addition": "justdirethings:celestigem",
+  "base": "justdirethings:blazegold_helmet",
+  "result": {
+    "count": 1,
+    "id": "justdirethings:celestigem_helmet"
+  },
+  "template": "justdirethings:template_celestigem"
+}

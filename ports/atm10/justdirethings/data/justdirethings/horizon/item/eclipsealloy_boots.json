@@ -1,0 +1,29 @@
+{
+  "template": "minecraft:iron_boots",
+  "components": {
+    "minecraft:max_damage": 780,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:eclipsealloy_boots",
+        "amount": 5,
+        "operation": "add_value",
+        "slot": "feet"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:eclipsealloy_boots",
+        "amount": 4.0,
+        "operation": "add_value",
+        "slot": "feet"
+      },
+      {
+        "type": "minecraft:knockback_resistance",
+        "id": "justdirethings:eclipsealloy_boots",
+        "amount": 0.1,
+        "operation": "add_value",
+        "slot": "feet"
+      }
+    ]
+  }
+}

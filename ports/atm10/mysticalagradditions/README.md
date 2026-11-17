@@ -23,7 +23,7 @@ with `port_convert.py`) and its observed behaviour, never from its code. Not run
    Siphoner trait. The recipes that need botania, powah or similar stay behind `neoforge:mod_loaded`.
 3. Apples use golden apple (tiers 1 and 2) and enchanted golden apple (tiers 3 to 6) as look and effect
    stand-ins; the original's effects are not known to the port.
-4. Coal burn times (the coals are fuel in the original) need a furnace fuel data map: see ENGINE-GAPS.md.
+4. Coal burn times: the coals are fuel in the original, but its data has no value for them (set in code), so they burn as plain coal does; a `minecraft:cooking_fuel` component would carry them.
 5. Paxel extras (stripping, flattening, tilling) belong to the original's item class and do not follow a
    template item.
 

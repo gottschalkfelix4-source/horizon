@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "justdirethings",
+  "key": {
+    "c": "justdirethings:celestigem",
+    "e": "justdirethings:eclipsealloy_ingot",
+    "w": "justdirethings:voidshift_wand"
+  },
+  "pattern": [
+    "  e",
+    " w ",
+    "c  "
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:eclipsegate_wand"
+  }
+}

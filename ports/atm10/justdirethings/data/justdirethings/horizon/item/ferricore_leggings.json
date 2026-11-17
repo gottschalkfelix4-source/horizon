@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_leggings",
+  "components": {
+    "minecraft:max_damage": 330,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:ferricore_leggings",
+        "amount": 5,
+        "operation": "add_value",
+        "slot": "legs"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:ferricore_leggings",
+        "amount": 0.0,
+        "operation": "add_value",
+        "slot": "legs"
+      }
+    ]
+  }
+}

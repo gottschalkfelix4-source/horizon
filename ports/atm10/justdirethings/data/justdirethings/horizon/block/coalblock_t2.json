@@ -1,0 +1,14 @@
+{
+  "template": "minecraft:coal_block",
+  "properties": {
+    "hardness": 5.0,
+    "explosion_resistance": 6.0
+  },
+  "item": true,
+  "components": {
+    "minecraft:cooking_fuel": {
+      "burn_time": 144000,
+      "speed_multiplier": 1.0
+    }
+  }
+}

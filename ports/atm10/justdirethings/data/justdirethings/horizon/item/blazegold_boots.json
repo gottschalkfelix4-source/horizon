@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_boots",
+  "components": {
+    "minecraft:max_damage": 468,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:blazegold_boots",
+        "amount": 3,
+        "operation": "add_value",
+        "slot": "feet"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:blazegold_boots",
+        "amount": 2.0,
+        "operation": "add_value",
+        "slot": "feet"
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_chestplate",
+  "components": {
+    "minecraft:max_damage": 352,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:ferricore_chestplate",
+        "amount": 6,
+        "operation": "add_value",
+        "slot": "chest"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:ferricore_chestplate",
+        "amount": 0.0,
+        "operation": "add_value",
+        "slot": "chest"
+      }
+    ]
+  }
+}

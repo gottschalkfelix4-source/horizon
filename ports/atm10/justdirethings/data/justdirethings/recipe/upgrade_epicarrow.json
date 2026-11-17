@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "b": "justdirethings:upgrade_blank",
+    "g": "minecraft:phantom_membrane",
+    "p": "minecraft:ender_eye",
+    "s": "minecraft:nether_star"
+  },
+  "pattern": [
+    "psp",
+    "gbg",
+    "psp"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:upgrade_epicarrow"
+  }
+}

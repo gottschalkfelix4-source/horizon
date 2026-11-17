@@ -506,9 +506,9 @@ mod menu and an item part, both of which the API has.
 
 ## mysticalagradditions
 
-- Fuel values for items from data: the mod's coals (and the blocks) burn longer than vanilla's. Proposed: read
-  NeoForge's `neoforge:furnace_fuels` data map (`data/<ns>/data_maps/item/furnace_fuels.json`, `burn_time`) in the
-  furnace, or a `Hooks::item_burn_time` answer. Today only `Host::item_burn_time` reads.
+- Fuel values for items from data: a content item takes `minecraft:cooking_fuel` as a component (Just Dire Things'
+  port does), but NeoForge's `neoforge:furnace_fuels` data map file of an original is not read, so a pack's
+  fuels must be converted by script; the burn times of this mod's coals are not in its data (it sets them in code).
 - Mod recipe serializers of another mod's machines (`mysticalagriculture:infusion`, `awakening`, `reprocessor`,
   `farmland_till`) wait for the Mystical Agriculture port to register them.
 - Fluids from files for molten metals and their buckets.
@@ -523,3 +523,13 @@ mod menu and an item part, both of which the API has.
   engine side exists (`register_recipe_type`), the Create port would have to read add-ons' files.
 - Items near a block as machine input (the coil charges items lying around it): an area item query
   (`LevelRef::item_entities_in`) with a way to set an item entity's stack.
+
+## justdirethings
+
+- Per-item upgrade state with hooks: the original's tools carry abilities (Tree Feller, Ore Miner, Hammer, Flight...)
+  that other code reads while mining. A native mod has block-break hooks but no way to run on a held tool's use
+  with its own component and to change a mining result (area breaking, auto-smelt drops). Proposed: a
+  `break_block_extra` hook that may break further blocks and replace drops for the tool in hand.
+- Fluids from files (the mod's nine fluids and buckets), as for the other ports.
+- Smithing and `ability` style recipes that keep the base item's components (an upgrade added to a tool): a
+  recipe type whose result copies the base stack and edits a component.

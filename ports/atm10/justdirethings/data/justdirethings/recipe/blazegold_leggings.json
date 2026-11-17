@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "group": "justdirethings",
+  "key": {
+    "f": "justdirethings:blazegold_ingot"
+  },
+  "pattern": [
+    "fff",
+    "f f",
+    "f f"
+  ],
+  "result": {
+    "count": 1,
+    "id": "justdirethings:blazegold_leggings"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "template": "minecraft:iron_helmet",
+  "components": {
+    "minecraft:max_damage": 396,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:armor",
+        "id": "justdirethings:blazegold_helmet",
+        "amount": 3,
+        "operation": "add_value",
+        "slot": "head"
+      },
+      {
+        "type": "minecraft:armor_toughness",
+        "id": "justdirethings:blazegold_helmet",
+        "amount": 2.0,
+        "operation": "add_value",
+        "slot": "head"
+      }
+    ]
+  }
+}

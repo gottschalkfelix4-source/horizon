@@ -1,0 +1,37 @@
+{
+  "template": "minecraft:iron_hoe",
+  "components": {
+    "minecraft:max_damage": 2500,
+    "minecraft:attribute_modifiers": [
+      {
+        "type": "minecraft:attack_damage",
+        "id": "minecraft:base_attack_damage",
+        "amount": 3.0,
+        "operation": "add_value",
+        "slot": "mainhand"
+      },
+      {
+        "type": "minecraft:attack_speed",
+        "id": "minecraft:base_attack_speed",
+        "amount": -1.0,
+        "operation": "add_value",
+        "slot": "mainhand"
+      }
+    ],
+    "minecraft:tool": {
+      "rules": [
+        {
+          "blocks": "#minecraft:incorrect_for_diamond_tool",
+          "correct_for_drops": false
+        },
+        {
+          "blocks": "#minecraft:mineable/hoe",
+          "correct_for_drops": true,
+          "speed": 9.0
+        }
+      ],
+      "default_mining_speed": 1.0,
+      "damage_per_block": 1
+    }
+  }
+}
