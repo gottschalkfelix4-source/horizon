@@ -666,5 +666,6 @@ fn container_of(kind: Kind) -> Option<ModContainer> {
         inputs,
         outputs,
         menu: Some(menu.into()),
+        slot_limit: 0,
     })
 }

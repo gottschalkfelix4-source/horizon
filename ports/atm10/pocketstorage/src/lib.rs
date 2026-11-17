@@ -91,6 +91,7 @@ impl Hooks for Mod {
                     inputs: every.clone(),
                     outputs: every.clone(),
                     menu: Some((*menu).into()),
+                    slot_limit: 0,
                 },
             );
         }

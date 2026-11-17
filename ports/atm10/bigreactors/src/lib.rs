@@ -225,6 +225,7 @@ impl Hooks for Mod {
                 inputs: vec![FUEL_SLOT],
                 outputs: vec![WASTE_SLOT],
                 menu: Some("minecraft:hopper".into()),
+                slot_limit: 0,
             },
         );
         let _ = KEYS.set(keys);

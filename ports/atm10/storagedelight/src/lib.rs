@@ -68,6 +68,7 @@ impl Hooks for Mod {
                     inputs: every.clone(),
                     outputs: every,
                     menu: Some(store.menu().into()),
+                    slot_limit: 0,
                 },
             );
             let kind = r.block_entity_type(store.name()).blocks(&[id.as_str()]).build();

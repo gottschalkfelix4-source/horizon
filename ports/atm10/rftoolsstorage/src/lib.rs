@@ -217,6 +217,7 @@ impl Hooks for Mod {
                 inputs: vec![0, 1, 2, INPUT],
                 outputs: vec![OUTPUT],
                 menu: Some("minecraft:hopper".into()),
+                slot_limit: 0,
             },
         );
         let kind = r

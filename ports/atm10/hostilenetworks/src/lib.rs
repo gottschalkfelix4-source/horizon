@@ -172,6 +172,7 @@ impl Hooks for Mod {
                     inputs,
                     outputs,
                     menu: Some("minecraft:hopper".into()),
+                    slot_limit: 0,
                 },
             );
         }

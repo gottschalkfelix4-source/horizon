@@ -634,6 +634,7 @@ impl Hooks for Mod {
                     inputs,
                     outputs,
                     menu: Some("minecraft:generic_9x1".into()),
+                    slot_limit: 0,
                 },
             );
         }
@@ -658,6 +659,7 @@ impl Hooks for Mod {
                 inputs: vec![0],
                 outputs: vec![0],
                 menu: None,
+                slot_limit: 0,
             },
         );
         let key = r.block_key("create:blaze_burner");
@@ -670,6 +672,7 @@ impl Hooks for Mod {
                 inputs: vec![0],
                 outputs: vec![],
                 menu: Some("minecraft:hopper".into()),
+                slot_limit: 0,
             },
         );
         let key = r.block_key("create:depot");
@@ -682,6 +685,7 @@ impl Hooks for Mod {
                 inputs: vec![0],
                 outputs: vec![0],
                 menu: None,
+                slot_limit: 0,
             },
         );
     }

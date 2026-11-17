@@ -905,6 +905,7 @@ fn factory_container(t: Tier) -> ModContainer {
         inputs,
         outputs,
         menu: Some("minecraft:generic_9x3".into()),
+        slot_limit: 0,
     }
 }
 
@@ -925,6 +926,9 @@ fn container_of(m: Machine) -> ModContainer {
         inputs,
         outputs: vec![OUTPUT],
         menu: Some(m.menu().into()),
+    },
+    slot_limit: 0,
+  slot_limit: 0,
     }
 }
 

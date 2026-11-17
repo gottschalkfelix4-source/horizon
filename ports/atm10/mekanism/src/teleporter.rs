@@ -205,6 +205,7 @@ pub fn register(r: &mut dyn Registrar) {
             inputs: vec![],
             outputs: vec![],
             menu: Some("minecraft:hopper".into()),
+            slot_limit: 0,
         },
     );
     let built = r.block_entity_type("teleporter").blocks(&[BLOCK]).build();

@@ -189,6 +189,7 @@ impl Hooks for Mod {
                 inputs: grid.clone(),
                 outputs: Vec::new(),
                 menu: Some("minecraft:generic_3x3".into()),
+                slot_limit: 0,
             },
         );
         let _ = BLOCK.set(block);

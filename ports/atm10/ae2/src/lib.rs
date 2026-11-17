@@ -500,6 +500,7 @@ fn drive_container() -> ModContainer {
         inputs: all.clone(),
         outputs: all,
         menu: Some("minecraft:generic_9x2".into()),
+        slot_limit: 0,
     }
 }
 
@@ -539,6 +540,7 @@ impl Hooks for Mod {
                             inputs: all.clone(),
                             outputs: all,
                             menu: Some("minecraft:generic_9x1".into()),
+                            slot_limit: 0,
                         },
                     );
                 }
@@ -567,6 +569,7 @@ impl Hooks for Mod {
                         inputs: all.clone(),
                         outputs: all,
                         menu: Some("minecraft:generic_9x1".into()),
+                        slot_limit: 0,
                     },
                 );
             }

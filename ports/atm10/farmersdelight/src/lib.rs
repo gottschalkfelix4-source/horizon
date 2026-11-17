@@ -816,16 +816,19 @@ impl Hooks for Mod {
                 inputs: [inputs, vec![POT_CONTAINER]].concat(),
                 outputs: vec![POT_OUTPUT],
                 menu: Some("minecraft:generic_3x3".into()),
+                slot_limit: 0,
             },
         );
         r.block_container(
             &keys.stove,
-            ModContainer { slots: STOVE_SLOTS, faces: no_faces(), inputs: vec![], outputs: vec![], menu: None },
+            ModContainer { slots: STOVE_SLOTS, faces: no_faces(), inputs: vec![], outputs: vec![], menu: None,
+slot_limit: 0, },
         );
         for key in [&keys.skillet, &keys.board] {
             r.block_container(
                 key,
-                ModContainer { slots: 1, faces: no_faces(), inputs: vec![], outputs: vec![], menu: None },
+                ModContainer { slots: 1, faces: no_faces(), inputs: vec![], outputs: vec![], menu: None,
+slot_limit: 0, },
             );
         }
         let pot = r.block_entity_type("cooking_pot").blocks(&["farmersdelight:cooking_pot"]).build();

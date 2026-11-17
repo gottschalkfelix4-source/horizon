@@ -390,6 +390,7 @@ fn hopper_like(slots: usize) -> ModContainer {
         inputs: all,
         outputs: Vec::new(),
         menu: Some("minecraft:hopper".into()),
+        slot_limit: 0,
     }
 }
 

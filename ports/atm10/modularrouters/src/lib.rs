@@ -605,6 +605,7 @@ impl Hooks for Mod {
                 inputs: vec![BUFFER],
                 outputs: vec![BUFFER],
                 menu: Some("minecraft:generic_9x2".into()),
+                slot_limit: 0,
             },
         );
         let mut modules = Vec::new();
