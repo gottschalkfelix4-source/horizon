@@ -159,10 +159,18 @@ pub enum Machine {
     PrecisionSawmill,
     Combiner,
     MetallurgicInfuser,
+    PurificationChamber,
+    ChemicalInjectionChamber,
+    ElectrolyticSeparator,
+    ChemicalInfuser,
 }
 
 impl Machine {
-    pub const ALL: [Machine; 6] = [
+    pub const ALL: [Machine; 10] = [
+        Machine::PurificationChamber,
+        Machine::ChemicalInjectionChamber,
+        Machine::ElectrolyticSeparator,
+        Machine::ChemicalInfuser,
         Machine::EnrichmentChamber,
         Machine::Crusher,
         Machine::EnergizedSmelter,
@@ -179,6 +187,25 @@ impl Machine {
             Machine::PrecisionSawmill => "precision_sawmill",
             Machine::Combiner => "combiner",
             Machine::MetallurgicInfuser => "metallurgic_infuser",
+            Machine::PurificationChamber => "purification_chamber",
+            Machine::ChemicalInjectionChamber => "chemical_injection_chamber",
+            Machine::ElectrolyticSeparator => "electrolytic_separator",
+            Machine::ChemicalInfuser => "chemical_infuser",
+        }
+    }
+
+    /// Whether it has item slots (the separator and the chemical infuser work on fluids and
+    /// chemicals only).
+    pub fn has_items(self) -> bool {
+        !matches!(self, Machine::ElectrolyticSeparator | Machine::ChemicalInfuser)
+    }
+
+    /// The chemical an item machine spends while it works, and how much per tick.
+    pub fn chemical_use(self) -> Option<(&'static str, u32)> {
+        match self {
+            Machine::PurificationChamber => Some(("mekanism:oxygen", 1)),
+            Machine::ChemicalInjectionChamber => Some(("mekanism:hydrogen_chloride", 1)),
+            _ => None,
         }
     }
 
@@ -204,7 +231,10 @@ impl Machine {
 
     /// FE per tick while working (50 J).
     pub fn fe_per_tick(self) -> i32 {
-        fe(50)
+        match self {
+            Machine::ElectrolyticSeparator => fe(400),
+            _ => fe(50),
+        }
     }
 
     /// The energy buffer in FE: 40 ticks of work (to check against the original).
@@ -245,6 +275,9 @@ pub fn enrich(item: &str) -> Option<(String, u32)> {
             return Some((format!("mekanism:dust_{m}"), 2));
         }
     }
+    if let Some(m) = metal_of(name, "dirty_dust") {
+        return Some((format!("mekanism:dust_{m}"), 1));
+    }
     match name {
         // fluorite ore gives 6 gems 
         "fluorite_ore" | "deepslate_fluorite_ore" => Some(("mekanism:fluorite_gem".into(), 6)),
@@ -258,6 +291,54 @@ pub fn enrich(item: &str) -> Option<(String, u32)> {
     }
 }
 
+/// The metal a clump, shard, dirty dust or ore is of, for `kind` (`"clump"`, `"shard"`, ...).
+fn metal_of<'a>(name: &'a str, kind: &str) -> Option<&'a str> {
+    name.strip_prefix(kind)?.strip_prefix('_')
+}
+
+/// Ores and raw ores of a metal Mekanism processes: the metal and whether it is raw.
+fn ore_metal(name: &str) -> Option<(&str, bool)> {
+    let name = name.strip_prefix("deepslate_").unwrap_or(name);
+    if let Some(m) = name.strip_suffix("_ore") {
+        return METALS.iter().chain(VANILLA_METALS.iter()).copied().find(|k| *k == m && m != "fluorite" && m != "netherite").map(|m| (m, false));
+    }
+    let m = name.strip_prefix("raw_")?;
+    METALS.iter().chain(VANILLA_METALS.iter()).copied().find(|k| *k == m && m != "fluorite" && m != "netherite").map(|m| (m, true))
+}
+
+/// The purification chamber (with oxygen): an ore into three clumps, a raw ore into two, a shard
+/// into a clump.
+pub fn purify(item: &str) -> Option<(String, u32)> {
+    let name = name_of(item);
+    if let Some((m, raw)) = ore_metal(name) {
+        return Some((format!("mekanism:clump_{m}"), if raw { 2 } else { 3 }));
+    }
+    metal_of(name, "shard").map(|m| (format!("mekanism:clump_{m}"), 1))
+}
+
+/// The chemical injection chamber (with hydrogen chloride): an ore into four shards, a raw ore
+/// into three, a crystal-less dust stays.
+pub fn inject(item: &str) -> Option<(String, u32)> {
+    let (m, raw) = ore_metal(name_of(item))?;
+    Some((format!("mekanism:shard_{m}"), if raw { 3 } else { 4 }))
+}
+
+/// The chemical infuser: two chemicals into one (either way round), 1 mB each per mB made.
+pub fn combine_chemicals(a: &str, b: &str) -> Option<&'static str> {
+    let pair = |x: &str, y: &str| (a == x && b == y) || (a == y && b == x);
+    pair("mekanism:hydrogen", "mekanism:chlorine").then_some("mekanism:hydrogen_chloride")
+}
+
+/// The electrolytic separator: what a fluid splits into, (fluid, mB spent, first chemical and mB,
+/// second chemical and mB) per tick of work.
+pub fn electrolyse(fluid: &str) -> Option<(u32, (&'static str, u32), (&'static str, u32))> {
+    match fluid {
+        "minecraft:water" => Some((2, ("mekanism:hydrogen", 2), ("mekanism:oxygen", 1))),
+        "mekanism:brine" => Some((10, ("mekanism:chlorine", 1), ("mekanism:sodium", 1))),
+        _ => None,
+    }
+}
+
 /// Crushing: what the crusher makes of `item`, and how many.
 pub fn crush(item: &str) -> Option<(String, u32)> {
     let name = item.strip_prefix("mekanism:").or_else(|| item.strip_prefix("minecraft:"))?;
@@ -265,6 +346,9 @@ pub fn crush(item: &str) -> Option<(String, u32)> {
         if name == format!("ingot_{m}") || name == format!("{m}_ingot") {
             return Some((format!("mekanism:dust_{m}"), 1));
         }
+    }
+    if let Some(m) = metal_of(name, "clump") {
+        return Some((format!("mekanism:dirty_dust_{m}"), 1));
     }
     match name {
         "cobblestone" => Some(("minecraft:gravel".into(), 1)),
@@ -428,6 +512,23 @@ mod tests {
         assert_eq!((r.output.as_str(), r.infuse), ("mekanism:alloy_infused", Some(("redstone", 10))));
         assert_eq!(infuse("minecraft:iron_ingot", "redstone", 9), None);
         assert_eq!(infuse("minecraft:iron_ingot", "diamond", 100), None);
+    }
+
+    #[test]
+    fn the_ore_chain_multiplies_yield() {
+        assert_eq!(purify("mekanism:osmium_ore"), Some(("mekanism:clump_osmium".into(), 3)));
+        assert_eq!(purify("minecraft:raw_iron"), Some(("mekanism:clump_iron".into(), 2)));
+        assert_eq!(purify("mekanism:shard_tin"), Some(("mekanism:clump_tin".into(), 1)));
+        assert_eq!(inject("minecraft:deepslate_gold_ore"), Some(("mekanism:shard_gold".into(), 4)));
+        assert_eq!(inject("mekanism:fluorite_ore"), None);
+        assert_eq!(crush("mekanism:clump_lead"), Some(("mekanism:dirty_dust_lead".into(), 1)));
+        assert_eq!(enrich("mekanism:dirty_dust_lead"), Some(("mekanism:dust_lead".into(), 1)));
+        assert_eq!(
+            combine_chemicals("mekanism:chlorine", "mekanism:hydrogen"),
+            Some("mekanism:hydrogen_chloride")
+        );
+        assert_eq!(combine_chemicals("mekanism:oxygen", "mekanism:hydrogen"), None);
+        assert_eq!(electrolyse("minecraft:water").map(|r| r.0), Some(2));
     }
 
     #[test]

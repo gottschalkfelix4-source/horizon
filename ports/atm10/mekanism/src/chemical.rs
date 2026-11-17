@@ -1,7 +1,7 @@
 //! Mekanism's chemical capability (gases, infuse types, pigments, slurries): `mekanism:chemicals`,
 //! a mod-own capability over the game's generic [`ResourceHandler`], so pipes and machines of
 //! other ports reach a chemical tank the way they reach items and fluids. The tank is one saved
-//! compound `{Chemical: "mekanism:hydrogen", Amount: n}` under the block entity's `chemical` key.
+//! compound `{Chemical: "mekanism:hydrogen", Amount: n}` under the block entity's `chemical_<name>` key.
 use mod_api::{
     BlockSide, CapabilityKey, Compound, ResourceHandler, ServerHost, Tag, Transaction,
 };
@@ -21,9 +21,14 @@ pub struct Tank {
     pub amount: u32,
 }
 
+/// The key a named tank is saved under in the block entity's data.
+fn key_of(name: &str) -> String {
+    format!("chemical_{name}")
+}
+
 impl Tank {
-    pub fn load(nbt: &Compound) -> Tank {
-        let Some(Tag::Compound(t)) = nbt.get(&"chemical".into()) else {
+    pub fn load(nbt: &Compound, name: &str) -> Tank {
+        let Some(Tag::Compound(t)) = nbt.get(&key_of(name).as_str().into()) else {
             return Tank::default();
         };
         let chemical = match t.get(&"Chemical".into()) {
@@ -37,11 +42,11 @@ impl Tank {
         if chemical.is_none() || amount == 0 { Tank::default() } else { Tank { chemical, amount } }
     }
 
-    pub fn save(&self, nbt: &mut Compound) {
+    pub fn save(&self, nbt: &mut Compound, name: &str) {
         let mut t = Compound::new();
         t.insert("Chemical".into(), Tag::String(self.chemical.clone().unwrap_or_default().as_str().into()));
         t.insert("Amount".into(), Tag::Int(self.amount.min(i32::MAX as u32) as i32));
-        nbt.insert("chemical".into(), Tag::Compound(t));
+        nbt.insert(key_of(name).as_str().into(), Tag::Compound(t));
     }
 
     /// Fills with up to `amount` of `chemical` into a tank of `capacity`: how much went in.
@@ -71,53 +76,68 @@ impl Tank {
     }
 }
 
-/// One tank of `capacity` mB in the block entity at `at`.
-pub struct BlockTank {
-    pub at: BlockSide,
+/// One tank of a block: its name, size, what may go in and come out, and the one chemical it takes.
+#[derive(Clone, Copy, Debug)]
+pub struct TankSpec {
+    pub name: &'static str,
     pub capacity: u32,
+    pub insert: bool,
+    pub extract: bool,
+    pub only: Option<&'static str>,
 }
 
-impl BlockTank {
-    fn read(&self, host: &mut dyn ServerHost) -> Tank {
+/// The chemical tanks of the block entity at `at`, as `specs` say: index `i` is `specs[i]`.
+pub struct BlockTanks {
+    pub at: BlockSide,
+    pub specs: &'static [TankSpec],
+}
+
+impl BlockTanks {
+    fn read(&self, host: &mut dyn ServerHost, i: usize) -> Tank {
         let Some(entity) = host.block_entity(self.at.level, self.at.pos) else {
             return Tank::default();
         };
-        entity.data(&*host).map(|d| Tank::load(&d)).unwrap_or_default()
+        entity.data(&*host).map(|d| Tank::load(&d, self.specs[i].name)).unwrap_or_default()
     }
 
-    fn write(&self, host: &mut dyn ServerHost, tank: &Tank) {
+    fn write(&self, host: &mut dyn ServerHost, i: usize, tank: &Tank) {
         let Some(entity) = host.block_entity(self.at.level, self.at.pos) else { return };
         let mut patch = Compound::new();
-        tank.save(&mut patch);
+        tank.save(&mut patch, self.specs[i].name);
         let _ = entity.merge_data(host, patch);
     }
 }
 
-impl ResourceHandler<ChemicalResource> for BlockTank {
+impl ResourceHandler<ChemicalResource> for BlockTanks {
     fn size(&self, _: &mut dyn ServerHost) -> usize {
-        1
+        self.specs.len()
     }
-    fn resource(&self, host: &mut dyn ServerHost, _: usize) -> Option<ChemicalResource> {
-        self.read(host).chemical.map(ChemicalResource)
+    fn resource(&self, host: &mut dyn ServerHost, i: usize) -> Option<ChemicalResource> {
+        self.read(host, i).chemical.map(ChemicalResource)
     }
-    fn amount(&self, host: &mut dyn ServerHost, _: usize) -> u32 {
-        self.read(host).amount
+    fn amount(&self, host: &mut dyn ServerHost, i: usize) -> u32 {
+        self.read(host, i).amount
     }
-    fn capacity(&self, _: &mut dyn ServerHost, _: usize, _: &ChemicalResource) -> u32 {
-        self.capacity
+    fn capacity(&self, _: &mut dyn ServerHost, i: usize, r: &ChemicalResource) -> u32 {
+        let spec = &self.specs[i];
+        if spec.only.is_some_and(|o| o != r.0) { 0 } else { spec.capacity }
     }
     fn insert(
         &self,
         host: &mut dyn ServerHost,
         _tx: &Transaction,
-        _: usize,
+        i: usize,
         resource: &ChemicalResource,
         amount: u32,
     ) -> u32 {
-        let mut tank = self.read(host);
-        let moved = tank.fill(&resource.0, amount, self.capacity);
+        let spec = &self.specs[i];
+        if !spec.insert || spec.only.is_some_and(|o| o != resource.0) {
+            return 0;
+        }
+        let mut tank = self.read(host, i);
+        let moved = tank.fill(&resource.0, amount, spec.capacity);
         if moved > 0 {
-            self.write(host, &tank);
+            self.write(host, i, &tank);
         }
         moved
     }
@@ -125,14 +145,17 @@ impl ResourceHandler<ChemicalResource> for BlockTank {
         &self,
         host: &mut dyn ServerHost,
         _tx: &Transaction,
-        _: usize,
+        i: usize,
         resource: &ChemicalResource,
         amount: u32,
     ) -> u32 {
-        let mut tank = self.read(host);
+        if !self.specs[i].extract {
+            return 0;
+        }
+        let mut tank = self.read(host, i);
         let moved = tank.drain(&resource.0, amount);
         if moved > 0 {
-            self.write(host, &tank);
+            self.write(host, i, &tank);
         }
         moved
     }
@@ -158,7 +181,8 @@ mod tests {
         let mut t = Tank::default();
         t.fill("mekanism:ethene", 250, 1000);
         let mut nbt = Compound::new();
-        t.save(&mut nbt);
-        assert_eq!(Tank::load(&nbt), t);
+        t.save(&mut nbt, "in");
+        assert_eq!(Tank::load(&nbt, "in"), t);
+        assert_eq!(Tank::load(&nbt, "out"), Tank::default());
     }
 }

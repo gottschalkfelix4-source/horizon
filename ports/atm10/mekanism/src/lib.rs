@@ -16,12 +16,12 @@ use mod_api::{
     CapabilityKey, FLUIDS, ITEMS, ResourceHandler, move_resources,
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
     BlockEntityTicksEvent, BlockPart, Compound, Direction, ENERGY, Hooks, Host, Identifier,
-    HostTransaction, ItemStack, LevelRef, LevelSide, ModContainer, ModEnergyBuffer, RecipeInput, Registrar,
+    HostTransaction, ItemStack, LevelRef, LevelSide, ModContainer, ModEnergyBuffer, ModFluidTanks, RecipeInput, Registrar,
     RegistrationContext, ServerHost, Tag,
 };
 
 pub mod chemical;
-use chemical::CHEMICALS;
+use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
 pub mod rules;
 use rules::*;
 
@@ -283,6 +283,9 @@ fn recipe(
     match machine {
         Machine::EnrichmentChamber => enrich(&id).map(|(o, n)| single(&o, n)),
         Machine::Crusher => crush(&id).map(|(o, n)| single(&o, n)),
+        Machine::PurificationChamber => purify(&id).map(|(o, n)| single(&o, n)),
+        Machine::ChemicalInjectionChamber => inject(&id).map(|(o, n)| single(&o, n)),
+        Machine::ElectrolyticSeparator | Machine::ChemicalInfuser => None,
         Machine::PrecisionSawmill => saw(&id),
         Machine::Combiner => combine(&id, &items[INPUT2].as_ref()?.item().id(&*host)),
         Machine::MetallurgicInfuser => {
@@ -313,6 +316,114 @@ fn absorb_infuse(host: &dyn Host, nbt: &mut Compound, items: &mut [Option<ItemSt
     items[INPUT2] = items[INPUT2].take().and_then(|i| i.shrink(1));
 }
 
+/// The chemical tanks a machine has, by index: what pipes reach through `mekanism:chemicals`.
+fn tank_specs(m: Machine) -> &'static [TankSpec] {
+    const BIG: u32 = 10_000;
+    const fn spec(name: &'static str, insert: bool, only: Option<&'static str>) -> TankSpec {
+        TankSpec { name, capacity: BIG, insert, extract: !insert, only }
+    }
+    const PURIFY: [TankSpec; 1] = [spec("in", true, Some("mekanism:oxygen"))];
+    const INJECT: [TankSpec; 1] = [spec("in", true, Some("mekanism:hydrogen_chloride"))];
+    const SEPARATE: [TankSpec; 2] = [spec("first", false, None), spec("second", false, None)];
+    const INFUSE: [TankSpec; 3] =
+        [spec("left", true, None), spec("right", true, None), spec("out", false, None)];
+    match m {
+        Machine::PurificationChamber => &PURIFY,
+        Machine::ChemicalInjectionChamber => &INJECT,
+        Machine::ElectrolyticSeparator => &SEPARATE,
+        Machine::ChemicalInfuser => &INFUSE,
+        _ => &[],
+    }
+}
+
+/// Whether the machine's chemical tank holds what an operation spends this tick.
+fn has_chemical(m: Machine, nbt: &Compound) -> bool {
+    match m.chemical_use() {
+        None => true,
+        Some((chem, per)) => {
+            let t = Tank::load(nbt, "in");
+            t.chemical.as_deref() == Some(chem) && t.amount >= per
+        }
+    }
+}
+
+/// The first tank of a `ModFluidTanks` block, as the game saves it: (fluid id, amount).
+fn fluid_tank(nbt: &Compound) -> (Option<String>, i32) {
+    let Some(Tag::List(list)) = nbt.get(&"fluids".into()) else { return (None, 0) };
+    match list.first() {
+        Some(Tag::Compound(t)) => {
+            let fluid = match t.get(&"Fluid".into()) {
+                Some(Tag::String(s)) => Some(s.to_string_lossy()).filter(|f| f != "minecraft:empty"),
+                _ => None,
+            };
+            (fluid, int(t, "Amount"))
+        }
+        _ => (None, 0),
+    }
+}
+
+fn set_fluid_tank(nbt: &mut Compound, fluid: Option<&str>, amount: i32) {
+    let mut t = Compound::new();
+    let fluid = if amount > 0 { fluid.unwrap_or("minecraft:empty") } else { "minecraft:empty" };
+    t.insert("Fluid".into(), Tag::String(fluid.into()));
+    t.insert("Amount".into(), Tag::Int(amount.max(0)));
+    nbt.insert("fluids".into(), Tag::List(vec![Tag::Compound(t)]));
+}
+
+/// One tick of the machines that work on fluids and chemicals: the separator splits a fluid
+/// into two chemicals, the chemical infuser joins two into one. They spend energy every tick
+/// they make something.
+fn tick_chemical(m: Machine, nbt: &mut Compound) {
+    let energy = int(nbt, "energy");
+    let need = m.fe_per_tick();
+    if energy < need {
+        return;
+    }
+    let made = match m {
+        Machine::ElectrolyticSeparator => {
+            let (fluid, amount) = fluid_tank(nbt);
+            let Some((cost, (c1, n1), (c2, n2))) = fluid.as_deref().and_then(electrolyse) else {
+                return;
+            };
+            let (mut t1, mut t2) = (Tank::load(nbt, "first"), Tank::load(nbt, "second"));
+            if (amount as u32) < cost {
+                return;
+            }
+            // each output tank holds one chemical at a time: both must have room for this tick
+            let fits1 = t1.amount == 0 || t1.chemical.as_deref() == Some(c1);
+            let fits2 = t2.amount == 0 || t2.chemical.as_deref() == Some(c2);
+            if !fits1 || !fits2 || t1.amount + n1 > 10_000 || t2.amount + n2 > 10_000 {
+                return;
+            }
+            t1.fill(c1, n1, 10_000);
+            t2.fill(c2, n2, 10_000);
+            t1.save(nbt, "first");
+            t2.save(nbt, "second");
+            set_fluid_tank(nbt, fluid.as_deref(), amount - cost as i32);
+            true
+        }
+        Machine::ChemicalInfuser => {
+            let (mut l, mut r, mut out) =
+                (Tank::load(nbt, "left"), Tank::load(nbt, "right"), Tank::load(nbt, "out"));
+            let (Some(a), Some(b)) = (l.chemical.clone(), r.chemical.clone()) else { return };
+            let Some(result) = combine_chemicals(&a, &b) else { return };
+            if l.amount == 0 || r.amount == 0 || out.fill(result, 1, 10_000) == 0 {
+                return;
+            }
+            l.drain(&a, 1);
+            r.drain(&b, 1);
+            l.save(nbt, "left");
+            r.save(nbt, "right");
+            out.save(nbt, "out");
+            true
+        }
+        _ => false,
+    };
+    if made {
+        set_int(nbt, "energy", energy - need);
+    }
+}
+
 fn tick_machine(
     host: &mut dyn ServerHost,
     level: LevelRef,
@@ -337,8 +448,14 @@ fn tick_machine(
         }
         fits(&*host, &items[OUTPUT], &r.output, r.count)
     });
+    let result = result.filter(|_| has_chemical(machine, nbt));
     let energy = int(nbt, "energy");
     let s = step(&mut work, result.is_some(), energy, machine.fe_per_tick(), machine.ticks());
+    if let (Some((chem, per)), true) = (machine.chemical_use(), s.spent > 0) {
+        let mut tank = Tank::load(nbt, "in");
+        tank.drain(chem, per);
+        tank.save(nbt, "in");
+    }
     set_int(nbt, "energy", energy - s.spent);
     set_int(nbt, "progress", work.progress);
     if s.finished {
@@ -398,7 +515,11 @@ impl BlockEntityPart for Machines {
             Kind::Pipe(f, _) => tick_pipe(host, level, pos, f),
             Kind::Cube(t) => tick_cube(host, level, pos, t, int(&nbt, "energy")),
             Kind::Machine(m) => {
-                tick_machine(host, level, m, &mut nbt, &mut items);
+                if m.has_items() {
+                    tick_machine(host, level, m, &mut nbt, &mut items);
+                } else {
+                    tick_chemical(m, &mut nbt);
+                }
                 // the furnace template's `lit` shows the machine working
                 let lit = i32::from(int(&nbt, "progress") > 0);
                 if int(&nbt, "lit") != lit {
@@ -492,12 +613,27 @@ impl Hooks for Mod {
                     r.block_energy(&key, buffer_of(kind));
                 }
                 if let Kind::Machine(m) = kind {
-                    r.block_container(&key, container_of(m));
+                    if m.has_items() {
+                        r.block_container(&key, container_of(m));
+                    }
+                    if m == Machine::ElectrolyticSeparator {
+                        // water or brine in from any side, 10 buckets
+                        let faces = std::array::from_fn(|_| vec![0]);
+                        r.block_fluids(&key, ModFluidTanks::new(vec![10_000], faces, vec![0], vec![]));
+                    }
                 }
             }
             let names: Vec<&str> = ids.iter().map(String::as_str).collect();
             let built = r.block_entity_type(entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Machines);
+            if let Some(Kind::Machine(m)) = ids.first().and_then(|id| parse_block(id)) {
+                let specs = tank_specs(m);
+                if !specs.is_empty() {
+                    r.block_entity_capability(&CHEMICALS, &built, move |_, at| {
+                        Some(Box::new(BlockTanks { at, specs }))
+                    });
+                }
+            }
         }
     }
 }
