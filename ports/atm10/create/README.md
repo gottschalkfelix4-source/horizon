@@ -44,3 +44,6 @@ small cogwheel mesh at, and the sail rule. `src/rules.rs` and `src/kinetics.rs` 
 ## Build
 
 `sh ../dev-sdk.sh`, then `cargo test --lib` and `cargo check` in this folder.
+4. A per-slot stack limit in `ModContainer` (a belt holds one item; hoppers and funnels now put up to a few
+   in, because the container takes stacks). Proposed: `slot_limit: u32` on `ModContainer`
+   (`crates/horizon-mod-vocab/src/item/containers.rs`), honoured by the items capability.
