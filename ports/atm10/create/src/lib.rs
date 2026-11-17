@@ -68,7 +68,8 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::Gearbox => Part::Gearbox,
         Kind::Millstone => Part::Consumer { impact: MILLSTONE_IMPACT },
         Kind::MechanicalPress => Part::Consumer { impact: PRESS_IMPACT },
-        Kind::Depot => return None,
+        Kind::MechanicalMixer => Part::Consumer { impact: MIXER_IMPACT },
+        Kind::Depot | Kind::Basin => return None,
         Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM, capacity: CREATIVE_MOTOR_CAPACITY },
         Kind::WaterWheel => {
             let flowing = Direction6::ALL
@@ -155,6 +156,7 @@ impl BlockEntityPart for Kinetic {
         match kind {
             Kind::Millstone => tick_millstone(host, speed, &mut nbt, &mut items),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
+            Kind::MechanicalMixer => tick_mixer(host, level, pos, speed, &mut nbt),
             _ => {}
         }
         if nbt == event.entity.nbt && items == event.entity.items {
@@ -263,6 +265,48 @@ fn tick_millstone(host: &mut dyn ServerHost, speed: f64, nbt: &mut Compound, ite
     }
 }
 
+/// Mixes what lies in the basin below: takes one of each ingredient, adds the product.
+fn tick_mixer(host: &mut dyn ServerHost, level: LevelRef, pos: Pos, speed: f64, nbt: &mut Compound) {
+    let below = [pos[0], pos[1] - 1, pos[2]];
+    let is_basin = state_at(&*host, level, below).is_some_and(|(id, ..)| parse_block(&id) == Some(Kind::Basin));
+    let Some(be) = host.block_entity(level, below).filter(|_| is_basin) else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    let slots: Vec<Option<ItemStack>> = (0..BASIN_SLOTS as u32).map(|i| be.item_slot(&*host, i).ok().flatten()).collect();
+    let ids: Vec<String> = slots.iter().flatten().map(|s| s.item().id(&*host).to_string()).collect();
+    let Some((take, out, n)) = mix(&ids) else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    if speed == 0.0 {
+        return;
+    }
+    let (p, done) = advance(progress(nbt), speed, MIX_WORK);
+    if !done {
+        set_progress(nbt, p);
+        return;
+    }
+    set_progress(nbt, 0.0);
+    let Some(key) = mod_api::Identifier::parse(out).ok().and_then(|id| host.item_key(&id)) else { return };
+    let Some(made) = ItemStack::new(key, n) else { return };
+    let mut slots = slots;
+    for id in take {
+        if let Some(i) = slots.iter().position(|s| s.as_ref().is_some_and(|s| s.item().id(&*host) == id)) {
+            slots[i] = slots[i].take().and_then(|s| s.shrink(1));
+        }
+    }
+    // the product goes into the first free slot, or the mix waits
+    let Some(free) = slots.iter().position(Option::is_none) else { return };
+    slots[free] = Some(made);
+    let _ = host.transaction(|host, tx| {
+        for (i, s) in slots.into_iter().enumerate() {
+            be.set_item_slot(host, tx, i as u32, s).map_err(|_| ())?;
+        }
+        Ok::<(), ()>(())
+    });
+}
+
 fn tick_press(host: &mut dyn ServerHost, level: LevelRef, pos: Pos, speed: f64, nbt: &mut Compound) {
     let below = [pos[0], pos[1] - 1, pos[2]];
     let on_depot = state_at(&*host, level, below).is_some_and(|(id, ..)| parse_block(&id) == Some(Kind::Depot));
@@ -327,6 +371,17 @@ impl Hooks for Mod {
                 faces: [outputs.clone(), inputs.clone(), inputs.clone(), inputs.clone(), inputs.clone(), inputs.clone()],
                 inputs,
                 outputs,
+                menu: Some("minecraft:generic_9x1".into()),
+            },
+        );
+        let key = r.block_key("create:basin");
+        r.block_container(
+            &key,
+            ModContainer {
+                slots: BASIN_SLOTS,
+                faces: std::array::from_fn(|_| (0..BASIN_SLOTS).collect()),
+                inputs: (0..BASIN_SLOTS).collect(),
+                outputs: (0..BASIN_SLOTS).collect(),
                 menu: Some("minecraft:generic_9x1".into()),
             },
         );
