@@ -3,11 +3,11 @@
 //! around it that are not part of the network. It needs power and a channel.
 //!
 //! The import bus takes the first item it finds (only the one named by its filter, when it has one);
-//! the export bus puts out the item named by its filter (nothing without one). Right-click a bus with
-//! an item to set its filter to that item, with an empty hand to clear it.
+//! the export bus puts out the item named by its filter (nothing without one). The filter is the item in the bus's first slot:
+//! right-click the bus to open it and put the item there.
 use mod_api::{
-    Compound, Direction, Hand, HostTransaction, Identifier, InteractionResult, ItemPlace, ItemResource, ItemStack, ITEMS,
-    LevelRef, ResourceHandler, ServerHost, Tag, Text, UseItemOnEvent, UseWithoutItemEvent,
+    Compound, Direction, HostTransaction, Identifier, ItemResource, ItemStack, ITEMS, LevelRef, ResourceHandler,
+    ServerHost, Tag,
 };
 
 use crate::rules::*;
@@ -33,7 +33,7 @@ fn resource_of(host: &dyn ServerHost, id: &str) -> Option<ItemResource> {
 }
 
 /// One operation of the bus at `pos`, run on the ticks that are a multiple of the period.
-pub fn tick(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], device: Device, nbt: &Compound) {
+pub fn tick(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], device: Device, filter: Option<String>) {
     if level.game_time(&*host).unwrap_or(0) % BUS_PERIOD != 0 {
         return;
     }
@@ -41,7 +41,6 @@ pub fn tick(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], device: D
     if !n.powered || !n.channel {
         return;
     }
-    let filter = filter_of(nbt);
     for dir in Direction::ALL {
         let other = offset(pos, dir);
         // blocks of the network are not inventories to work on
@@ -98,47 +97,4 @@ fn export(host: &mut dyn ServerHost, level: LevelRef, drives: &[[i32; 3]], cap: 
         return false;
     }
     true
-}
-
-/// Sets the filter of the bus at `pos` to the held item (or clears it), and says so.
-fn set_filter(host: &mut dyn ServerHost, pos: [i32; 3], player: u128, held: Option<&ItemStack>) -> Option<InteractionResult> {
-    let level = host.level(host.dimension())?;
-    let be = host.block_entity(level, pos)?;
-    let filter = held.map(|h| h.item().id(&*host)).unwrap_or_default();
-    let mut patch = Compound::new();
-    patch.insert(FILTER.into(), Tag::String(filter.as_str().into()));
-    let _ = be.merge_data(host, patch);
-    if let Some(p) = host.player(player) {
-        let msg = if filter.is_empty() { "Bus filter cleared".to_string() } else { format!("Bus filter: {filter}") };
-        let _ = p.action_bar(host, Text::literal(&msg));
-    }
-    Some(InteractionResult::SuccessServer)
-}
-
-/// What the player holds in `hand`: the click's own stack, else a read of the hand.
-fn held(host: &mut dyn ServerHost, click_stack: Option<&ItemStack>, player: u128, hand: Hand) -> Option<ItemStack> {
-    click_stack.cloned().or_else(|| ItemPlace::PlayerHand { player, hand }.stack(host))
-}
-
-pub fn use_item_on(host: &mut dyn ServerHost, event: &mut UseItemOnEvent<'_>) -> Option<InteractionResult> {
-    let click = event.click;
-    let stack = held(&mut *host, click.stack, click.player, click.hand);
-    set_filter(host, click.pos, click.player, stack.as_ref())
-}
-
-pub fn use_without_item(host: &mut dyn ServerHost, event: &mut UseWithoutItemEvent<'_>) -> Option<InteractionResult> {
-    let click = event.click;
-    // The game also runs this empty-hand use right after the item use of the same click, so an empty
-    // hand alone must not clear the filter: sneaking with an empty hand does.
-    let stack = held(&mut *host, click.stack, click.player, click.hand);
-    if stack.is_none() {
-        let sneaking = host
-            .player(click.player)
-            .and_then(|p| p.is_secondary_use_active(&*host))
-            .unwrap_or(false);
-        if !sneaking {
-            return None;
-        }
-    }
-    set_filter(host, click.pos, click.player, stack.as_ref())
 }

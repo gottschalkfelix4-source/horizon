@@ -98,8 +98,9 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   network's cells and the first neighbouring inventory (a block outside the network with an item capability) that can
   take or give it. Needs power and a channel, draws 0.1 AE/tick.
 - The import bus takes the first plain item it finds (only its filter's item when it has one). The export bus puts out
-  its filter's item, nothing without a filter. Right-click a bus with an item to set its filter, sneak-right-click with an empty hand to
-  clear it (shown on the action bar). AE2 buses are cable parts with a configuration screen; this is the port's stand-in.
+  its filter's item, nothing without a filter. Right-click the bus to open it and put the item to filter by in its first slot (the other slots refuse
+  items). AE2 buses are cable parts with a configuration screen; this is the port's stand-in. A filter saved by
+  `data merge` (`filter`) also works.
 - Channels: a network has 8, or 32 with a controller. Drives, terminals and buses each take one, the lowest positions
   first; a device past the limit does nothing (a drive's cells are not seen, a terminal says "no free channel"). AE2's
   per-cable channel routing (8 per smart cable, 32 per dense) is not modelled.
