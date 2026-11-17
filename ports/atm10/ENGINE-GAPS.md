@@ -512,3 +512,14 @@ mod menu and an item part, both of which the API has.
 - Mod recipe serializers of another mod's machines (`mysticalagriculture:infusion`, `awakening`, `reprocessor`,
   `farmland_till`) wait for the Mystical Agriculture port to register them.
 - Fluids from files for molten metals and their buckets.
+
+## createaddition
+
+- Rotation from another mod's network: a native mod cannot make a block part of Create's kinetic network
+  (it lives in the Create crate), so the motor and alternator only exchange `speed_x1000` through saved data.
+  Proposed: a kinetic capability in the mod API (`KINETIC`: speed, stress capacity/impact, axis) that
+  mods register on blocks, the way `ENERGY` is, so Create's solver and its add-ons share one network.
+- Another mod's recipe types read from a machine (Create's `mixing`, `pressing`, `mechanical_crafting`...): the
+  engine side exists (`register_recipe_type`), the Create port would have to read add-ons' files.
+- Items near a block as machine input (the coil charges items lying around it): an area item query
+  (`LevelRef::item_entities_in`) with a way to set an item entity's stack.

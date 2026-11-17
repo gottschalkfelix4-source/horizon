@@ -101,6 +101,7 @@ All of these were built and unit-tested only (`cargo test`, clippy, fmt); none h
 | [BotanyPots](botanypots/) | 21.1.44 | LGPL-2.1-only | machines | Botany pot with 9 soils and 11 crops (not data-driven) ported |
 | [Mystical Agriculture](mysticalagriculture/) | 8.0.28 | MIT | machines | 16 essence crops and five farmland tiers with tier-gated growth; rest to do |
 | [Mystical Agradditions](mysticalagradditions/) | 8.0.15 | MIT | machines | Tier 6 farmland and six awakened crops, insanium, coals, apples, paxels, cruxes, inferium ores as data from the original; seed/infusion recipes and fluids to do; not run in the game |
+| [Create Additions](createaddition/) | 1.7.2 | MIT | machines | Motor, alternator, accumulator, connectors, creative generator, Tesla coil with the original charging recipes; rotation needs Create (no hook), rolling mill, fluids to do; not run in the game |
 | [Storage Delight](storagedelight/) | 26.09.17-1.21-neoforge | MIT | machines | Placeholder: food-only pantry and fridge; original's blocks not recalled |
 | [Sushi Go Crafting](sushigocrafting/) | 0.6.6 | MIT | machines | Rolling mat making rolls (assumed); ingredients not obtainable yet |
 
