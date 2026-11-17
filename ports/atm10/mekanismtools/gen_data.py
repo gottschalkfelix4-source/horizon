@@ -48,3 +48,19 @@ for m, (dur, bonus, factor, points, tough, kb) in MATERIALS.items():
                          "amount": kb, "operation": "add_value", "slot": SLOT[a]})
         write(f"{m}_{a}", {"template": f"minecraft:iron_{a}", "components": {
             "minecraft:max_damage": factor * mult, "minecraft:attribute_modifiers": mods}})
+
+
+# Paxels: pickaxe, axe and shovel in one (speed per material from memory, see README "To check")
+PAXEL_SPEED = {"bronze": 6.0, "lapis_lazuli": 5.0, "osmium": 6.0, "refined_glowstone": 7.0,
+               "refined_obsidian": 9.0, "steel": 7.0}
+for m, (dur, bonus, factor, points, tough, kb) in MATERIALS.items():
+    rules = [{"blocks": f"#minecraft:mineable/{k}", "correct_for_drops": True, "speed": PAXEL_SPEED[m]}
+             for k in ("pickaxe", "axe", "shovel")]
+    write(f"{m}_paxel", {"template": "minecraft:iron_pickaxe", "components": {
+        "minecraft:max_damage": dur * 2,
+        "minecraft:tool": {"rules": rules, "default_mining_speed": 1.0, "damage_per_block": 1},
+        "minecraft:attribute_modifiers": [
+            {"type": "minecraft:attack_damage", "id": "minecraft:base_attack_damage",
+             "amount": 5.0 + bonus, "operation": "add_value", "slot": "mainhand"},
+            {"type": "minecraft:attack_speed", "id": "minecraft:base_attack_speed",
+             "amount": -2.4, "operation": "add_value", "slot": "mainhand"}]}})
