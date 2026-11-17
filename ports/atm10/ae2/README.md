@@ -78,5 +78,6 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
 - The drive takes only storage cells, in slots 0 to 9 (`menu_slot_rules` on `minecraft:generic_9x2`).
 - Storage cells stack to 1 (two cells used to merge into one stack of 2 that counted once).
 - `item replace` can still put any item into a drive slot; the network ignores non-cells and slots past ten.
+- Block tags `mineable/pickaxe` and `needs_stone_tool` (ores) are written by gen_data.py.
 - Loot tables use 26.3's keys (`type` for conditions and functions, not 1.21.1's `condition`/`function`); the
   names of blocks and items are in `assets/ae2/lang/en_us.json`.
