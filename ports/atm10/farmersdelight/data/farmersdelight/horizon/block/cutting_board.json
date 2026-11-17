@@ -3,9 +3,9 @@
   "properties": {
     "hardness": 2.0,
     "explosion_resistance": 2.0,
-    "sounds": "minecraft:oak_planks"
+    "sounds": "minecraft:oak_planks",
+    "occludes": false
   },
-  "occludes": false,
   "shapes": {
     "default": [
       [

@@ -115,7 +115,7 @@ fn a_world_folder_zips_under_its_own_name_without_the_lock() {
     let target = root.join("out/backup.zip");
     archive::write(&world, &target, 0, Some(6)).unwrap();
     let mut zip = zip::ZipArchive::new(std::fs::File::open(&target).unwrap()).unwrap();
-    let mut names: Vec<String> = zip.file_names().map(str::to_owned).collect();
+    let mut names: Vec<String> = zip.file_names().filter_map(Result::ok).map(|n| n.into_owned()).collect();
     names.sort();
     assert_eq!(names, ["MyWorld/level.dat", "MyWorld/region/r.0.0.mca"]);
     let mut region = Vec::new();

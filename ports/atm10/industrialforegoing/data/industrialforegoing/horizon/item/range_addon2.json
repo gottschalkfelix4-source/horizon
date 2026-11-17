@@ -1,12 +1,4 @@
 {
   "template": "minecraft:paper",
-  "components": {
-    "minecraft:custom_data": {
-      "industrialforegoing:addon": {
-        "kind": "range",
-        "tier": 3
-      }
-    }
-  },
   "max_stack_size": 1
 }

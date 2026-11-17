@@ -9,8 +9,8 @@
 //! entity of the one type `industrialforegoing:machine`. Its energy and tanks are the game's own
 //! (`r.block_energy`, `r.block_fluids`: the amounts live in the block entity's compound under
 //! `energy` and `fluids`), its slots a `ModContainer` that opens a vanilla menu. The slots that
-//! are neither inputs nor outputs are addon slots: an item there whose `minecraft:custom_data`
-//! carries `industrialforegoing:addon` changes the machine's numbers ([`rules::Addons`]).
+//! are neither inputs nor outputs are addon slots: an addon item (named by its id, or by its `minecraft:custom_data`
+//! carrying `industrialforegoing:addon`) changes the machine's numbers ([`rules::Addons`]).
 //! A machine works on the block or the area behind it, the side its front faces away from.
 use std::sync::OnceLock;
 
@@ -123,7 +123,9 @@ fn addons(host: &dyn Host, items: &[Option<ItemStack>], io: &[usize]) -> Addons 
         if io.contains(&i) {
             continue;
         }
-        if let Some(data) = stack.as_ref().and_then(|s| custom_data(host, s)) {
+        let Some(stack) = stack.as_ref() else { continue };
+        a.add_item_id(&stack.item().id(host));
+        if let Some(data) = custom_data(host, stack) {
             a.add_custom_data(&data);
         }
     }

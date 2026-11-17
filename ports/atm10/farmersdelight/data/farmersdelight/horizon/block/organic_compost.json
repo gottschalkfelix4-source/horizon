@@ -1,6 +1,5 @@
 {
   "template": "minecraft:dirt",
-  "random_ticks": true,
   "item": true,
   "state_properties": {
     "composting": {
@@ -16,5 +15,8 @@
         "7"
       ]
     }
+  },
+  "properties": {
+    "random_ticks": true
   }
 }

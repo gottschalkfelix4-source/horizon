@@ -36,6 +36,17 @@ impl AddonKind {
     }
 }
 
+/// The kind and tier of the addon item `id` names (`range_addon0` is tier 1, the others' number
+/// is their tier), or `None` for any other item.
+pub fn addon_of_item_id(id: &str) -> Option<(AddonKind, u8)> {
+    let name = id.strip_prefix("industrialforegoing:")?;
+    if let Some(n) = name.strip_prefix("range_addon") {
+        return Some((AddonKind::Range, n.parse::<u8>().ok()?.checked_add(1)?));
+    }
+    let (kind, n) = name.split_once("_addon_")?;
+    Some((AddonKind::parse(kind)?, n.parse().ok()?))
+}
+
 /// The addons in a machine's addon slots, the best tier of each kind (IF does not stack two
 /// addons of a kind: a machine takes one of each).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -47,6 +58,19 @@ pub struct Addons {
 }
 
 impl Addons {
+    /// Adds the addon an item id names, if it is one: `industrialforegoing:speed_addon_1`
+    /// (also `efficiency_addon_N`, `processing_addon_N`) or `range_addon0`, whose tiers start at 1.
+    pub fn add_item_id(&mut self, id: &str) {
+        let Some((kind, tier)) = addon_of_item_id(id) else { return };
+        let slot = match kind {
+            AddonKind::Speed => &mut self.speed,
+            AddonKind::Efficiency => &mut self.efficiency,
+            AddonKind::Processing => &mut self.processing,
+            AddonKind::Range => &mut self.range,
+        };
+        *slot = (*slot).max(tier);
+    }
+
     /// Adds the addon described by an item's custom data, if it is one.
     pub fn add_custom_data(&mut self, custom_data: &Compound) {
         let Some(Tag::Compound(addon)) = custom_data.get(&ADDON_KEY.into()) else {
@@ -539,5 +563,19 @@ mod tests {
         let mut burn = 5;
         assert_eq!(generator_tick(&mut burn, PITIFUL_GENERATOR.capacity - 10, &PITIFUL_GENERATOR, None), (0, false));
         assert_eq!(burn, 5);
+    }
+}
+
+#[cfg(test)]
+mod addon_id_tests {
+    use super::*;
+
+    #[test]
+    fn addon_items_name_their_kind_and_tier() {
+        assert_eq!(addon_of_item_id("industrialforegoing:speed_addon_2"), Some((AddonKind::Speed, 2)));
+        assert_eq!(addon_of_item_id("industrialforegoing:range_addon0"), Some((AddonKind::Range, 1)));
+        assert_eq!(addon_of_item_id("industrialforegoing:range_addon11"), Some((AddonKind::Range, 12)));
+        assert_eq!(addon_of_item_id("industrialforegoing:plastic"), None);
+        assert_eq!(addon_of_item_id("minecraft:speed_addon_1"), None);
     }
 }

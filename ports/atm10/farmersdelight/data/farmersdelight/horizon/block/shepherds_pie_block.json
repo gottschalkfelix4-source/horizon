@@ -3,7 +3,9 @@
   "properties": {
     "hardness": 0.5,
     "explosion_resistance": 0.5,
-    "sounds": "minecraft:white_wool"
+    "sounds": "minecraft:white_wool",
+    "occludes": false,
+    "destroy_overlay": false
   },
   "state_properties": {
     "servings": {
@@ -17,8 +19,6 @@
       ]
     }
   },
-  "occludes": false,
-  "destroy_overlay": false,
   "shapes": {
     "default": [
       [
