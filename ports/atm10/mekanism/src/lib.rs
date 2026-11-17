@@ -44,7 +44,7 @@ fn kind_at(host: &dyn Host, level: LevelRef, pos: [i32; 3]) -> Option<Kind> {
 }
 
 /// Moves up to `budget` FE from the energy of `from` to the energy of `to`, in one transaction:
-/// how much moved. Nothing moves unless the source has all of it.
+/// how much moved (at most what the source can hand over and the sink take).
 fn route(
     host: &mut dyn ServerHost,
     level: LevelRef,
@@ -58,8 +58,20 @@ fn route(
     ) else {
         return 0;
     };
+    // What the source can give this tick (its holdings, its rate), found in a transaction that
+    // is thrown away: asking for more than it can hand over would abort the move.
+    let held = host
+        .transaction(|host, tx| {
+            let have = src.amount(host).min(budget);
+            let n = src.extract(host, tx, have);
+            Err::<(), u32>(n)
+        })
+        .err()
+        .unwrap_or(0);
+    if held == 0 {
+        return 0;
+    }
     host.transaction(|host, tx| {
-        let held = src.amount(host).min(budget);
         let taken = dst.insert(host, tx, held);
         if taken == 0 {
             return Ok(0);
