@@ -387,7 +387,13 @@ pub fn oxidize(item: &str) -> Option<(&'static str, u32)> {
 
 /// The isotopic centrifuge: uranium hexafluoride into fissile fuel, mB for mB.
 pub fn centrifuge(chemical: &str) -> Option<&'static str> {
-    (chemical == "mekanism:uranium_hexafluoride").then_some("mekanism:fissile_fuel")
+    match chemical {
+        "mekanism:uranium_hexafluoride" => Some("mekanism:fissile_fuel"),
+        // stand-ins: the original makes these by other routes
+        "mekanism:hydrogen" => Some("mekanism:deuterium"),
+        "mekanism:lithium" => Some("mekanism:tritium"),
+        _ => None,
+    }
 }
 
 /// The electrolytic separator: what a fluid splits into, (fluid, mB spent, first chemical and mB,

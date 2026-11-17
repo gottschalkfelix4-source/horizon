@@ -22,7 +22,10 @@ use mod_api::{
 
 pub mod chemical;
 use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
+pub mod evaporation;
 pub mod fission;
+pub mod fusion;
+pub mod sps;
 pub mod matrix;
 pub mod mb;
 pub mod multiblock;
@@ -220,15 +223,23 @@ fn balance_tanks<R: 'static>(
         if n == 0 {
             continue;
         }
-        let moved = host
-            .transaction(|host, tx| {
+        // all or nothing; a store that takes only part (a cauldron gives whole thirds) is
+        // asked again for that part
+        let attempt = |host: &mut dyn ServerHost, n: u32| {
+            host.transaction(|host, tx| {
                 let out = src.extract(host, tx, i, &r, n);
                 if out == 0 {
                     return Ok(0);
                 }
-                if dst.insert(host, tx, j, &r, out) < out { Err(()) } else { Ok::<u32, ()>(out) }
+                let took = dst.insert(host, tx, j, &r, out);
+                if took < out { Err(took) } else { Ok(out) }
             })
-            .unwrap_or(0);
+        };
+        let moved = match attempt(host, n) {
+            Ok(m) => m,
+            Err(took) if took > 0 => attempt(host, took).unwrap_or(0),
+            Err(_) => 0,
+        };
         total += moved;
         left -= moved;
     }
@@ -300,7 +311,7 @@ fn move_network<R: 'static>(
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
             || matches!(
                 mb::id_at(host, level, p).as_deref(),
-                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT)
+                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | fusion::PORT | sps::PORT)
             )
     };
     for (i, &from) in ends.iter().enumerate() {
@@ -929,6 +940,9 @@ impl Hooks for Mod {
         tank::register(r);
         steam::register(r);
         fission::register(r);
+        evaporation::register(r);
+        fusion::register(r);
+        sps::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
                 let Some(kind) = parse_block(id) else { continue };
