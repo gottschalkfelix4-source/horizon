@@ -14,6 +14,7 @@ use mod_api::{
     RegistrationContext, ServerHost, Tag, move_resources,
 };
 
+pub mod grind;
 pub mod kinetics;
 pub mod rules;
 use kinetics::{Axis, Node, Part, Pos, solve};
@@ -217,8 +218,8 @@ impl BlockEntityPart for Kinetic {
         kinetic_step(host, level, pos, &mut nbt);
         let speed = f64::from(int(&nbt, "speed_x1000")) / 1000.0;
         match kind {
-            Kind::Millstone => tick_millstone(host, speed, &mut nbt, &mut items, mill),
-            Kind::CrushingWheel => tick_millstone(host, speed, &mut nbt, &mut items, crush),
+            Kind::Millstone => tick_millstone(host, pos, speed, &mut nbt, &mut items, grind::milling),
+            Kind::CrushingWheel => tick_millstone(host, pos, speed, &mut nbt, &mut items, grind::crushing),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
             Kind::Funnel => tick_funnel(host, level, pos),
             Kind::Belt => tick_belt(host, level, pos, speed, &mut nbt, &mut items),
@@ -313,34 +314,47 @@ fn deposit(host: &dyn Host, items: &mut [Option<ItemStack>], id: &str, count: u3
 
 fn tick_millstone(
     host: &mut dyn ServerHost,
+    pos: Pos,
     speed: f64,
     nbt: &mut Compound,
     items: &mut Vec<Option<ItemStack>>,
-    recipes: fn(&str) -> Option<(&'static str, u32)>,
+    recipes: fn(&str) -> Option<grind::Recipe>,
 ) {
     items.resize(MILL_SLOTS, None);
     let found = (0..MILL_INPUTS).find_map(|slot| {
         let id = items[slot].as_ref()?.item().id(&*host);
-        recipes(&id).map(|(out, n)| (slot, out, n))
+        recipes(&id).map(|r| (slot, r))
     });
-    let Some((slot, out, n)) = found else {
+    let Some((slot, recipe)) = found else {
         set_progress(nbt, 0.0);
         return;
     };
     if speed == 0.0 {
         return;
     }
-    let (p, done) = advance(progress(nbt), speed, MILL_WORK);
+    // the recipe's time is for 16 RPM; faster turning shortens it
+    let work = f64::from(recipe.time);
+    let (p, done) = advance(progress(nbt), (speed.abs() / 16.0).max(1.0 / 16.0), work);
     if !done {
         set_progress(nbt, p);
         return;
     }
-    if deposit(&*host, items, out, n) {
-        items[slot] = items[slot].take().and_then(|i| i.shrink(1));
+    let time = pos[0] as i64 * 7 + pos[2] as i64 + int(nbt, "rolls") as i64;
+    set_int(nbt, "rolls", int(nbt, "rolls").wrapping_add(1));
+    let mut after = items.clone();
+    let mut fits = true;
+    for (id, n) in grind::drops(&recipe, pos, time) {
+        if !deposit(&*host, &mut after, id, n) {
+            fits = false;
+        }
+    }
+    if fits {
+        after[slot] = after[slot].take().and_then(|i| i.shrink(1));
+        *items = after;
         set_progress(nbt, 0.0);
     } else {
         // the outputs are full: hold at the end
-        set_progress(nbt, MILL_WORK - speed.abs());
+        set_progress(nbt, work - 1.0);
     }
 }
 
