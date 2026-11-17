@@ -2,8 +2,7 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "rolls": 1,
-      "bonus_rolls": 0,
+      "rolls": 1.0,
       "entries": [
         {
           "type": "minecraft:alternatives",
@@ -47,6 +46,5 @@
         }
       ]
     }
-  ],
-  "random_sequence": "ae2:blocks/deepslate_quartz_ore"
+  ]
 }
