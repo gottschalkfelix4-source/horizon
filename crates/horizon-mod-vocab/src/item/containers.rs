@@ -212,6 +212,10 @@ pub struct ModContainer {
     pub inputs: Vec<usize>,
     pub outputs: Vec<usize>,
     pub menu: Option<String>,
+    /// What one slot holds of any item (`Container.getMaxStackSize`), 1 to 99: a belt's slot
+    /// takes one item, whoever puts it there (hoppers, funnels, the items capability). 0 keeps
+    /// vanilla's 99; the item's own maximum still applies.
+    pub slot_limit: u32,
 }
 /// The fluid tanks of a mod block's block entity, in the container's shape:
 /// each tank's capacity in millibuckets, the tanks each face reaches, and
