@@ -18,8 +18,8 @@ use std::sync::{Mutex, OnceLock};
 
 use mod_api::{
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
-    BlockEntityTicksEvent, BlockKey, BlockPart, Compound, Hooks, Host, HostSide, HostTransaction,
-    InteractionResult, ItemKey, ItemPart, ItemPlace, LevelRef,
+    BlockEntityTicksEvent, BlockKey, BlockPart, Compound, Hooks, Host, HostSide,
+    InteractionResult, ItemKey, ItemPart, LevelRef,
     MenuClickedEvent, MenuClosedEvent, ModContainer, ModFluidTanks, PreRemoveSideEffectsEvent,
     Registrar, RegistrationContext, ServerHost, ServerTickEvent, Tag, Text, UseItemEvent,
     UseItemOnEvent, UseWithoutItemEvent,
@@ -399,14 +399,14 @@ impl ItemPart for Tablet {
             tell(host, event.player, "dimstorage.locked");
             return Some(InteractionResult::Fail);
         }
-        let place = ItemPlace::PlayerHand { player: event.player, hand: event.hand };
-        let _ = host.transaction(|host, tx| {
-            if place.edit(host, tx, |stack| tablet::set_frequency(stack, &freq)) {
-                Ok(())
-            } else {
-                Err(())
-            }
-        });
+        // The bound stack is written straight into the hand: an exchange through an `ItemPlace` takes the old
+        // stack out first, which a creative player's inventory does not lose (the binding then landed on a copy).
+        let _ = (|| {
+            let living = host.living(host.player(event.player)?.entity())?;
+            let mut stack = living.hand_item(&*host, event.hand)?;
+            tablet::set_frequency(&mut stack, &freq);
+            living.set_hand_item(host, event.hand, Some(stack)).ok()
+        })();
         Some(InteractionResult::SuccessServer)
     }
 }
