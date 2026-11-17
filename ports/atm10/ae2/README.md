@@ -114,9 +114,11 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
   patterns make, with a count of 0 when none is stored.
 - Middle click on a listed item asks for one: the plan (`src/crafting.rs`) takes what the cells hold and crafts the rest, inputs
   first, up to 16 deep, and says what is missing otherwise. It needs one `ae2:molecular_assembler` with a channel.
-  The crafts run at once, step by step; a craft that cannot start returns what it took; a result no cell has room for goes
-  to the player. Not modelled: crafting CPUs and their storage, crafting time and the assembler's power draw per craft (it
-  draws 2 AE/tick idle), processing patterns, amounts other than one.
+  The request is queued as a job and worked off by the assemblers: every 20 ticks each assembler of the network makes
+  one craft, each craft costs 200 FE (100 AE) from the cells; a job without power waits, one that runs out of an
+  ingredient stops with a message (the power drawn is not refunded). A result no cell has room for goes to the player.
+  Jobs are not saved over a restart. Not modelled: crafting CPUs and their storage, per-assembler speed cards,
+  processing patterns, amounts other than one.
 
 ## Storage bus and interface
 
