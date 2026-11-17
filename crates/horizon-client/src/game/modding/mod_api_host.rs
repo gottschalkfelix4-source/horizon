@@ -468,6 +468,29 @@ impl mod_api::LevelHost for super::GameLevel<'_> {
     fn is_loaded(&self, pos: [i32; 3]) -> bool {
         self.world.is_loaded_at(pos[0], pos[1], pos[2])
     }
+    fn face_sturdy(
+        &self,
+        pos: [i32; 3],
+        face: mod_api::BlockFace,
+        support: mod_api::SupportType,
+    ) -> Option<bool> {
+        if !self.world.is_loaded_at(pos[0], pos[1], pos[2]) {
+            return None;
+        }
+        let state = self.world.block(pos[0], pos[1], pos[2]);
+        let b = self.behaviours;
+        // A state whose support reads its surroundings needs the scene the full-game read builds.
+        if !b.has_cached_support(state) {
+            return None;
+        }
+        let direction = super::native_entity_refs::block_face_direction(face);
+        Some(match support {
+            mod_api::SupportType::Full => b.is_face_sturdy(state, direction),
+            mod_api::SupportType::Center => b.is_face_sturdy_center(state, direction),
+            mod_api::SupportType::Rigid => b.is_face_sturdy_rigid(state, direction),
+            _ => unreachable!("mod_api::SupportType: unhandled variant"),
+        })
+    }
     fn is_raining_at(&self, pos: [i32; 3]) -> bool {
         self.world.is_loaded_at(pos[0], pos[1], pos[2])
             && self
@@ -662,6 +685,14 @@ impl<'a: 'b, 'b, L: std::ops::Deref<Target = super::GameLevel<'a>>> mod_api::Lev
     fn is_loaded(&self, pos: [i32; 3]) -> bool {
         mod_api::LevelHost::is_loaded(&*self.level, pos)
     }
+    fn face_sturdy(
+        &self,
+        pos: [i32; 3],
+        face: mod_api::BlockFace,
+        support: mod_api::SupportType,
+    ) -> Option<bool> {
+        mod_api::LevelHost::face_sturdy(&*self.level, pos, face, support)
+    }
     fn is_raining_at(&self, pos: [i32; 3]) -> bool {
         mod_api::LevelHost::is_raining_at(&*self.level, pos)
     }
@@ -739,6 +770,26 @@ impl<'a: 'b, 'b> mod_api::LevelWriteHost for LevelTicks<'b, &mut super::GameLeve
 
     fn remove_block(&mut self, pos: [i32; 3], moved: bool) -> bool {
         self.level.remove_block_write(self.ticks, pos, moved)
+    }
+
+    fn update_neighbors(
+        &mut self,
+        pos: [i32; 3],
+        source: mod_api::BlockState,
+        update: mod_api::NeighbourUpdate,
+    ) -> bool {
+        let Ok(source) = source.try_into_engine(&()) else {
+            return false;
+        };
+        self.level
+            .update_neighbors_write(self.ticks, pos, source, update)
+    }
+
+    fn neighbor_changed(&mut self, pos: [i32; 3], source: mod_api::BlockState) -> bool {
+        let Ok(source) = source.try_into_engine(&()) else {
+            return false;
+        };
+        self.level.neighbor_changed_write(self.ticks, pos, source)
     }
 
     fn set_block_property(&mut self, pos: [i32; 3], key: &str, value: &str, flags: i32) -> bool {

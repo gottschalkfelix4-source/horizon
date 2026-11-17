@@ -1423,6 +1423,14 @@ pub trait LevelHost {
     fn is_raining_at(&self, _pos: [i32; 3]) -> bool {
         unimplemented!("LevelHost::is_raining_at")
     }
+    /// Whether the block at `pos` supports `support` on `face` (`BlockState.isFaceSturdy`),
+    /// as `LevelRef::block_face_sturdy` answers it, for the cases the game answers from its
+    /// tables (every vanilla shape and every mod block with a plain shape). None for an unloaded
+    /// position and for a state whose support depends on its surroundings (dynamic support), which
+    /// only the server-level read answers.
+    fn face_sturdy(&self, _pos: [i32; 3], _face: BlockFace, _support: SupportType) -> Option<bool> {
+        None
+    }
     /// `LevelReader.enabledFeatures`: the feature flags the world enables.
     fn enabled_features(&self) -> FeatureFlags {
         unimplemented!("LevelHost::enabled_features")
@@ -1500,6 +1508,26 @@ pub trait LevelWriteHost: LevelTicksHost + LevelRandomHost {
     /// Remove a block through `Level.removeBlock`, preserving its fluid. `moved` marks a piston move.
     fn remove_block(&mut self, _pos: [i32; 3], _moved: bool) -> bool {
         unimplemented!("LevelWriteHost::remove_block")
+    }
+    /// Tell the neighbours of `pos` that a block changed there, as vanilla's own writes do
+    /// (`Level.updateNeighborsAt`, `updateNeighborsAtExceptFromFacing` or
+    /// `updateNeighbourForOutputSignal`, by `update`), `source` being the state whose block
+    /// vanilla passes as the one that changed. The same call as `LevelRef::update_neighbors`,
+    /// for a part that holds only its write host, as a block's `tick_block` does. False, with
+    /// nothing done, for a position that isn't loaded, a `source` that is no block state, or a
+    /// non-authoritative level.
+    fn update_neighbors(
+        &mut self,
+        _pos: [i32; 3],
+        _source: BlockState,
+        _update: NeighbourUpdate,
+    ) -> bool {
+        unimplemented!("LevelWriteHost::update_neighbors")
+    }
+    /// Tell the block at `pos` that `source`'s block beside it changed (`Level.neighborChanged`),
+    /// as `LevelRef::neighbor_changed` does. False as for `update_neighbors`.
+    fn neighbor_changed(&mut self, _pos: [i32; 3], _source: BlockState) -> bool {
+        unimplemented!("LevelWriteHost::neighbor_changed")
     }
     /// Change a block property through `native_set_block_property`.
     fn set_block_property(
