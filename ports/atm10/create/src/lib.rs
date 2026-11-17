@@ -96,6 +96,8 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::MechanicalMixer => Part::Consumer {
             impact: MIXER_IMPACT,
         },
+        Kind::Deployer => Part::Consumer { impact: DEPLOYER_IMPACT },
+        Kind::MechanicalSaw => Part::Consumer { impact: SAW_IMPACT },
         Kind::Belt => Part::Belt {
             impact: BELT_IMPACT,
         },
@@ -222,6 +224,8 @@ impl BlockEntityPart for Kinetic {
             Kind::CrushingWheel => tick_millstone(host, pos, speed, &mut nbt, &mut items, grind::crushing),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
             Kind::Funnel => tick_funnel(host, level, pos),
+            Kind::Deployer => tick_deployer(host, level, pos, speed, &mut nbt, &mut items),
+            Kind::MechanicalSaw => tick_saw(host, level, pos, speed, &mut nbt),
             Kind::BlazeBurner => tick_burner(host, &mut nbt, &mut items),
             Kind::Belt => tick_belt(host, level, pos, speed, &mut nbt, &mut items),
             Kind::MechanicalMixer => tick_mixer(host, level, pos, speed, &mut nbt),
@@ -536,6 +540,86 @@ fn tick_mixer(
     });
 }
 
+/// The depot below `pos` and the stack on it.
+fn depot_below(host: &dyn ServerHost, level: LevelRef, pos: Pos) -> Option<(mod_api::BlockEntityRef, ItemStack)> {
+    let below = [pos[0], pos[1] - 1, pos[2]];
+    if state_at(host, level, below).is_none_or(|(id, ..)| parse_block(&id) != Some(Kind::Depot)) {
+        return None;
+    }
+    let be = host.block_entity(level, below)?;
+    let stack = be.item_slot(host, 0).ok().flatten()?;
+    Some((be, stack))
+}
+
+/// Writes `stack` (or nothing) into the depot's slot.
+fn set_depot(host: &mut dyn ServerHost, be: mod_api::BlockEntityRef, stack: Option<ItemStack>) {
+    let _ = host.transaction(|host, tx| be.set_item_slot(host, tx, 0, stack).map_err(|_| ()).map(|_| ()));
+}
+
+/// A deployer applies the item it holds to the stack on the depot below it.
+fn tick_deployer(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    pos: Pos,
+    speed: f64,
+    nbt: &mut Compound,
+    items: &mut Vec<Option<ItemStack>>,
+) {
+    items.resize(1, None);
+    let found = depot_below(&*host, level, pos).and_then(|(be, target)| {
+        let held = items[0].as_ref()?;
+        let (out, keep) = deploy(&target.item().id(&*host), &held.item().id(&*host))?;
+        // the whole stack is worked at once and needs as many held items unless the tool is kept
+        (keep || held.count() >= target.count()).then_some((be, target.count(), out, keep))
+    });
+    let Some((be, n, out, keep)) = found else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    if speed == 0.0 {
+        return;
+    }
+    let (p, done) = advance(progress(nbt), (speed.abs() / 16.0).max(1.0 / 16.0), DEPLOY_WORK / 4.0);
+    if !done {
+        set_progress(nbt, p);
+        return;
+    }
+    set_progress(nbt, 0.0);
+    let Some(made) = mod_api::Identifier::parse(&out).ok().and_then(|id| host.item_key(&id)).and_then(|k| ItemStack::new(k, n)) else {
+        return;
+    };
+    set_depot(host, be, Some(made));
+    if !keep {
+        items[0] = items[0].take().and_then(|i| i.shrink(n));
+    }
+}
+
+/// A saw cuts the stack on the depot below it.
+fn tick_saw(host: &mut dyn ServerHost, level: LevelRef, pos: Pos, speed: f64, nbt: &mut Compound) {
+    let found = depot_below(&*host, level, pos).and_then(|(be, target)| {
+        let (out, per, time) = cut(&target.item().id(&*host))?;
+        // the result must fit one stack
+        (target.count() * per <= 64).then_some((be, target.count(), out, per, time))
+    });
+    let Some((be, n, out, per, time)) = found else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    if speed == 0.0 {
+        return;
+    }
+    let (p, done) = advance(progress(nbt), (speed.abs() / 16.0).max(1.0 / 16.0), f64::from(time));
+    if !done {
+        set_progress(nbt, p);
+        return;
+    }
+    set_progress(nbt, 0.0);
+    let Some(made) = mod_api::Identifier::parse(out).ok().and_then(|id| host.item_key(&id)).and_then(|k| ItemStack::new(k, n * per)) else {
+        return;
+    };
+    set_depot(host, be, Some(made));
+}
+
 fn tick_press(
     host: &mut dyn ServerHost,
     level: LevelRef,
@@ -665,6 +749,19 @@ impl Hooks for Mod {
         );
         let key = r.block_key("create:blaze_burner");
         // one fuel item at a time, from hoppers on any side
+        r.block_container(
+            &key,
+            ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| vec![0]),
+                inputs: vec![0],
+                outputs: vec![],
+                menu: Some("minecraft:hopper".into()),
+                slot_limit: 0,
+            },
+        );
+        let key = r.block_key("create:deployer");
+        // the held item: one slot, hoppers fill it
         r.block_container(
             &key,
             ModContainer {
