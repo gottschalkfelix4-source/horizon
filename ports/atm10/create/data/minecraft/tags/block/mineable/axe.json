@@ -7,6 +7,9 @@
     "create:gearbox",
     "create:water_wheel",
     "create:windmill_bearing",
-    "create:creative_motor"
+    "create:creative_motor",
+    "create:millstone",
+    "create:depot",
+    "create:mechanical_press"
   ]
 }

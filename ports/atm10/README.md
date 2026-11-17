@@ -16,7 +16,7 @@ Rules followed here:
 |---|---|---|---|---|
 | [Libraries](libs/) | | LGPL-3.0-or-later | libs | config, geo (GeckoLib), accessories (Curios), guidebook (Patchouli): data sides done, see libs/README.md |
 | [Torchmaster](torchmaster/) | 21.1.13 | MIT | logic | Mega Torch and Dread Lamp ported; Feral Flare Lantern and config to do; not yet checked against the original |
-| [Create](create/) | 6.0.0 | MIT | deep | stage 1: shafts, cogwheels, gearboxes, water wheel, windmill bearing, creative motor and the stress solver; machines and contraptions follow |
+| [Create](create/) | 6.0.0 | MIT | deep | stages 1-2 in part: shafts, cogwheels, gearbox, water wheel, windmill bearing, creative motor, stress solver, millstone, depot, press; mixer, belts and contraptions follow |
 | [AppleSkin](appleskin/) | 3.0.9+mc1.21 | Unlicense | client | ported in part; not run in the game, not yet checked against the original |
 | [Auroras](auroras/) | 1.6.2 | BSD-2-Clause | client | ported in part; not run in the game, not yet checked against the original |
 | [Better Advanced Tooltips](betteradvancedtooltips/) | 2101.1.0-build.5 | MIT | client | ported in part; not run in the game, not yet checked against the original |

@@ -5,5 +5,14 @@
   "block.create.gearbox": "Gearbox",
   "block.create.water_wheel": "Water Wheel",
   "block.create.windmill_bearing": "Windmill Bearing",
-  "block.create.creative_motor": "Creative Motor"
+  "block.create.creative_motor": "Creative Motor",
+  "block.create.millstone": "Millstone",
+  "block.create.depot": "Depot",
+  "block.create.mechanical_press": "Mechanical Press",
+  "item.create.wheat_flour": "Wheat Flour",
+  "item.create.iron_sheet": "Iron Sheet",
+  "item.create.golden_sheet": "Golden Sheet",
+  "item.create.copper_sheet": "Copper Sheet",
+  "item.create.brass_sheet": "Brass Sheet",
+  "item.create.brass_ingot": "Brass Ingot"
 }

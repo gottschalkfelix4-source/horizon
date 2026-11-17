@@ -2,8 +2,7 @@
 
 Port of [Create](https://github.com/Creators-of-Create/Create) (ATM10 8.x, MIT) as a native Horizon
 mod. Written from the mod's observed behaviour and public description, not from its code.
-This is stage 1: rotation and stress. Later stages: press, mixer, millstone and crushing wheel
-(stage 2), belts, depot and funnels (stage 3), contraptions (stage 4).
+Stages: 1 rotation and stress (done), 2 millstone, press (done) and mixer, crushing wheel (not yet), 3 belts, funnels and a fuller depot, 4 contraptions.
 
 ## What it does
 
@@ -17,7 +16,13 @@ This is stage 1: rotation and stress. Later stages: press, mixer, millstone and 
 | Creative motor | 16 RPM, huge capacity | ported, speed not configurable yet |
 | Networks | The blocks joined by shafts, cogwheels and gearboxes (up to 4096) share one speed. Sources that disagree on speed or sense, or a ring of cogwheels that turns against itself, jam the network. Stress used (impact x RPM of each consumer) above what the sources give (capacity x RPM) stops it | ported; the network's lowest block solves it every 10 ticks and writes `speed_x1000`, `capacity`, `stress`, `jammed`, `overstressed` into every member's block entity |
 
-Consumers exist in the solver (`Part::Consumer`); the machines that use them come in stage 2.
+| Millstone | Four input and five output slots (hoppers work, vanilla 9x1 menu until its own screen), 4 su per RPM; each item takes 2048 RPM-ticks (64 ticks at 32 RPM): wheat to flour, cobblestone to gravel, bone to 3 bone meal | ported, recipe table and time from memory |
+| Depot | One slot a hopper fills and empties | stand-in: no belt, no putting an item on it by hand yet |
+| Mechanical press | 8 su per RPM; presses the stack on a depot below it in 1280 RPM-ticks: iron, gold, copper and brass ingots to sheets | ported, whole stack at once (to check) |
+| Mechanical mixer, basin, crushing wheel | | not yet: the mixer needs the basin and the heater, the wheels need item entities between them |
+
+Consumers use the solver's `Part::Consumer`; a millstone or press takes its speed from the
+`speed_x1000` the network writes into it.
 
 ## To check against the NeoForge original
 
@@ -27,9 +32,10 @@ small cogwheel mesh at, and the sail rule. `src/rules.rs` and `src/kinetics.rs` 
 
 ## Needs from Horizon
 
-1. A client-side block entity renderer for rotating models (shafts, cogwheels turn visibly);
-   today the blocks are static placeholders.
-2. Right-click hooks with held-item and block-face context for the hand crank and wrench.
+1. Nothing new in the engine for turning models: `block_entity_submit` draws a baked model under
+   `rotate_about` with `partial()` and `animation_time()`, and `BlockClick` carries the held item and
+   the face. The port does not use them yet (placeholder models, no hand crank, no putting items on a
+   depot by hand).
 3. Contraption entities (stage 4): moving structures of blocks with their own block entities.
 
 ## Build

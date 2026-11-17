@@ -11,10 +11,13 @@ pub enum Kind {
     WaterWheel,
     WindmillBearing,
     CreativeMotor,
+    Millstone,
+    Depot,
+    MechanicalPress,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 7] = [
+    pub const ALL: [Kind; 10] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -22,6 +25,9 @@ impl Kind {
         Kind::WaterWheel,
         Kind::WindmillBearing,
         Kind::CreativeMotor,
+        Kind::Millstone,
+        Kind::Depot,
+        Kind::MechanicalPress,
     ];
 
     pub fn name(self) -> &'static str {
@@ -33,6 +39,9 @@ impl Kind {
             Kind::WaterWheel => "water_wheel",
             Kind::WindmillBearing => "windmill_bearing",
             Kind::CreativeMotor => "creative_motor",
+            Kind::Millstone => "millstone",
+            Kind::Depot => "depot",
+            Kind::MechanicalPress => "mechanical_press",
         }
     }
 }
@@ -77,6 +86,46 @@ pub fn is_sail(id: &str) -> bool {
     id == "create:sail_frame" || id == "create:white_sail" || id.ends_with("_wool")
 }
 
+/// Stress per RPM a millstone and a press use.
+pub const MILLSTONE_IMPACT: f64 = 4.0;
+pub const PRESS_IMPACT: f64 = 8.0;
+
+/// Work (RPM summed over ticks) one millstone item or one pressing needs: 64 ticks at 32 RPM.
+pub const MILL_WORK: f64 = 2048.0;
+pub const PRESS_WORK: f64 = 1280.0;
+
+/// The millstone's slots: 4 in, 5 out.
+pub const MILL_SLOTS: usize = 9;
+pub const MILL_INPUTS: usize = 4;
+
+/// What a millstone makes of one item: `(output id, count)`.
+pub fn mill(id: &str) -> Option<(&'static str, u32)> {
+    Some(match id {
+        "minecraft:wheat" => ("create:wheat_flour", 1),
+        "minecraft:cobblestone" => ("minecraft:gravel", 1),
+        "minecraft:bone" => ("minecraft:bone_meal", 3),
+        _ => return None,
+    })
+}
+
+/// What a press makes of one item lying on a depot.
+pub fn press(id: &str) -> Option<&'static str> {
+    Some(match id {
+        "minecraft:iron_ingot" => "create:iron_sheet",
+        "minecraft:gold_ingot" => "create:golden_sheet",
+        "minecraft:copper_ingot" => "create:copper_sheet",
+        "create:brass_ingot" => "create:brass_sheet",
+        _ => return None,
+    })
+}
+
+/// One tick of work at `speed` RPM: the new progress and whether `work` is reached (then the
+/// progress starts over). A block that stands still loses no progress.
+pub fn advance(progress: f64, speed: f64, work: f64) -> (f64, bool) {
+    let next = progress + speed.abs();
+    if next >= work { (0.0, true) } else { (next, false) }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -108,5 +157,32 @@ mod tests {
         assert!(is_sail("minecraft:red_wool"));
         assert!(is_sail("create:sail_frame"));
         assert!(!is_sail("minecraft:oak_planks"));
+    }
+
+    #[test]
+    fn work_adds_up_by_speed_and_wraps_when_done() {
+        let (p, done) = advance(0.0, 32.0, MILL_WORK);
+        assert!(!done);
+        assert_eq!(p, 32.0);
+        assert_eq!(advance(2040.0, -16.0, MILL_WORK), (0.0, true));
+        // 32 RPM finishes in 64 ticks
+        let (mut p, mut ticks) = (0.0, 0);
+        loop {
+            ticks += 1;
+            let (np, done) = advance(p, 32.0, MILL_WORK);
+            p = np;
+            if done {
+                break;
+            }
+        }
+        assert_eq!(ticks, 64);
+    }
+
+    #[test]
+    fn recipes_know_their_inputs() {
+        assert_eq!(mill("minecraft:wheat"), Some(("create:wheat_flour", 1)));
+        assert_eq!(mill("minecraft:dirt"), None);
+        assert_eq!(press("minecraft:iron_ingot"), Some("create:iron_sheet"));
+        assert_eq!(press("minecraft:iron_nugget"), None);
     }
 }

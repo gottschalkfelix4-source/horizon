@@ -9,8 +9,8 @@
 //! the NeoForge original is in README.md.
 use mod_api::{
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
-    BlockEntityTicksEvent, BlockPart, HostBlockStates, Compound, Hooks, Host, LevelRef, LevelSide, Registrar,
-    RegistrationContext, ServerHost, Tag,
+    BlockEntityTicksEvent, BlockPart, Compound, Hooks, Host, HostBlockStates, HostTransaction, ItemStack, LevelRef,
+    LevelSide, ModContainer, Registrar, RegistrationContext, ServerHost, Tag,
 };
 
 pub mod kinetics;
@@ -66,6 +66,9 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::Cogwheel => Part::Cog,
         Kind::LargeCogwheel => Part::LargeCog,
         Kind::Gearbox => Part::Gearbox,
+        Kind::Millstone => Part::Consumer { impact: MILLSTONE_IMPACT },
+        Kind::MechanicalPress => Part::Consumer { impact: PRESS_IMPACT },
+        Kind::Depot => return None,
         Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM, capacity: CREATIVE_MOTOR_CAPACITY },
         Kind::WaterWheel => {
             let flowing = Direction6::ALL
@@ -144,42 +147,148 @@ impl BlockEntityPart for Kinetic {
     fn block_entity_tick(&self, host: &mut dyn ServerHost, event: &mut BlockEntityTickEvent<'_>) {
         let pos = event.pos;
         let Some(level) = host.level(host.dimension()) else { return };
-        // a network is solved every SOLVE_EVERY ticks, each block at its own offset
-        let time = level.game_time(&*host).unwrap_or(0);
-        let offset = i64::from((pos[0].wrapping_mul(31) ^ pos[2]).rem_euclid(SOLVE_EVERY));
-        if time.rem_euclid(i64::from(SOLVE_EVERY)) != offset {
-            *event.reply = BlockEntityTickReply::Unchanged;
-            return;
-        }
-        // a block the lowest block of its network keeps up to date leaves the solving to it
-        let stamp = int(&event.entity.nbt, "stamp");
-        let fresh = (period(time)).wrapping_sub(stamp).abs() <= 1;
-        if int(&event.entity.nbt, "leader") == 0 && fresh && stamp != 0 {
-            *event.reply = BlockEntityTickReply::Unchanged;
-            return;
-        }
-        let solution = {
-            let h: &dyn Host = &*host;
-            solve(|p| node_at(h, level, p), pos)
-        };
-        let leads = solution.leader() == Some(pos);
+        let Some(kind) = state_at(&*host, level, pos).and_then(|(id, ..)| parse_block(&id)) else { return };
         let mut nbt = event.entity.nbt.clone();
-        apply(&mut nbt, &solution, pos);
-        set_int(&mut nbt, "leader", i32::from(leads));
-        set_int(&mut nbt, "stamp", period(time));
+        let mut items = event.entity.items.clone();
+        kinetic_step(host, level, pos, &mut nbt);
+        let speed = f64::from(int(&nbt, "speed_x1000")) / 1000.0;
+        match kind {
+            Kind::Millstone => tick_millstone(host, speed, &mut nbt, &mut items),
+            Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
+            _ => {}
+        }
+        if nbt == event.entity.nbt && items == event.entity.items {
+            *event.reply = BlockEntityTickReply::Unchanged;
+            return;
+        }
         event.entity.nbt = nbt;
-        // the network's lowest block tells the others
-        if leads {
-            for (at, _) in solution.speeds.iter().filter(|(p, _)| **p != pos) {
-                let Some(be) = host.block_entity(level, *at) else { continue };
-                let mut patch = Compound::new();
-                apply(&mut patch, &solution, *at);
-                set_int(&mut patch, "leader", 0);
-                set_int(&mut patch, "stamp", period(time));
-                let _ = be.merge_data(host, patch);
+        event.entity.items = items;
+    }
+}
+
+/// Solves the block's network when it is this block's turn and nobody keeps it up to date, and
+/// writes the result into `nbt`; the network's lowest block hands it to the others.
+fn kinetic_step(host: &mut dyn ServerHost, level: LevelRef, pos: Pos, nbt: &mut Compound) {
+    if !node_at(&*host, level, pos).is_some() {
+        return;
+    }
+    // a network is solved every SOLVE_EVERY ticks, each block at its own offset
+    let time = level.game_time(&*host).unwrap_or(0);
+    let offset = i64::from((pos[0].wrapping_mul(31) ^ pos[2]).rem_euclid(SOLVE_EVERY));
+    if time.rem_euclid(i64::from(SOLVE_EVERY)) != offset {
+        return;
+    }
+    // a block the lowest block of its network keeps up to date leaves the solving to it
+    let stamp = int(nbt, "stamp");
+    let fresh = period(time).wrapping_sub(stamp).abs() <= 1;
+    if int(nbt, "leader") == 0 && fresh && stamp != 0 {
+        return;
+    }
+    let solution = {
+        let h: &dyn Host = &*host;
+        solve(|p| node_at(h, level, p), pos)
+    };
+    let leads = solution.leader() == Some(pos);
+    apply(nbt, &solution, pos);
+    set_int(nbt, "leader", i32::from(leads));
+    set_int(nbt, "stamp", period(time));
+    if leads {
+        for (at, _) in solution.speeds.iter().filter(|(p, _)| **p != pos) {
+            let Some(be) = host.block_entity(level, *at) else { continue };
+            let mut patch = Compound::new();
+            apply(&mut patch, &solution, *at);
+            set_int(&mut patch, "leader", 0);
+            set_int(&mut patch, "stamp", period(time));
+            let _ = be.merge_data(host, patch);
+        }
+    }
+}
+
+fn progress(nbt: &Compound) -> f64 {
+    f64::from(int(nbt, "progress_x1000")) / 1000.0
+}
+
+fn set_progress(nbt: &mut Compound, p: f64) {
+    set_int(nbt, "progress_x1000", (p * 1000.0).round() as i32);
+}
+
+/// Puts `out` into the millstone's output slots (4..9) if it fits there.
+fn deposit(host: &dyn Host, items: &mut [Option<ItemStack>], id: &str, count: u32) -> bool {
+    let Some(key) = mod_api::Identifier::parse(id).ok().and_then(|i| host.item_key(&i)) else {
+        return false;
+    };
+    let Some(out) = ItemStack::new(key, count) else { return false };
+    for slot in MILL_INPUTS..MILL_SLOTS {
+        match &mut items[slot] {
+            None => {
+                items[slot] = Some(out);
+                return true;
+            }
+            Some(held) => {
+                let max = host.max_stack_size(held.item()).unwrap_or(64);
+                if held.is_stackable_with(&out) && held.count() + count <= max {
+                    let _ = held.grow(count);
+                    return true;
+                }
             }
         }
     }
+    false
+}
+
+fn tick_millstone(host: &mut dyn ServerHost, speed: f64, nbt: &mut Compound, items: &mut Vec<Option<ItemStack>>) {
+    items.resize(MILL_SLOTS, None);
+    let found = (0..MILL_INPUTS).find_map(|slot| {
+        let id = items[slot].as_ref()?.item().id(&*host);
+        mill(&id).map(|(out, n)| (slot, out, n))
+    });
+    let Some((slot, out, n)) = found else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    if speed == 0.0 {
+        return;
+    }
+    let (p, done) = advance(progress(nbt), speed, MILL_WORK);
+    if !done {
+        set_progress(nbt, p);
+        return;
+    }
+    if deposit(&*host, items, out, n) {
+        items[slot] = items[slot].take().and_then(|i| i.shrink(1));
+        set_progress(nbt, 0.0);
+    } else {
+        // the outputs are full: hold at the end
+        set_progress(nbt, MILL_WORK - speed.abs());
+    }
+}
+
+fn tick_press(host: &mut dyn ServerHost, level: LevelRef, pos: Pos, speed: f64, nbt: &mut Compound) {
+    let below = [pos[0], pos[1] - 1, pos[2]];
+    let on_depot = state_at(&*host, level, below).is_some_and(|(id, ..)| parse_block(&id) == Some(Kind::Depot));
+    let held = if on_depot { host.block_entity(level, below).and_then(|be| be.item_slot(&*host, 0).ok().flatten()) } else { None };
+    let result = held.as_ref().and_then(|h| press(&h.item().id(&*host)));
+    let (Some(out), Some(held)) = (result, held) else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    if speed == 0.0 {
+        return;
+    }
+    let (p, done) = advance(progress(nbt), speed, PRESS_WORK);
+    if !done {
+        set_progress(nbt, p);
+        return;
+    }
+    set_progress(nbt, 0.0);
+    // the whole stack on the depot is pressed at once
+    let Some(key) = mod_api::Identifier::parse(out).ok().and_then(|id| host.item_key(&id)) else { return };
+    let Some(sheets) = ItemStack::new(key, held.count()) else { return };
+    let Some(be) = host.block_entity(level, below) else { return };
+    let _ = host.transaction(|host, tx| {
+        be.set_item_slot(host, tx, 0, Some(sheets)).map_err(|_| ())?;
+        Ok::<(), ()>(())
+    });
 }
 
 /// A coarse clock (about ten seconds) for the leader's stamp, so a stamp changes rarely.
@@ -207,5 +316,31 @@ impl Hooks for Mod {
         let names: Vec<&str> = ids.iter().map(String::as_str).collect();
         let built = r.block_entity_type("kinetic").blocks(&names).build();
         let _ = r.block_entity_part(&built, Kinetic);
+        let key = r.block_key("create:millstone");
+        // hoppers feed the four input slots from above and the sides and empty the outputs below
+        let inputs: Vec<usize> = (0..MILL_INPUTS).collect();
+        let outputs: Vec<usize> = (MILL_INPUTS..MILL_SLOTS).collect();
+        r.block_container(
+            &key,
+            ModContainer {
+                slots: MILL_SLOTS,
+                faces: [outputs.clone(), inputs.clone(), inputs.clone(), inputs.clone(), inputs.clone(), inputs.clone()],
+                inputs,
+                outputs,
+                menu: Some("minecraft:generic_9x1".into()),
+            },
+        );
+        let key = r.block_key("create:depot");
+        // one stack lies on a depot; hoppers put onto it and take from it
+        r.block_container(
+            &key,
+            ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| vec![0]),
+                inputs: vec![0],
+                outputs: vec![0],
+                menu: None,
+            },
+        );
     }
 }
