@@ -16,6 +16,8 @@
     "create:andesite_casing",
     "create:deployer",
     "create:mechanical_saw",
+    "create:fluid_pipe",
+    "create:mechanical_pump",
     "create:depot",
     "create:basin",
     "create:mechanical_mixer",

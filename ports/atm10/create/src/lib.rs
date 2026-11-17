@@ -10,7 +10,7 @@
 use mod_api::{
     BlockEntityEvent, BlockEntityPart, BlockEntityTickEvent, BlockEntityTickReply,
     BlockEntityTicksEvent, BlockPart, BlockState, BlockUpdateFlags, Compound, Direction, Flow, HostSide,
-    InteractionResult, RightClickBlockEvent, Hooks, Host, HostBlockStates,
+    FLUIDS, InteractionResult, ModFluidTanks, RightClickBlockEvent, Hooks, Host, HostBlockStates,
     HostTransaction, ITEMS, ItemStack, LevelRef, LevelSide, ModContainer, Registrar,
     RegistrationContext, ServerHost, Tag, move_resources,
 };
@@ -97,12 +97,13 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::MechanicalMixer => Part::Consumer {
             impact: MIXER_IMPACT,
         },
+        Kind::MechanicalPump => Part::Consumer { impact: PUMP_IMPACT },
         Kind::Deployer => Part::Consumer { impact: DEPLOYER_IMPACT },
         Kind::MechanicalSaw => Part::Consumer { impact: SAW_IMPACT },
         Kind::Belt => Part::Belt {
             impact: BELT_IMPACT,
         },
-        Kind::Depot | Kind::Basin | Kind::Funnel | Kind::BlazeBurner => return None,
+        Kind::Depot | Kind::Basin | Kind::Funnel | Kind::BlazeBurner | Kind::FluidPipe => return None,
         Kind::CreativeMotor => Part::Source {
             rpm: CREATIVE_MOTOR_RPM * facing_sign(facing),
             capacity: CREATIVE_MOTOR_CAPACITY,
@@ -225,6 +226,8 @@ impl BlockEntityPart for Kinetic {
             Kind::CrushingWheel => tick_millstone(host, pos, speed, &mut nbt, &mut items, grind::crushing),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
             Kind::Funnel => tick_funnel(host, level, pos),
+            Kind::FluidPipe => tick_pipe(host, level, pos),
+            Kind::MechanicalPump => tick_pump(host, level, pos, speed),
             Kind::Deployer => tick_deployer(host, level, pos, speed, &mut nbt, &mut items),
             Kind::MechanicalSaw => tick_saw(host, level, pos, speed, &mut nbt),
             Kind::BlazeBurner => tick_burner(host, &mut nbt, &mut items),
@@ -541,6 +544,59 @@ fn tick_mixer(
     });
 }
 
+/// How many mB the first tank of `pos` holds, through its fluid capability.
+fn held_fluid(host: &mut dyn ServerHost, level: LevelRef, pos: Pos) -> i32 {
+    level
+        .capability(host, &FLUIDS, pos, None)
+        .map_or(0, |c| (0..c.size(host)).map(|i| c.amount(host, i) as i32).sum())
+}
+
+/// A pipe hands fluid to the neighbours below its own level, to pipes by level and to anything
+/// else that takes it.
+fn tick_pipe(host: &mut dyn ServerHost, level: LevelRef, pos: Pos) {
+    let mine = held_fluid(host, level, pos);
+    if mine == 0 {
+        return;
+    }
+    for dir in Direction::ALL {
+        let n = dir.normal();
+        let to = [pos[0] + n[0], pos[1] + n[1], pos[2] + n[2]];
+        let is_pipe = state_at(&*host, level, to).is_some_and(|(id, ..)| parse_block(&id) == Some(Kind::FluidPipe));
+        if is_pipe && !flows(mine, held_fluid(host, level, to)) {
+            continue;
+        }
+        if !is_pipe && level.capability(host, &FLUIDS, to, Some(dir.opposite())).is_none() {
+            continue;
+        }
+        let (Some(src), Some(dst)) = (
+            level.capability(host, &FLUIDS, pos, Some(dir)),
+            level.capability(host, &FLUIDS, to, Some(dir.opposite())),
+        ) else {
+            continue;
+        };
+        let _ = host.transaction(|host, tx| move_resources(host, &src, &dst, |_| true, PIPE_FLOW, tx).map_err(|_| ()));
+    }
+}
+
+/// A pump moves fluid from the block behind it into the block it faces, by its speed.
+fn tick_pump(host: &mut dyn ServerHost, level: LevelRef, pos: Pos, speed: f64) {
+    let rate = pump_rate(speed);
+    if rate == 0 {
+        return;
+    }
+    let Some(facing) = state_at(&*host, level, pos).and_then(|(_, _, f, _)| f) else { return };
+    let Some(out) = Direction::ALL.into_iter().find(|d| d.normal() == facing) else { return };
+    let from = [pos[0] - facing[0], pos[1] - facing[1], pos[2] - facing[2]];
+    let to = [pos[0] + facing[0], pos[1] + facing[1], pos[2] + facing[2]];
+    let (Some(src), Some(dst)) = (
+        level.capability(host, &FLUIDS, from, Some(out)),
+        level.capability(host, &FLUIDS, to, Some(out.opposite())),
+    ) else {
+        return;
+    };
+    let _ = host.transaction(|host, tx| move_resources(host, &src, &dst, |_| true, rate, tx).map_err(|_| ()));
+}
+
 /// The depot below `pos` and the stack on it.
 fn depot_below(host: &dyn ServerHost, level: LevelRef, pos: Pos) -> Option<(mod_api::BlockEntityRef, ItemStack)> {
     let below = [pos[0], pos[1] - 1, pos[2]];
@@ -808,6 +864,9 @@ impl Hooks for Mod {
                 slot_limit: 0,
             },
         );
+        let key = r.block_key("create:fluid_pipe");
+        // one tank of a bucket, every face
+        r.block_fluids(&key, ModFluidTanks::new(vec![PIPE_CAPACITY], std::array::from_fn(|_| vec![0]), vec![0], vec![0]));
         let key = r.block_key("create:depot");
         // one stack lies on a depot; hoppers put onto it and take from it
         r.block_container(
