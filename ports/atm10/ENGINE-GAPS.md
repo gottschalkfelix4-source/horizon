@@ -497,3 +497,9 @@ mod menu and an item part, both of which the API has.
 - Energy faces: the acceptor must take FE in from outside without giving it out; `ModEnergyBuffer` has one set of faces for
   both directions of what is reachable from the network's own routing.
 - Stages 3 to 5 (terminal, buses, autocrafting) will add their gaps here as they are reached.
+
+## create
+
+- A per-slot stack limit for mod containers: a belt holds one item, but hoppers, funnels and `item replace` put several in
+  because the slot takes a whole stack. Proposed: `ModContainer::slot_limit: u32` (`crates/horizon-mod-vocab/src/item/containers.rs`),
+  honoured by the items capability and `/item replace`.
