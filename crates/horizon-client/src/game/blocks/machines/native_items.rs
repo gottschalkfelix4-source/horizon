@@ -493,6 +493,7 @@ mod tests {
             kind,
             container: (kind == Kind::Mod).then(|| {
                 Arc::new(ModContainer {
+ slot_limit: 0,
                     slots,
                     ..Default::default()
                 })

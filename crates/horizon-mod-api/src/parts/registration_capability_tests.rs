@@ -59,6 +59,7 @@ mod tests {
             assert!(r.is_block_capability_registered(&ITEMS, &earlier));
             assert!(!r.is_block_capability_registered(&ITEMS, &later));
             let replacement = crate::ModContainer {
+ slot_limit: 0,
                 slots: 9,
                 ..Default::default()
             };

@@ -48,12 +48,14 @@ fn internal_slots_preserve_automation_limits_and_nested_transactions() {
                 );
             });
             let machine_slots = ModContainer {
+ slot_limit: 0,
                 slots: 2,
                 inputs: vec![0],
                 outputs: vec![1],
                 ..Default::default()
             };
             let replacement_slots = ModContainer {
+ slot_limit: 0,
                 slots: 1,
                 ..Default::default()
             };
@@ -253,6 +255,7 @@ fn container_holder(game: &mut super::Game<'_>, keys: usize) -> mod_api::BlockEn
         [(
             stone.0,
             Arc::new(ModContainer {
+ slot_limit: 0,
                 slots: 9,
                 inputs: (0..9).collect(),
                 outputs: (0..9).collect(),

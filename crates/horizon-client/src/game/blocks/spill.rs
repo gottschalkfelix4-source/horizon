@@ -1397,6 +1397,7 @@ mod tests {
                 [(
                     stone.0,
                     Arc::new(ModContainer {
+ slot_limit: 0,
                         slots: 1,
                         ..Default::default()
                     }),

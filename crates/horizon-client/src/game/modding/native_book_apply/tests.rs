@@ -34,6 +34,7 @@ fn actual_game_stage_refuses_nested_frame_and_mutated_actor() {
             [(
                 game.world.block(pos.0, pos.1, pos.2).0,
                 std::sync::Arc::new(horizon_client::containers::ModContainer {
+ slot_limit: 0,
                     slots: 3,
                     ..Default::default()
                 }),
