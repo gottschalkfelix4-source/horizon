@@ -295,6 +295,7 @@ pub fn build_with_conditions(
             }
         }
     }
+    inherit_template_tags(base, &plan, &mut tags)?;
     // A tag naming an id nobody registers fails as a whole in vanilla, and
     // carried-over mods name blocks left out or other mods' ids: such
     // entries are dropped instead, so the rest of the tag holds.
@@ -577,4 +578,79 @@ pub fn resource_root_with_conditions(
     fs::write(out.join(STAMP), stamp)?;
     prune_roots(&roots, &out, KEEP_ROOTS);
     Ok(out)
+}
+
+/// The vanilla block tags a content block inherits from its `template`: the tool tags
+/// (`minecraft:mineable/*`, `minecraft:needs_{stone,iron,diamond}_tool`), which `Block` rules
+/// outside the registry (tool speed, `correct_for_drops`) read. A mod that names the block in
+/// any tag of one family (or removes it) keeps its own choice for that family.
+fn inherit_template_tags(
+    base: &Path,
+    plan: &Plan<'_>,
+    tags: &mut BTreeMap<String, TagMerge>,
+) -> Result<()> {
+    let dir = base.join("data/minecraft/tags/block");
+    let mut families: Vec<(&str, Vec<String>)> = Vec::new();
+    let mineable: Vec<String> = fs::read_dir(dir.join("mineable"))
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| e.file_name().into_string().ok())
+        .filter(|n| n.ends_with(".json"))
+        .map(|n| format!("data/minecraft/tags/block/mineable/{n}"))
+        .collect();
+    families.push(("mineable", mineable));
+    let needs = ["stone", "iron", "diamond"]
+        .map(|t| format!("data/minecraft/tags/block/needs_{t}_tool.json"));
+    families.push(("needs", needs.to_vec()));
+    for (family, files) in families {
+        let mut listed: Vec<(String, Vec<String>)> = Vec::new();
+        for file in files {
+            let Ok(text) = fs::read_to_string(base.join(&file)) else {
+                continue;
+            };
+            let doc: J = serde_json::from_str(&text).map_err(|e| format!("{file}: {e}"))?;
+            let Some(J::Arr(values)) = doc.get("values") else {
+                continue;
+            };
+            let ids = values
+                .iter()
+                .filter_map(|v| match v {
+                    J::Str(id) => Some(id.clone()),
+                    other => match other.get("id") {
+                        Some(J::Str(id)) => Some(id.clone()),
+                        _ => None,
+                    },
+                })
+                .collect();
+            listed.push((file, ids));
+        }
+        for block in &plan.blocks {
+            let (id, template) = (&block.decl.id, &block.decl.template);
+            let names = |v: &J| match v {
+                J::Str(s) => s == id,
+                other => matches!(other.get("id"), Some(J::Str(s)) if s == id),
+            };
+            let chosen = tags.iter().any(|(file, merge)| {
+                file.starts_with("data/minecraft/tags/block/")
+                    && file[26..].starts_with(family)
+                    && merge
+                        .layers
+                        .iter()
+                        .any(|(add, remove)| add.iter().chain(remove).any(&names))
+            });
+            if chosen {
+                continue;
+            }
+            for (file, ids) in &listed {
+                if ids.iter().any(|i| i == template) {
+                    tags.entry(file.clone())
+                        .or_default()
+                        .layers
+                        .push((vec![J::Str(id.clone())], Vec::new()));
+                }
+            }
+        }
+    }
+    Ok(())
 }
