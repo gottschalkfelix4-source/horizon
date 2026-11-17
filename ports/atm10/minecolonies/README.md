@@ -15,8 +15,8 @@ is refused with a message naming the colony. A Town Hall is refused when its pla
 a colony in this world, or when its claim would come closer than 8 chunks to another colony's.
 
 ```text
-/minecolonies colony addOfficer <colony id> <player>
-/minecolonies colony removeOfficer <colony id> <player>
+/minecolonies colony addofficer <colony id> <player>
+/minecolonies colony removeofficer <colony id> <player>
 /minecolonies colony delete <colony id>
 ```
 

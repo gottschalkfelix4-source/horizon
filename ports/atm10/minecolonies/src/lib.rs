@@ -10,7 +10,7 @@
 //! unless they already own one here or the colony's claim would come too close to another's;
 //! the placement is refused then. A colony claims the square of chunks around its Town Hall's
 //! chunk. In a claimed chunk only the colony's owner and officers may place or break blocks.
-//! `/minecolonies colony addOfficer|removeOfficer|delete` manage a colony.
+//! `/minecolonies colony addofficer|removeofficer|delete` manage a colony.
 use std::sync::OnceLock;
 
 use mod_api::{
@@ -258,7 +258,7 @@ impl ItemPart for TownHallItem {
 struct Mod;
 
 impl Mod {
-    /// `/minecolonies colony addOfficer|removeOfficer|delete <colony> [player]`.
+    /// `/minecolonies colony addofficer|removeofficer|delete <colony> [player]`.
     fn command(
         colonies: &mut Colonies,
         event: &RunModCommandEvent<'_>,
@@ -285,13 +285,13 @@ impl Mod {
         };
         let colony = &mut colonies.list[index];
         match (event.command.literals.get(2).map(String::as_str), target) {
-            (Some("addOfficer"), Some(t)) => {
+            (Some("addofficer"), Some(t)) => {
                 if !colony.officers.contains(&t) {
                     colony.officers.push(t);
                 }
                 ("minecolonies.horizon.command.officer_added", Some(id))
             }
-            (Some("removeOfficer"), Some(t)) => {
+            (Some("removeofficer"), Some(t)) => {
                 colony.officers.retain(|o| *o != t);
                 ("minecolonies.horizon.command.officer_removed", Some(id))
             }
@@ -369,10 +369,10 @@ impl Hooks for Mod {
     fn register_commands(&self, _: &mut dyn ServerHost, event: &mut RegisterCommandsEvent<'_>) {
         event.commands.extend([
             mod_api::Command::new(
-                "minecolonies colony addOfficer <colony:integer> <player:player>",
+                "minecolonies colony addofficer <colony:integer> <player:player>",
             ),
             mod_api::Command::new(
-                "minecolonies colony removeOfficer <colony:integer> <player:player>",
+                "minecolonies colony removeofficer <colony:integer> <player:player>",
             ),
             mod_api::Command::new("minecolonies colony delete <colony:integer>"),
         ]);
