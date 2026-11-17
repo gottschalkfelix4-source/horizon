@@ -1,0 +1,116 @@
+{
+  "template": "minecraft:glass",
+  "properties": {
+    "hardness": 0.0,
+    "explosion_resistance": 0.0,
+    "sounds": "minecraft:stone",
+    "light": 0,
+    "occludes": false
+  },
+  "state_properties": {
+    "attach": {
+      "type": "enum",
+      "values": [
+        "down",
+        "up",
+        "north",
+        "south",
+        "west",
+        "east"
+      ]
+    },
+    "rotation": {
+      "type": "enum",
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    "powered": {
+      "type": "boolean"
+    },
+    "memory": {
+      "type": "boolean"
+    },
+    "input": {
+      "type": "boolean"
+    }
+  },
+  "default_state": {
+    "attach": "down",
+    "rotation": "0",
+    "powered": "false",
+    "memory": "false",
+    "input": "false"
+  },
+  "shapes": {
+    "properties": [
+      "attach"
+    ],
+    "values": {
+      "down": [
+        [
+          0,
+          0,
+          0,
+          1,
+          0.125,
+          1
+        ]
+      ],
+      "up": [
+        [
+          0,
+          0.875,
+          0,
+          1,
+          1,
+          1
+        ]
+      ],
+      "north": [
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          0.125
+        ]
+      ],
+      "south": [
+        [
+          0,
+          0,
+          0.875,
+          1,
+          1,
+          1
+        ]
+      ],
+      "west": [
+        [
+          0,
+          0,
+          0,
+          0.125,
+          1,
+          1
+        ]
+      ],
+      "east": [
+        [
+          0.875,
+          0,
+          0,
+          1,
+          1,
+          1
+        ]
+      ]
+    }
+  },
+  "item": true
+}

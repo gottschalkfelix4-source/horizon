@@ -4,5 +4,10 @@ version = "1.9.12-1.21.1-horizon.1"
 description = "A microchip block that runs a small logic circuit between its four redstone sides. A Horizon port of Little Big Redstone (MIT) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: the Little Big Redstone authors (names to confirm from the mod page)"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

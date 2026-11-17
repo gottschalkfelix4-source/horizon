@@ -1,0 +1,38 @@
+{
+  "template": "minecraft:stone",
+  "properties": {
+    "hardness": 0.5,
+    "explosion_resistance": 0.5,
+    "sounds": "minecraft:white_wool",
+    "occludes": false,
+    "destroy_overlay": false
+  },
+  "state_properties": {
+    "servings": {
+      "type": "enum",
+      "values": [
+        "4",
+        "3",
+        "2",
+        "1",
+        "0"
+      ]
+    }
+  },
+  "shapes": {
+    "default": [
+      [
+        0.0625,
+        0.0,
+        0.0625,
+        0.9375,
+        0.625,
+        0.9375
+      ]
+    ]
+  },
+  "item": true,
+  "components": {
+    "minecraft:max_stack_size": 1
+  }
+}

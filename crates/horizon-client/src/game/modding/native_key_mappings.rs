@@ -12,14 +12,23 @@ impl Game<'_> {
     /// Binds the mods' mappings to the player's keys (`horizon-mods.txt`) or their declared
     /// defaults: when the settings apply, at start and after Controls changes one.
     pub(super) fn bind_mod_mappings(&mut self) {
-        let mappings = super::mods::collect_key_mappings(
+        let mappings: Vec<(&str, &mod_api::KeyRegistration)> = super::mods::collect_key_mappings(
             self.options.execution_role,
             mod_api::__private::key_mappings(),
-        );
+        )
+        .iter()
+        .map(|(owner, mapping)| (*owner, mapping))
+        .chain(
+            self.native_input
+                .runtime
+                .iter()
+                .map(|(owner, mapping)| (owner.as_str(), mapping)),
+        )
+        .collect();
         let settings = &self.settings;
         self.native_input
             .mappings
-            .bind(mappings.iter().map(|(owner, mapping)| {
+            .bind(mappings.iter().map(|&(owner, mapping)| {
                 let (input, modifiers) = settings.mods.binding(
                     owner,
                     &mapping.id,
@@ -37,6 +46,22 @@ impl Game<'_> {
                     },
                 }
             }));
+    }
+    /// Every key mods register, at startup and then at run time, with its owner.
+    pub(in crate::game) fn declared_mod_mappings(&self) -> Vec<(&str, &mod_api::KeyRegistration)> {
+        super::mods::collect_key_mappings(
+            self.options.execution_role,
+            mod_api::__private::key_mappings(),
+        )
+        .iter()
+        .map(|(owner, mapping)| (*owner, mapping))
+        .chain(
+            self.native_input
+                .runtime
+                .iter()
+                .map(|(owner, mapping)| (owner.as_str(), mapping)),
+        )
+        .collect()
     }
     /// One key event, the window's after it handled it or the control socket's: the mods'
     /// mappings bound to it hear it (`KeyMapping.set`, `KeyMapping.click`), then `input_key`

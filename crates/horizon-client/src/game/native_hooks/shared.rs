@@ -3219,10 +3219,11 @@ impl Game<'_> {
     }
     /// Options > Mods' rows for loaded code mods, after the content-only rows.
     pub(super) fn list_native_mods(&mut self) {
-        let registered = super::mods::collect_key_mappings(
-            self.options.execution_role,
-            mod_api::__private::key_mappings(),
-        );
+        let registered: Vec<(String, mod_api::KeyRegistration)> = self
+            .declared_mod_mappings()
+            .into_iter()
+            .map(|(owner, mapping)| (owner.to_owned(), mapping.clone()))
+            .collect();
         let native = self.mods.native.clone();
         // Wasm proxies are installed in the same dispatch table as native mods. Their rows
         // need the same live switch and settings page, not a frozen content-only toggle.
@@ -3261,18 +3262,7 @@ impl Game<'_> {
             let mappings: Vec<KeyMapping> = registered
                 .iter()
                 .filter(|(owner, _)| *owner == row.id)
-                .map(|(_, k)| KeyMapping {
-                    id: k.id.clone(),
-                    label: k.label.clone(),
-                    key: k.key.clone(),
-                    modifiers: k.modifiers.bits,
-                    context: crate::game::api_values::TryIntoEngine::try_into_engine(
-                        &k.context,
-                        &(),
-                    )
-                    .unwrap(),
-                    category: k.category.clone(),
-                })
+                .map(|(_, k)| Self::engine_key_mapping(k))
                 .collect();
             row.native = Some(NativePage { mappings, settings });
             self.settings.mods.installed.push(row);

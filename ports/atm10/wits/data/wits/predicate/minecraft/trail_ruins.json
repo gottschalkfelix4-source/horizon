@@ -1,0 +1,4 @@
+{
+  "type": "minecraft:location_check",
+  "predicate": { "structures": "minecraft:trail_ruins" }
+}

@@ -1,0 +1,6 @@
+{
+  "template": "minecraft:farmland",
+  "base_block": "farmersdelight:rich_soil",
+  "item": false,
+  "pick_item": "farmersdelight:rich_soil"
+}

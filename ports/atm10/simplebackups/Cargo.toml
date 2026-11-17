@@ -1,0 +1,18 @@
+[package]
+name = "mod-simplebackups"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+# The pinned SDK's copy, which `cargo horizon-mod` fetches into .horizon/sdk/. In a checkout,
+# `ports/atm10/dev-sdk.sh` links it to this repository's crates for `cargo check`.
+horizon-mod-api = { path = ".horizon/sdk/api/crates/horizon-mod-api" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+zip = { version = "9", default-features = false, features = ["deflate"] }
+

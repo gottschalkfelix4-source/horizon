@@ -1,0 +1,9 @@
+{
+  "commands.bwncr.value": "%s = %s",
+  "commands.bwncr.all": "All silence options set to %s",
+  "commands.bwncr.unknown": "Unknown option: %s",
+  "commands.bwncr.extra.added": "Now silencing %s",
+  "commands.bwncr.extra.removed": "No longer silencing %s",
+  "commands.bwncr.extra.missing": "%s was not in the list",
+  "commands.bwncr.extra.cleared": "Extra sound list cleared"
+}

@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": ["FFF", "FFF", "FFF"],
+  "key": { "F": "wstweaks:fragment" },
+  "result": { "id": "minecraft:wither_skeleton_skull", "count": 1 }
+}

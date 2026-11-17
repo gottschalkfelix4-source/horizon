@@ -1,0 +1,9 @@
+{
+  "block.redstonepen.track": "Redstone Track",
+  "block.redstonepen.relay": "Redstone Relay",
+  "block.redstonepen.inverted_relay": "Inverted Redstone Relay",
+  "block.redstonepen.bistable_relay": "Bistable Redstone Relay",
+  "block.redstonepen.pulse_relay": "Pulse Redstone Relay",
+  "item.redstonepen.pen": "Redstone Pen",
+  "item.redstonepen.quill": "Redstone Quill"
+}

@@ -3,21 +3,22 @@
 //! Written from KeyBind Bundles' observed behaviour and public description, never from its code
 //! (docs/modpacks.md, "Licences"). Each bundle has its own key in Controls (`Bundle 1`...). Holding
 //! it opens a radial menu of the bundle's bindings; letting go (or clicking) fires the binding
-//! under the pointer as if its own key had been pressed. A bundle with nothing in it opens the
-//! editor, where a click adds a binding to the bundle or takes it out. The bundles are saved in
-//! the mod's data folder. The model and the geometry are in `bundles.rs`.
+//! under the pointer as if its own key had been pressed (`press_binding`, so any binding of the game
+//! or of a mod). A bundle with nothing in it opens the editor, where a click adds a binding to the
+//! bundle or takes it out, and `+` adds a bundle (its key is registered at run time). The bundles
+//! are saved in the mod's data folder. The model and the geometry are in `bundles.rs`.
 use std::sync::Mutex;
 
 use mod_api::client::widgets::{Button, Outcome, WidgetId, Widgets};
 use mod_api::{
     ClientHost, ClientTickPostEvent, ConfigPath, Flow, Hooks, KeyRegistration, Registrar,
     RegistrationContext, ScreenKeyReleasedPreEvent, ScreenMouseButtonPressedPreEvent,
-    ScreenMouseButtonReleasedPreEvent, ScreenRenderPostEvent, Text,
+    ScreenMouseButtonReleasedPreEvent, ScreenMouseScrolledPreEvent, ScreenRenderPostEvent, Text,
 };
 
 pub mod bundles;
 
-use bundles::{BUNDLES, Bundles, CLICKABLE};
+use bundles::{BUNDLES, Bundles, holdable};
 
 /// This mod's id, as `horizon-mod.toml` names it.
 pub const MOD_ID: &str = "keybindbundles";
@@ -38,6 +39,7 @@ enum Mode {
 struct Ids {
     prev: WidgetId,
     next: WidgetId,
+    add: WidgetId,
     done: WidgetId,
 }
 
@@ -50,6 +52,33 @@ struct State {
     close: bool,
     fire: Option<String>,
     editor: Option<(Widgets, Ids, [f32; 2])>,
+    /// How many bundles have their key registered (the first `BUNDLES` at startup).
+    registered: usize,
+    /// How far the editor's list is scrolled, in pixels.
+    scroll: f32,
+}
+
+/// The bindings the editor lists, in Controls' order, as `(id, name)`: every one a bundle can hold.
+fn editor_rows(host: &dyn ClientHost) -> Vec<(String, String)> {
+    host.key_bindings()
+        .into_iter()
+        .filter(|v| holdable(&v.id))
+        .map(|v| {
+            let name = host.text_string(&v.label).unwrap_or_else(|_| v.id.clone());
+            (v.id, name)
+        })
+        .collect()
+}
+
+/// A binding's name as Controls shows it, by id; the id itself when no mod provides it now.
+fn names(host: &dyn ClientHost) -> std::collections::HashMap<String, String> {
+    editor_rows(host).into_iter().collect()
+}
+
+fn bundle_key(n: usize) -> KeyRegistration {
+    KeyRegistration::new(&key_id(n), "key.keyboard.unknown")
+        .label(&format!("key.keybindbundles.bundle_{}", n + 1))
+        .category("key.categories.keybindbundles")
 }
 
 fn key_id(n: usize) -> String {
@@ -126,13 +155,23 @@ impl State {
             let x = (size[0] / 2.0 - 155.0).floor();
             let y = size[1] - 26.0;
             let mut w = Widgets::new();
-            let prev = w.add_button(Button::new([x, y, 100.0, 20.0], Text::literal("<")));
-            let next = w.add_button(Button::new([x + 105.0, y, 100.0, 20.0], Text::literal(">")));
+            let prev = w.add_button(Button::new([x, y, 76.0, 20.0], Text::literal("<")));
+            let next = w.add_button(Button::new([x + 78.0, y, 76.0, 20.0], Text::literal(">")));
+            let add = w.add_button(Button::new([x + 156.0, y, 76.0, 20.0], Text::literal("+")));
             let done = w.add_button(Button::new(
-                [x + 210.0, y, 100.0, 20.0],
+                [x + 234.0, y, 76.0, 20.0],
                 Text::translate("gui.done", Vec::new()),
             ));
-            self.editor = Some((w, Ids { prev, next, done }, size));
+            self.editor = Some((
+                w,
+                Ids {
+                    prev,
+                    next,
+                    add,
+                    done,
+                },
+                size,
+            ));
         }
         self.editor.as_mut().expect("built above")
     }
@@ -185,11 +224,7 @@ fn ours(host: &dyn ClientHost, id: &str) -> bool {
 impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
         for n in 0..BUNDLES {
-            r.register_key_mapping(
-                KeyRegistration::new(&key_id(n), "key.keyboard.unknown")
-                    .label(&format!("key.keybindbundles.bundle_{}", n + 1))
-                    .category("key.categories.keybindbundles"),
-            );
+            r.register_key_mapping(bundle_key(n));
         }
         r.register_key_mapping(
             KeyRegistration::new("edit", "key.keyboard.unknown")
@@ -199,8 +234,15 @@ impl Hooks for Mod {
     }
 
     fn client_tick_post(&self, host: &mut dyn ClientHost, _: &mut ClientTickPostEvent) {
+        // Bundles added in the editor, or saved from an earlier session, get their key now.
+        let count = self.with(|s| s.bundles(&*host).0.len());
+        let from = self.with(|s| s.registered.max(BUNDLES));
+        for n in from..count {
+            host.register_runtime_key_mapping(bundle_key(n));
+        }
+        self.with(|s| s.registered = count.max(BUNDLES));
         let mut pressed = None;
-        for n in 0..BUNDLES {
+        for n in 0..count {
             if host.consume_click(MOD_ID, &key_id(n)) && pressed.is_none() {
                 pressed = Some(n);
             }
@@ -224,8 +266,9 @@ impl Hooks for Mod {
             self.with(|s| s.mode = None);
         }
         if let Some(id) = fire {
-            // The screen is closed now, so the click is taken as the binding's own key press.
-            let _ = host.click_mapping(&id);
+            // The screen is closed now, so the press is taken as the binding's own key press. A
+            // binding no mod provides now is skipped.
+            let _ = host.press_binding(&id);
         }
         if let Some(mode) = open
             && host.mod_screen_open(MOD_ID)
@@ -243,6 +286,7 @@ impl Hooks for Mod {
         self.with(|s| match s.mode {
             Some(Mode::Radial(n)) => {
                 let entries = s.bundles(host).0[n].clone();
+                let names = names(host);
                 let center = [size[0] / 2.0, size[1] / 2.0];
                 let hover = bundles::slice_at(center, mouse, entries.len());
                 let draw = &mut *event.draw;
@@ -256,7 +300,7 @@ impl Hooks for Mod {
                     let (a0, a1) = bundles::slice_angles(i, entries.len());
                     let mid = (a0 + a1) / 2.0;
                     let r = (INNER + OUTER) / 2.0;
-                    let name = tr(host, id);
+                    let name = names.get(id).cloned().unwrap_or_else(|| id.clone());
                     let w = draw.text_width(&name);
                     let at = [
                         center[0] + r * mid.sin() - w / 2.0,
@@ -288,8 +332,16 @@ impl Hooks for Mod {
                 let tw = draw.text_width(&title);
                 draw.text(&title, [(size[0] - tw) / 2.0, 8.0], 0xFFFF_FFFF, true);
                 let left = (size[0] / 2.0 - 155.0).floor();
-                for (i, id) in CLICKABLE.iter().enumerate() {
-                    let y = LIST_TOP + i as f32 * ROW;
+                let rows = editor_rows(host);
+                let bottom = size[1] - 32.0;
+                let max_scroll = (rows.len() as f32 * ROW - (bottom - LIST_TOP)).max(0.0);
+                s.scroll = s.scroll.clamp(0.0, max_scroll);
+                let _ = draw.push_clip([0.0, LIST_TOP, size[0], bottom - LIST_TOP]);
+                for (i, (id, name)) in rows.iter().enumerate() {
+                    let y = LIST_TOP + i as f32 * ROW - s.scroll;
+                    if y + ROW < LIST_TOP || y > bottom {
+                        continue;
+                    }
                     if inside([left, y, 310.0, ROW], mouse) {
                         draw.fill([left - 2.0, y, 314.0, ROW], 0x40FF_FFFF);
                     }
@@ -299,13 +351,14 @@ impl Hooks for Mod {
                     } else {
                         0xFFFF_FFFF
                     };
-                    draw.text(&tr(host, id), [left, y + 3.0], color, false);
+                    draw.text(name, [left, y + 3.0], color, false);
                     if let Some(p) = picked {
                         let mark = format!("#{}", p + 1);
                         let w = draw.text_width(&mark);
                         draw.text(&mark, [left + 310.0 - w, y + 3.0], color, false);
                     }
                 }
+                let _ = draw.pop_clip();
                 let (w, _, _) = s.editor(size);
                 let _ = w.draw(&mut *event.draw, host, mouse);
             }
@@ -372,21 +425,35 @@ impl Hooks for Mod {
             }
             Some(Mode::Editor(n)) => {
                 let (w, ids, _) = s.editor(size);
-                let (prev, next, done) = (ids.prev, ids.next, ids.done);
+                let (prev, next, add, done) = (ids.prev, ids.next, ids.add, ids.done);
                 let outcome = w.mouse_pressed(host, at, event.button, event.modifiers);
                 match outcome {
                     Outcome::Pressed(id) if id == prev => {
-                        s.mode = Some(Mode::Editor((n + BUNDLES - 1) % BUNDLES));
+                        let count = s.bundles(host).0.len();
+                        s.mode = Some(Mode::Editor((n + count - 1) % count));
+                        s.scroll = 0.0;
                     }
                     Outcome::Pressed(id) if id == next => {
-                        s.mode = Some(Mode::Editor((n + 1) % BUNDLES));
+                        let count = s.bundles(host).0.len();
+                        s.mode = Some(Mode::Editor((n + 1) % count));
+                        s.scroll = 0.0;
+                    }
+                    Outcome::Pressed(id) if id == add => {
+                        // Its key is registered on the next client tick.
+                        if s.bundles(host).add_bundle() {
+                            s.save(host);
+                        }
                     }
                     Outcome::Pressed(id) if id == done => s.close = true,
                     Outcome::Ignored if event.button == 0 => {
                         let left = (size[0] / 2.0 - 155.0).floor();
-                        if at[0] >= left && at[0] < left + 310.0 && at[1] >= LIST_TOP {
-                            let row = ((at[1] - LIST_TOP) / ROW) as usize;
-                            if let Some(id) = CLICKABLE.get(row) {
+                        if at[0] >= left
+                            && at[0] < left + 310.0
+                            && at[1] >= LIST_TOP
+                            && at[1] < size[1] - 32.0
+                        {
+                            let row = ((at[1] - LIST_TOP + s.scroll) / ROW) as usize;
+                            if let Some((id, _)) = editor_rows(host).get(row) {
                                 s.bundles(host).toggle(n, id);
                                 s.save(host);
                                 return Flow::Cancel;
@@ -402,6 +469,24 @@ impl Hooks for Mod {
                 }
             }
             _ => Flow::Continue,
+        })
+    }
+
+    fn screen_mouse_scrolled_pre(
+        &self,
+        host: &dyn ClientHost,
+        event: &mut ScreenMouseScrolledPreEvent<'_>,
+    ) -> Flow {
+        if !ours(host, event.screen.id) {
+            return Flow::Continue;
+        }
+        self.with(|s| {
+            if matches!(s.mode, Some(Mode::Editor(_))) {
+                s.scroll -= event.scroll[1] as f32 * ROW * 2.0;
+                Flow::Cancel
+            } else {
+                Flow::Continue
+            }
         })
     }
 }

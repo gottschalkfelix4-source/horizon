@@ -1,0 +1,5 @@
+{
+  "template": "minecraft:stick",
+  "max_stack_size": 1,
+  "components": { "minecraft:max_damage": 2031, "minecraft:damage_resistant": { "types": "#minecraft:is_fire" } }
+}

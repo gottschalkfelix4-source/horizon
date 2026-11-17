@@ -1,0 +1,4 @@
+{
+  "type": "minecraft:location_check",
+  "predicate": { "structures": "minecraft:ruined_portal_swamp" }
+}

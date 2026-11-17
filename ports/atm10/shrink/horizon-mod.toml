@@ -4,5 +4,10 @@ version = "2.0.1.47-horizon.1"
 description = "The Shrinking Device: shrink yourself or a mob to a tenth of its size and back, through vanilla's scale attribute. A first slice of a Horizon port of Shrink (LGPL-3.0), written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: Gigabait"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

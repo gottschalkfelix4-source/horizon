@@ -1,0 +1,13 @@
+id = "repeatable_trial_vaults"
+name = "Repeatable Trial Vaults"
+version = "1.0.3-horizon.1"
+description = "A trial vault you already looted opens again for another key. A Horizon port of Repeatable Trial Vaults (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: Buuz135"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

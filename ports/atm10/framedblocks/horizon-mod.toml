@@ -4,5 +4,10 @@ version = "10.6.3-horizon.1"
 description = "The Framed Cube: right-click it with a block to give it that block as its camouflage, with glowstone to make it glow, and take both back with the Framed Hammer. A Horizon port of FramedBlocks (LGPL-3.0) written from its observed behaviour."
 authors = ["Port: gottschalkfelix4-source", "Original: XFactHD"]
 api = "0.2"
-side = "server"
+side = "both"
 capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

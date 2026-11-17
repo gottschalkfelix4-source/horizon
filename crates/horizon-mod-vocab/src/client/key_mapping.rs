@@ -1,6 +1,6 @@
 //! The keys a native mod registers on Options > Controls.
 
-use crate::ClientModifiers;
+use crate::{ClientModifiers, Text};
 /// The screens in which two mappings can conflict.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 #[non_exhaustive]
@@ -87,4 +87,33 @@ impl KeyRegistration {
         self.category = category.to_owned();
         self
     }
+}
+
+/// One key binding Controls lists (`ClientHost::key_bindings`): vanilla's, Horizon's and every
+/// mod's, with the key it is bound to now and the one it resets to.
+#[derive(Clone, Debug, PartialEq)]
+// exhaustive: the game builds it with a literal; mods only read it
+#[derive(horizon_mod_api_macros::Wire)]
+pub struct KeyBindingView {
+    /// What `set_key_binding` and `press_binding` take: the mapping's name for vanilla's and
+    /// Horizon's (`key.jump`, `key.emote`), `<mod id>:<id>` for a mod's (`zoom:in`).
+    pub id: String,
+    /// The label Controls shows, a translation key.
+    pub label: Text,
+    /// The category's translation key (`key.category.minecraft.movement`); a mod's own, or
+    /// empty for none.
+    pub category: String,
+    /// The key or mouse button it is bound to (`key.keyboard.z`); `key.keyboard.unknown` for none.
+    pub key: String,
+    /// The modifiers held with it, in GLFW's input-event encoding (shift 1, control 2, alt 4).
+    /// Only a mod's binding holds any.
+    pub modifiers: ClientModifiers,
+    /// The key Reset puts it back on.
+    pub default_key: String,
+    /// The modifiers Reset puts back.
+    pub default_modifiers: ClientModifiers,
+    /// When it can conflict with another binding; vanilla's and Horizon's are `Universal`.
+    pub context: KeyConflictContext,
+    /// The id of the mod that registered it; `None` for vanilla's and Horizon's.
+    pub owner: Option<String>,
 }

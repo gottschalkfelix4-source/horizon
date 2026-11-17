@@ -1,0 +1,13 @@
+id = "pocketstorage"
+name = "Pocket Storage"
+version = "1.2.5-horizon.1"
+description = "A pocket item that stores large amounts of a limited number of item kinds. A Horizon port of Pocket Storage (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: superbas11"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

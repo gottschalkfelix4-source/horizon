@@ -1,0 +1,9 @@
+{
+  "template": "minecraft:wall_torch",
+  "properties": {
+    "hardness": 1.0,
+    "explosion_resistance": 1.0,
+    "light": 15
+  },
+  "item": false
+}

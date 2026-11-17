@@ -3,22 +3,21 @@
 //! Written from KeybindsPurger's observed behaviour and public description, never from its code
 //! (docs/modpacks.md, "Licences"). The player marks bindings as purged on this mod's screen (or
 //! lets it mark every binding that clashes with an earlier one); the list is saved in the mod's
-//! data folder. Horizon's mod API cannot unbind a key yet (README, "Needs from Horizon"): until it
-//! can, a press is dropped when every binding on its key is purged, which frees the key for
-//! nothing else but stops the purged actions. The choices are in `purge.rs`.
+//! data folder with the key each had. A purge unbinds the binding and hides it from Controls
+//! (`set_key_binding`, `set_key_binding_hidden`); keeping it again restores its key. The choices are
+//! in `purge.rs`.
 use std::sync::Mutex;
 
 use mod_api::client::widgets::{Button, Outcome, WidgetId, Widgets};
 use mod_api::{
-    ClientHost, ClientTickPostEvent, ConfigPath, Flow, Hooks, KeyMappingPreEvent, KeyRegistration,
+    ClientHost, ClientModifiers, ClientTickPostEvent, ConfigPath, Flow, Hooks, KeyRegistration,
     Registrar, RegistrationContext, ScreenMouseButtonPressedPreEvent, ScreenMouseScrolledPreEvent,
     ScreenRenderPostEvent, Text,
 };
 
-pub mod keys;
 pub mod purge;
 
-use purge::{Binding, Purged};
+use purge::{Binding, Purged, Step};
 
 /// This mod's id, as `horizon-mod.toml` names it.
 pub const MOD_ID: &str = "keybindspurger";
@@ -27,8 +26,22 @@ const LIST_FILE: &str = "purged.txt";
 const ROW: f32 = 14.0;
 const LIST_TOP: f32 = 30.0;
 
+/// What the player asked on the screen, done on the next client tick (the screen hooks hold the
+/// host read-only).
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum Action {
+    Toggle(String),
+    PurgeConflicts,
+    PurgeModded,
+    KeepAll,
+}
+
+/// How often purged bindings are checked for a key the player gave them since, in client ticks.
+const ENFORCE_EVERY: u32 = 40;
+
 struct Ids {
     conflicts: WidgetId,
+    modded: WidgetId,
     clear: WidgetId,
     done: WidgetId,
 }
@@ -41,26 +54,51 @@ struct State {
     scroll: f32,
     open: bool,
     close: bool,
+    actions: Vec<Action>,
+    ticks: u32,
 }
 
 fn tr(host: &dyn ClientHost, key: &str) -> String {
     host.translate(key).unwrap_or_else(|| key.to_owned())
 }
 
-/// The bindings as the game has them now, in Controls' order.
-fn read_bindings(host: &dyn ClientHost) -> Vec<Binding> {
-    let not_bound = tr(host, "key.keyboard.unknown");
-    keys::MAPPINGS
-        .iter()
-        .filter_map(|&(id, _)| {
-            let mapping = host.mapping(id).ok().flatten()?;
-            let key = host.text_string(&mapping.label).ok()?;
-            Some(Binding {
-                id: id.to_owned(),
-                key: (!key.is_empty() && key != not_bound).then_some(key),
-            })
+/// The bindings as the game has them now, in Controls' order, with the name and key Controls shows.
+fn read_bindings(host: &dyn ClientHost) -> Vec<(Binding, String, String)> {
+    host.key_bindings()
+        .into_iter()
+        .map(|v| {
+            let name = host.text_string(&v.label).unwrap_or_else(|_| v.id.clone());
+            let key = tr(host, &v.key);
+            (
+                Binding {
+                    id: v.id,
+                    key_id: v.key,
+                    modifiers: v.modifiers.bits,
+                    default_key: v.default_key,
+                    default_modifiers: v.default_modifiers.bits,
+                    context: v.context,
+                    owner: v.owner,
+                },
+                name,
+                key,
+            )
         })
         .collect()
+}
+
+fn plain(rows: &[(Binding, String, String)]) -> Vec<Binding> {
+    rows.iter().map(|(b, ..)| b.clone()).collect()
+}
+
+fn apply(host: &mut dyn ClientHost, steps: Vec<Step>) {
+    for step in steps {
+        match step {
+            Step::Rebind(id, key, modifiers) => {
+                let _ = host.set_key_binding(&id, &key, ClientModifiers::new(modifiers));
+            }
+            Step::Hide(id, hidden) => host.set_key_binding_hidden(&id, hidden),
+        }
+    }
 }
 
 fn path() -> Option<ConfigPath> {
@@ -93,21 +131,26 @@ impl State {
         let y = size[1] - 26.0;
         let mut w = Widgets::new();
         let conflicts = w.add_button(Button::new(
-            [x, y, 100.0, 20.0],
+            [x, y, 76.0, 20.0],
             Text::translate("keybindspurger.purge_conflicts", Vec::new()),
         ));
+        let modded = w.add_button(Button::new(
+            [x + 78.0, y, 76.0, 20.0],
+            Text::translate("keybindspurger.purge_modded", Vec::new()),
+        ));
         let clear = w.add_button(Button::new(
-            [x + 105.0, y, 100.0, 20.0],
+            [x + 156.0, y, 76.0, 20.0],
             Text::translate("keybindspurger.clear", Vec::new()),
         ));
         let done = w.add_button(Button::new(
-            [x + 210.0, y, 100.0, 20.0],
+            [x + 234.0, y, 76.0, 20.0],
             Text::translate("gui.done", Vec::new()),
         ));
         self.widgets = Some((
             w,
             Ids {
                 conflicts,
+                modded,
                 clear,
                 done,
             },
@@ -140,6 +183,51 @@ impl Mod {
     }
 }
 
+impl Mod {
+    /// Does what the screen asked, and every so often unbinds the purged bindings the player has bound
+    /// again (a mod's, registered after the purge, included).
+    fn update_bindings(&self, host: &mut dyn ClientHost, actions: Vec<Action>) {
+        let due = self.with(|s| {
+            s.ticks = s.ticks.wrapping_add(1);
+            !actions.is_empty() || s.ticks % ENFORCE_EVERY == 1
+        });
+        if !due {
+            return;
+        }
+        let rows = read_bindings(host);
+        let bindings = plain(&rows);
+        let steps = self.with(|s| {
+            let purged = s.purged(host);
+            let mut steps = Vec::new();
+            for action in actions {
+                steps.extend(match action {
+                    Action::Toggle(id) => match bindings.iter().find(|b| b.id == id) {
+                        Some(b) if purged.contains(&id) => purged.keep(b),
+                        Some(b) => purged.purge(b),
+                        None => Vec::new(),
+                    },
+                    Action::PurgeConflicts => purged.purge_conflicts(&bindings),
+                    Action::PurgeModded => purged.purge_modded(&bindings, MOD_ID),
+                    Action::KeepAll => purged.keep_all(&bindings),
+                });
+            }
+            let changed = !steps.is_empty();
+            // What is already unbound needs no second unbinding.
+            let extra: Vec<Step> = purged
+                .enforce(&bindings)
+                .into_iter()
+                .filter(|e| !steps.contains(e))
+                .collect();
+            steps.extend(extra);
+            if changed {
+                s.save(host);
+            }
+            steps
+        });
+        apply(host, steps);
+    }
+}
+
 #[mod_api::horizon_mod]
 impl Hooks for Mod {
     fn register(&self, r: &mut dyn Registrar, _: &RegistrationContext) {
@@ -152,12 +240,13 @@ impl Hooks for Mod {
 
     fn client_tick_post(&self, host: &mut dyn ClientHost, _: &mut ClientTickPostEvent) {
         let clicked = host.consume_click(MOD_ID, "open");
-        let (open, close) = self.with(|s| {
-            let asked = (s.open || clicked, s.close);
+        let (open, close, actions) = self.with(|s| {
+            let asked = (s.open || clicked, s.close, std::mem::take(&mut s.actions));
             s.open = false;
             s.close = false;
             asked
         });
+        self.update_bindings(host, actions);
         if close {
             host.mod_screen_close(MOD_ID);
         }
@@ -168,26 +257,6 @@ impl Hooks for Mod {
                 }
             }
         }
-    }
-
-    /// A purged binding's press is dropped when no kept binding shares its key.
-    fn key_mapping_pre(
-        &self,
-        host: &mut dyn ClientHost,
-        event: &mut KeyMappingPreEvent<'_>,
-    ) -> Flow {
-        if !event.pressed {
-            return Flow::Continue;
-        }
-        let host: &dyn ClientHost = host;
-        let drop = self.with(|s| {
-            if !s.purged(host).contains(event.mapping) {
-                return false;
-            }
-            let bindings = read_bindings(host);
-            s.purged(host).drops(event.mapping, &bindings)
-        });
-        if drop { Flow::Cancel } else { Flow::Continue }
     }
 
     fn screen_render_post(&self, host: &dyn ClientHost, event: &mut ScreenRenderPostEvent<'_>) {
@@ -217,11 +286,10 @@ impl Hooks for Mod {
             s.scroll = s.scroll.clamp(0.0, max_scroll);
             let left = (size[0] / 2.0 - 155.0).floor();
             let purged_word = tr(host, "keybindspurger.purged");
-            let not_bound = tr(host, "key.keyboard.unknown");
             let scroll = s.scroll;
             let purged = s.purged(host).clone();
             let _ = draw.push_clip([0.0, LIST_TOP, size[0], bottom - LIST_TOP]);
-            for (i, b) in bindings.iter().enumerate() {
+            for (i, (b, name, key)) in bindings.iter().enumerate() {
                 let y = LIST_TOP + i as f32 * ROW - scroll;
                 if y + ROW < LIST_TOP || y > bottom {
                     continue;
@@ -231,11 +299,11 @@ impl Hooks for Mod {
                     draw.fill([left - 2.0, y, 314.0, ROW], 0x40FF_FFFF);
                 }
                 let name_color = if gone { 0xFF80_8080 } else { 0xFFFF_FFFF };
-                draw.text(&tr(host, &b.id), [left, y + 3.0], name_color, false);
+                draw.text(name, [left, y + 3.0], name_color, false);
                 let right = if gone {
                     purged_word.clone()
                 } else {
-                    b.key.clone().unwrap_or_else(|| not_bound.clone())
+                    key.clone()
                 };
                 let color = if gone { 0xFFFF_5555 } else { 0xFFA0_FFA0 };
                 let rw = draw.text_width(&right);
@@ -269,17 +337,12 @@ impl Hooks for Mod {
             let Some((w, ids)) = &mut s.widgets else {
                 return Flow::Continue;
             };
-            let (conflicts, clear, done) = (ids.conflicts, ids.clear, ids.done);
+            let (conflicts, modded, clear, done) = (ids.conflicts, ids.modded, ids.clear, ids.done);
             let outcome = w.mouse_pressed(host, at, event.button, event.modifiers);
             match outcome {
-                Outcome::Pressed(id) if id == conflicts => {
-                    s.purged(host).purge_conflicts(&bindings);
-                    s.save(host);
-                }
-                Outcome::Pressed(id) if id == clear => {
-                    *s.purged(host) = Purged::default();
-                    s.save(host);
-                }
+                Outcome::Pressed(id) if id == conflicts => s.actions.push(Action::PurgeConflicts),
+                Outcome::Pressed(id) if id == modded => s.actions.push(Action::PurgeModded),
+                Outcome::Pressed(id) if id == clear => s.actions.push(Action::KeepAll),
                 Outcome::Pressed(id) if id == done => s.close = true,
                 Outcome::Ignored if event.button == 0 => {
                     let left = (s.size[0] / 2.0 - 155.0).floor();
@@ -287,9 +350,8 @@ impl Hooks for Mod {
                     if at[0] >= left && at[0] < left + 310.0 && at[1] >= LIST_TOP && at[1] < bottom
                     {
                         let row = ((at[1] - LIST_TOP + s.scroll) / ROW) as usize;
-                        if let Some(b) = bindings.get(row) {
-                            s.purged(host).toggle(&b.id);
-                            s.save(host);
+                        if let Some((b, ..)) = bindings.get(row) {
+                            s.actions.push(Action::Toggle(b.id.clone()));
                             return Flow::Cancel;
                         }
                     }

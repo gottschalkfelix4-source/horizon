@@ -58,11 +58,15 @@ impl Kind {
             _ => None,
         }
     }
-    /// Whether this light stops a spawn for `reason`. Torchmaster's defaults block natural
-    /// spawning only; the Mega Torch also stops a village siege's zombies.
+    /// Whether this light stops a spawn for `reason`. Observed on the original: the Mega Torch
+    /// blocks natural, patrol and chunk-generation spawns, not events. The Dread Lamp's reasons
+    /// are not observed yet; natural only.
     pub fn blocks(self, reason: SpawnReason) -> bool {
         match self {
-            Kind::MegaTorch => matches!(reason, SpawnReason::Natural | SpawnReason::Event),
+            Kind::MegaTorch => matches!(
+                reason,
+                SpawnReason::Natural | SpawnReason::Patrol | SpawnReason::ChunkGeneration
+            ),
             Kind::DreadLamp => matches!(reason, SpawnReason::Natural),
         }
     }
@@ -78,7 +82,9 @@ pub struct Light {
 impl Light {
     /// Whether `pos` lies in this light's cube.
     pub fn covers(&self, pos: [i32; 3]) -> bool {
-        (0..3).all(|i| (pos[i] - self.pos[i]).abs() <= RADIUS)
+        // Measured on the original: a cube, 64 blocks to each side, one block more upwards.
+        let d = [pos[0] - self.pos[0], pos[1] - self.pos[1], pos[2] - self.pos[2]];
+        d[0].abs() <= RADIUS && d[2].abs() <= RADIUS && (-RADIUS..=RADIUS + 1).contains(&d[1])
     }
 }
 
@@ -124,7 +130,13 @@ fn decode_lights(data: &Compound) -> Result<Vec<Light>, AttachmentError> {
 /// The two blocks' keys, known once registration ran.
 static KEYS: OnceLock<[BlockKey; 2]> = OnceLock::new();
 
+/// The Mega Torch's wall form: the item places it on a wall, and it is the same light.
+static WALL: OnceLock<BlockKey> = OnceLock::new();
+
 fn kind_of(block: BlockKey) -> Option<Kind> {
+    if WALL.get() == Some(&block) {
+        return Some(Kind::MegaTorch);
+    }
     let keys = KEYS.get()?;
     [Kind::MegaTorch, Kind::DreadLamp]
         .into_iter()
@@ -168,6 +180,7 @@ impl Hooks for Mod {
             r.block_key(Kind::DreadLamp.id()),
         ];
         let _ = KEYS.set(keys);
+        let _ = WALL.set(r.block_key("torchmaster:megatorch_wall"));
         for kind in [Kind::MegaTorch, Kind::DreadLamp] {
             let item = r.item_key(kind.id());
             r.item_part(item, LightItem);
@@ -203,7 +216,8 @@ impl Hooks for Mod {
             row.value.iter().any(|light| {
                 light.kind == kind
                     && light.covers(pos)
-                    && event.level.block(host, light.pos) == Some(block)
+                    && matches!(event.level.block(host, light.pos),
+                        Some(b) if b == block || (kind == Kind::MegaTorch && WALL.get() == Some(&b)))
             })
         });
         if covered {
@@ -223,9 +237,10 @@ mod tests {
             kind: Kind::MegaTorch,
         };
         assert!(torch.covers([64, 0, -64]));
-        assert!(torch.covers([-64, 128, 64]));
+        assert!(torch.covers([-64, 129, 64]));
+        assert!(!torch.covers([0, 130, 0]));
         assert!(!torch.covers([65, 64, 0]));
-        assert!(!torch.covers([0, 129, 0]));
+        assert!(!torch.covers([0, -1, 65]));
     }
 
     #[test]
@@ -257,6 +272,8 @@ mod tests {
         assert_eq!(Kind::for_category(MobCategory::Ambient), None);
         assert!(Kind::MegaTorch.blocks(SpawnReason::Natural));
         assert!(!Kind::MegaTorch.blocks(SpawnReason::Spawner));
+        assert!(!Kind::MegaTorch.blocks(SpawnReason::Event));
+        assert!(Kind::MegaTorch.blocks(SpawnReason::Patrol));
         assert!(!Kind::DreadLamp.blocks(SpawnReason::Event));
     }
 }

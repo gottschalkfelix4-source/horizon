@@ -1,0 +1,13 @@
+id = "bridgingmod"
+name = "Bridging Mod"
+version = "2.6.2+1.21.1-horizon.1"
+description = "Reach-around block placement for bridging: shows where a block goes against the side of the block you stand on. A Horizon port of Bridging Mod (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Bridging Mod authors"]
+api = "0.2"
+side = "client"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

@@ -1,0 +1,9 @@
+{
+  "template": "minecraft:apple",
+  "components": {
+    "minecraft:food": {
+      "nutrition": 1,
+      "saturation": 0.6
+    }
+  }
+}

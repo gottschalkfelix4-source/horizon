@@ -1,0 +1,13 @@
+id = "bwncr"
+name = "Bad Wither No Cookie - Reloaded"
+version = "3.20.4-horizon.1"
+description = "Silences loud server-wide sounds: the wither's, the ender dragon's, thunder, wandering traders and, on request, explosions or any listed sound. A Horizon port of Bad Wither No Cookie - Reloaded (MIT) written from its public description."
+authors = ["Port: gottschalkfelix4-source", "Original: Kreezxil"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

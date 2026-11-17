@@ -1,0 +1,13 @@
+id = "hostilenetworks"
+name = "Hostile Neural Networks"
+version = "6.5.1-horizon.1"
+description = "Data models that learn from kills, the simulation chamber and the loot fabricator. A Horizon port of Hostile Neural Networks (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Shadows_of_Fire"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

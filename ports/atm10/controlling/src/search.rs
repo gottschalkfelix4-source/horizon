@@ -1,5 +1,10 @@
 //! Controlling's list logic, apart from the game: which bindings conflict, which the search and
-//! the filters keep, in which order, and which keys no binding uses.
+//! the filters keep, in which order, which keys no binding uses, and what a rebind or Reset All sets.
+
+use mod_api::KeyConflictContext;
+
+/// The key id of a binding bound to nothing.
+pub const UNBOUND: &str = "key.keyboard.unknown";
 
 /// One binding as the list shows it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -16,6 +21,24 @@ pub struct Binding {
     pub key: String,
     /// Bound to nothing.
     pub unbound: bool,
+    /// The bound key's id (`key.keyboard.space`).
+    pub key_id: String,
+    /// The modifiers held with it (GLFW bits).
+    pub modifiers: u32,
+    /// The key Reset puts it back on, and its modifiers.
+    pub default_key: String,
+    pub default_modifiers: u32,
+    /// When it can conflict with another binding.
+    pub context: KeyConflictContext,
+    /// The mod that registered it; `None` for vanilla's and Horizon's.
+    pub owner: Option<String>,
+}
+
+impl Binding {
+    /// Whether it is on other than its default key.
+    pub fn changed(&self) -> bool {
+        self.key_id != self.default_key || self.modifiers != self.default_modifiers
+    }
 }
 
 /// Which bindings the list shows (Controlling's "Show" button).
@@ -106,25 +129,30 @@ pub struct Query {
 }
 
 /// Whether two bindings can clash: a debug key only acts with F3 held, so it clashes only with
-/// another debug key; `key.debug.modifier` is F3 itself and clashes with nothing.
+/// another debug key; `key.debug.modifier` is F3 itself and clashes with nothing. Otherwise their
+/// conflict contexts must overlap.
 fn same_context(a: &Binding, b: &Binding) -> bool {
     if a.id == "key.debug.modifier" || b.id == "key.debug.modifier" {
         return false;
     }
-    (a.category == "debug") == (b.category == "debug")
+    a.id.starts_with("key.debug.") == b.id.starts_with("key.debug.")
+        && a.context.conflicts(b.context)
 }
 
-/// For each binding, whether another binding shares its key (vanilla's red key label).
+/// For each binding, whether another binding shares its key and modifiers (vanilla's red key label).
 pub fn conflicts(bindings: &[Binding]) -> Vec<bool> {
     bindings
         .iter()
         .enumerate()
         .map(|(i, a)| {
             !a.unbound
-                && bindings
-                    .iter()
-                    .enumerate()
-                    .any(|(j, b)| i != j && !b.unbound && a.key == b.key && same_context(a, b))
+                && bindings.iter().enumerate().any(|(j, b)| {
+                    i != j
+                        && !b.unbound
+                        && a.key_id == b.key_id
+                        && a.modifiers == b.modifiers
+                        && same_context(a, b)
+                })
         })
         .collect()
 }
@@ -165,12 +193,71 @@ pub fn filter(bindings: &[Binding], query: &Query) -> Vec<usize> {
     shown
 }
 
-/// The keys of `keys` (`(id, name as Controls shows it)`) no bound binding uses, in order.
-pub fn free_keys<'a>(keys: &'a [(String, String)], bindings: &[Binding]) -> Vec<&'a str> {
+/// The ids of `keys` no bound binding uses, in order.
+pub fn free_keys<'a>(keys: &'a [String], bindings: &[Binding]) -> Vec<&'a str> {
     keys.iter()
-        .filter(|(_, name)| !bindings.iter().any(|b| !b.unbound && &b.key == name))
-        .map(|(id, _)| id.as_str())
+        .filter(|id| !bindings.iter().any(|b| !b.unbound && &b.key_id == *id))
+        .map(|id| id.as_str())
         .collect()
+}
+
+/// The changes Reset All makes: every binding off its default key goes back, as `(id, key, modifiers)`.
+pub fn reset_plan(bindings: &[Binding]) -> Vec<(String, String, u32)> {
+    bindings
+        .iter()
+        .filter(|b| b.changed())
+        .map(|b| (b.id.clone(), b.default_key.clone(), b.default_modifiers))
+        .collect()
+}
+
+/// The key id of mouse button `button` (GLFW's numbering: 0 left, 1 right, 2 middle): `key.mouse.left`,
+/// then `key.mouse.4` for the fourth button.
+pub fn mouse_key(button: u32) -> String {
+    match button {
+        0 => "key.mouse.left".to_owned(),
+        1 => "key.mouse.right".to_owned(),
+        2 => "key.mouse.middle".to_owned(),
+        n => format!("key.mouse.{}", n + 1),
+    }
+}
+
+fn is_modifier_key(key: &str) -> bool {
+    matches!(
+        key,
+        "key.keyboard.left.shift"
+            | "key.keyboard.right.shift"
+            | "key.keyboard.left.control"
+            | "key.keyboard.right.control"
+            | "key.keyboard.left.alt"
+            | "key.keyboard.right.alt"
+            | "key.keyboard.left.win"
+            | "key.keyboard.right.win"
+    )
+}
+
+/// What a rebind to `key` with `held` modifiers sets on `binding`: only a mod's binding keeps shift,
+/// control and alt, and a modifier key on its own is bound bare.
+pub fn rebind(binding: &Binding, key: &str, held: u32) -> (String, u32) {
+    let modifiers = if binding.owner.is_some() && !is_modifier_key(key) {
+        held & 7
+    } else {
+        0
+    };
+    (key.to_owned(), modifiers)
+}
+
+/// A key as Controls shows it: the modifiers' names, then `key_name`. `modifier_name` gives the
+/// name of `"shift"`, `"control"` or `"alt"`.
+pub fn key_label(key_name: &str, modifiers: u32, modifier_name: impl Fn(&str) -> String) -> String {
+    let mut label = String::new();
+    for (bit, name) in [(2, "control"), (4, "alt"), (1, "shift")] {
+        if modifiers & bit != 0 {
+            label.push_str(&modifier_name(name));
+            label.push_str(" + ");
+        }
+    }
+    label.push_str(key_name);
+    label
 }
 
 #[cfg(test)]
@@ -185,6 +272,16 @@ mod tests {
             category_name: category.into(),
             key: key.into(),
             unbound: key == "Not Bound",
+            key_id: if key == "Not Bound" {
+                UNBOUND.into()
+            } else {
+                format!("key.keyboard.{}", key.to_lowercase())
+            },
+            modifiers: 0,
+            default_key: UNBOUND.into(),
+            default_modifiers: 0,
+            context: KeyConflictContext::Universal,
+            owner: None,
         }
     }
 
@@ -297,18 +394,96 @@ mod tests {
 
     #[test]
     fn free_keys_are_the_ones_no_bound_binding_uses() {
-        let keys: Vec<(String, String)> = [
-            ("key.keyboard.a", "A"),
-            ("key.keyboard.k", "K"),
-            ("key.keyboard.q", "Q"),
-            ("key.keyboard.z", "Z"),
-        ]
-        .into_iter()
-        .map(|(a, b)| (a.to_owned(), b.to_owned()))
-        .collect();
+        let keys: Vec<String> = ["a", "k", "q", "z"]
+            .into_iter()
+            .map(|k| format!("key.keyboard.{k}"))
+            .collect();
         assert_eq!(
             free_keys(&keys, &sample()),
             ["key.keyboard.k", "key.keyboard.z"]
         );
+    }
+
+    #[test]
+    fn same_key_with_other_modifiers_or_non_overlapping_context_is_no_conflict() {
+        let mut list = vec![
+            b("a:one", "One", "x", "K"),
+            b("a:two", "Two", "x", "K"),
+            b("a:three", "Three", "x", "K"),
+        ];
+        list[1].modifiers = 2; // Ctrl+K
+        assert_eq!(conflicts(&list), [true, false, true]);
+        list[0].context = KeyConflictContext::InGame;
+        list[2].context = KeyConflictContext::Gui;
+        assert_eq!(conflicts(&list), [false, false, false]);
+    }
+
+    #[test]
+    fn reset_all_puts_only_the_changed_bindings_back_on_their_defaults() {
+        let mut list = sample();
+        list[0].default_key = "key.keyboard.space".into(); // already there
+        list[1].default_key = "key.keyboard.x".into(); // moved to Q
+        list[3].default_key = "key.keyboard.k".into(); // unbound by the player
+        list[3].default_modifiers = 2;
+        assert_eq!(
+            reset_plan(&list)
+                .into_iter()
+                .filter(|(id, ..)| id != "key.mymod.dash"
+                    && id != "key.left"
+                    && id != "key.debug.reloadChunk")
+                .collect::<Vec<_>>(),
+            [
+                ("key.drop".to_owned(), "key.keyboard.x".to_owned(), 0),
+                (
+                    "key.smoothCamera".to_owned(),
+                    "key.keyboard.k".to_owned(),
+                    2
+                ),
+            ]
+        );
+    }
+
+    #[test]
+    fn a_rebind_keeps_modifiers_for_mod_bindings_only_and_never_on_a_modifier_key() {
+        let vanilla = sample().remove(0);
+        let mut modded = vanilla.clone();
+        modded.owner = Some("zoom".into());
+        assert_eq!(
+            rebind(&vanilla, "key.keyboard.k", 3),
+            ("key.keyboard.k".into(), 0)
+        );
+        assert_eq!(
+            rebind(&modded, "key.keyboard.k", 3),
+            ("key.keyboard.k".into(), 1 | 2)
+        );
+        assert_eq!(
+            rebind(&modded, "key.keyboard.left.control", 2),
+            ("key.keyboard.left.control".into(), 0)
+        );
+    }
+
+    #[test]
+    fn mouse_buttons_name_like_the_game_and_labels_list_modifiers_first() {
+        assert_eq!(
+            [
+                mouse_key(0),
+                mouse_key(1),
+                mouse_key(2),
+                mouse_key(3),
+                mouse_key(7)
+            ],
+            [
+                "key.mouse.left",
+                "key.mouse.right",
+                "key.mouse.middle",
+                "key.mouse.4",
+                "key.mouse.8"
+            ]
+        );
+        assert_eq!(
+            key_label("K", 7, |m| m.to_uppercase()),
+            "CONTROL + ALT + SHIFT + K"
+        );
+        assert_eq!(key_label("K", 0, |m| m.to_uppercase()), "K");
     }
 }

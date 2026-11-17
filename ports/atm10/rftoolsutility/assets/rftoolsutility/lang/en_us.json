@@ -1,0 +1,15 @@
+{
+  "rftoolsutility.timer": "Timer: pulse every %s ticks",
+  "rftoolsutility.counter": "Counter: fires after %s pulses",
+  "rftoolsutility.channel": "Channel %s",
+  "rftoolsutility.radius": "Environmental radius %s",
+  "rftoolsutility.count": "Counted %s",
+  "item.rftoolsutility.environmental_module_speed": "Environmental Module: Speed",
+  "item.rftoolsutility.environmental_module_haste": "Environmental Module: Haste",
+  "item.rftoolsutility.environmental_module_regeneration": "Environmental Module: Regeneration",
+  "item.rftoolsutility.environmental_module_night_vision": "Environmental Module: Night Vision",
+  "item.rftoolsutility.environmental_module_water_breathing": "Environmental Module: Water Breathing",
+  "item.rftoolsutility.environmental_module_slow_falling": "Environmental Module: Feather Falling",
+  "item.rftoolsutility.environmental_module_glowing": "Environmental Module: Glowing",
+  "item.rftoolsutility.environmental_module_saturation": "Environmental Module: Saturation"
+}

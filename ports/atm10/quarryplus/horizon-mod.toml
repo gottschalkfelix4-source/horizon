@@ -1,0 +1,13 @@
+id = "quarryplus"
+name = "QuarryPlus"
+version = "21.1.164-horizon.1"
+description = "A marker-defined quarry that digs its area layer by layer for energy and puts the drops in neighbouring inventories. A Horizon port of QuarryPlus (LGPL-3.0) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: Kotori316"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

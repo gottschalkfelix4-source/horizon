@@ -1,0 +1,13 @@
+id = "xnet"
+name = "XNet"
+version = "1.21-7.0.7-horizon.1"
+description = "Cables, connectors and a controller with channels that route items, energy, fluids and redstone. A Horizon port of XNet (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: McJty"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

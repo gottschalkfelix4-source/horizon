@@ -1,0 +1,23 @@
+{
+  "template": "minecraft:glass",
+  "properties": {
+    "hardness": 0.3,
+    "explosion_resistance": 0.3,
+    "light": 7,
+    "random_ticks": true
+  },
+  "state_properties": {
+    "axis": {
+      "type": "enum",
+      "values": [
+        "x",
+        "y",
+        "z"
+      ]
+    }
+  },
+  "default_state": {
+    "axis": "x"
+  },
+  "item": false
+}

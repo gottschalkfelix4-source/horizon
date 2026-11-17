@@ -29,6 +29,8 @@ pub(super) struct ModInput {
     events: BTreeMap<String, Vec<ModEvent>>,
     using: Option<ModUse>,
     pub(super) mappings: horizon_client::keymapping::ModKeys,
+    /// The keys mods registered after startup (`register_runtime_key_mapping`), by owner.
+    pub(super) runtime: Vec<(String, mod_api::KeyRegistration)>,
 }
 
 impl ModInput {

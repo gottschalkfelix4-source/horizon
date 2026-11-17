@@ -1,0 +1,7 @@
+{
+  "template": "minecraft:dirt",
+  "item": true,
+  "properties": {
+    "random_ticks": true
+  }
+}

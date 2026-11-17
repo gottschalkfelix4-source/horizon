@@ -1,0 +1,7 @@
+{
+  "template": "minecraft:stone",
+  "properties": { "hardness": 3.5, "explosion_resistance": 6.0, "light": 0 },
+  "state_properties": { "lit": { "type": "boolean" } },
+  "default_state": { "lit": "false" },
+  "item": true
+}

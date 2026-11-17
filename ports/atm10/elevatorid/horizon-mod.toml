@@ -1,0 +1,13 @@
+id = "elevatorid"
+name = "ElevatorMod"
+version = "1.21.1-1.11.4-horizon.1"
+description = "Elevator blocks: jump to ride up to the next elevator in the column, sneak to ride down. A Horizon port of ElevatorMod (MIT) written from its observed behaviour."
+authors = ["Port: gottschalkfelix4-source", "Original: VsnGamer"]
+api = "0.2"
+side = "both"
+capabilities = ["registries"]
+
+[native]
+game = "26.3"
+horizon = "8a9c351d160407eb4b27b30b5858afaae2934a10"
+mixins = "e59da9094f0c2fdda6c627fe9eff22dec6a906f0"

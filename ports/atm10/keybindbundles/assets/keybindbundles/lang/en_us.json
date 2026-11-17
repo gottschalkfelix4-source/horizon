@@ -9,5 +9,13 @@
   "key.keybindbundles.bundle_7": "Bundle 7",
   "key.keybindbundles.bundle_8": "Bundle 8",
   "key.keybindbundles.edit": "Edit Bundles",
-  "keybindbundles.editor": "%s: click a binding to add or remove it"
+  "keybindbundles.editor": "%s: click a binding to add or remove it, + adds a bundle",
+  "key.keybindbundles.bundle_9": "Bundle 9",
+  "key.keybindbundles.bundle_10": "Bundle 10",
+  "key.keybindbundles.bundle_11": "Bundle 11",
+  "key.keybindbundles.bundle_12": "Bundle 12",
+  "key.keybindbundles.bundle_13": "Bundle 13",
+  "key.keybindbundles.bundle_14": "Bundle 14",
+  "key.keybindbundles.bundle_15": "Bundle 15",
+  "key.keybindbundles.bundle_16": "Bundle 16"
 }

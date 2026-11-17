@@ -1,0 +1,5 @@
+{
+  "wits.header": "Structures at %s, %s, %s in %s:",
+  "wits.line": "- %s",
+  "wits.none": "No structure at %s, %s, %s in %s"
+}

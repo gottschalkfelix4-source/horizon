@@ -73,6 +73,49 @@ pub trait ClientInputClientHost {
     #[access(WorldOnly)]
     fn click_mapping(&mut self, key: &str) -> Result<(), MappingError>;
     /// Side: client.
+    /// Every binding Controls lists, vanilla's, Horizon's and every mod's, in the order Controls
+    /// shows them (vanilla's, Horizon's, then each mod's in registration order, runtime
+    /// registrations last). A binding hidden with `set_key_binding_hidden` is still listed.
+    #[access(ClientSetup)]
+    fn key_bindings(&self) -> Vec<KeyBindingView>;
+    /// Side: client.
+    /// Rebinds `id` (a [`KeyBindingView::id`]: `key.jump`, or `<mod id>:<id>`) to `key` as Controls
+    /// does, and saves it; `key.keyboard.unknown` unbinds it. `modifiers` apply to a mod's binding
+    /// only (shift, control and alt are kept); a vanilla or Horizon binding holds none. Refuses an
+    /// id no binding has, or a `key` that names no key or mouse button, with
+    /// [`MappingError::Unknown`].
+    #[access(ClientSetup)]
+    fn set_key_binding(
+        &mut self,
+        id: &str,
+        key: &str,
+        modifiers: ClientModifiers,
+    ) -> Result<(), MappingError>;
+    /// Side: client.
+    /// Hides binding `id` from Options > Controls, or shows it again; the binding keeps its key and
+    /// still works. Kept with the player's bindings (`horizon-mods.txt`). An id no binding has is
+    /// kept and hides nothing until one is registered.
+    #[access(ClientSetup)]
+    fn set_key_binding_hidden(&mut self, id: &str, hidden: bool);
+    /// Side: client.
+    /// Presses binding `id` once (a [`KeyBindingView::id`]), as a press and release of its key does
+    /// with no screen open: a vanilla gameplay mapping as `click_mapping` does, any other vanilla
+    /// mapping through the game's key handling of its default key (`key.screenshot`,
+    /// `key.togglePerspective`), one click for a mod's (`consume_click`). Refuses an id no
+    /// binding has with [`MappingError::Unknown`], a vanilla mapping with no key to press
+    /// (a mouse default outside the gameplay ones) with [`MappingError::NotGameplay`], and no
+    /// player in a world with [`MappingError::NoWorld`]. With a screen or overlay open the press is
+    /// dropped.
+    #[access(WorldOnly)]
+    fn press_binding(&mut self, id: &str) -> Result<(), MappingError>;
+    /// Side: client.
+    /// Registers a key for the calling mod after startup, as `Registrar::register_key_mapping`
+    /// does at startup: listed under the mod's name on Controls, its binding kept by mod id, read
+    /// with `is_down` and `consume_click`. A later call with the same id replaces it; an id the
+    /// mod registered at startup, or a call outside a mod's own hook, registers nothing.
+    #[access(ClientSetup)]
+    fn register_runtime_key_mapping(&mut self, mapping: KeyRegistration);
+    /// Side: client.
     /// Milliseconds on the game's own clock (`Util.getMillis`), counting from the game's start:
     /// what a text field's cursor blinks by and what tells a double click from two clicks.
     /// Only differences between two readings mean anything.

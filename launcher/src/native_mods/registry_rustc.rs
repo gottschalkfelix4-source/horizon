@@ -75,7 +75,13 @@ impl Plan {
                 for (name, path) in &bindings.externs {
                     sdk.push(format!("--extern\n{name}={}", path.display()));
                 }
+                // The game's stack size is an executable's setting: macOS's linker refuses
+                // `-stack_size` for a library, so only a binary takes it.
+                let executable = kind.as_deref() == Some(std::ffi::OsStr::new("bin"));
                 for arg in &bindings.link_args {
+                    if !executable && (arg.contains("-stack_size") || arg.contains("--stack,")) {
+                        continue;
+                    }
                     sdk.push(format!("-C\nlink-arg={arg}"));
                 }
                 let text = sdk.join("\n");

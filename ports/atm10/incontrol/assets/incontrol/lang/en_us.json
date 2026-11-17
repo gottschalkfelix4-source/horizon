@@ -1,0 +1,5 @@
+{
+  "incontrol.reloaded": "Loaded %s spawn rules and %s experience rules",
+  "incontrol.skipped": "Rule %s of %s is ignored: %s",
+  "incontrol.file_error": "%s could not be read: %s"
+}

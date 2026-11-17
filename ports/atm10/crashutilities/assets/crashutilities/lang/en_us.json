@@ -1,0 +1,20 @@
+{
+  "crashutilities.entities.header": "Entities in %s: %s",
+  "crashutilities.entities.line": "%s: %s",
+  "crashutilities.entities.find.header": "Chunks with the most %s:",
+  "crashutilities.entities.find.line": "Chunk %s, %s in %s: %s",
+  "crashutilities.entities.none": "No entities of that type are loaded",
+  "crashutilities.entities.removed": "Removed %s entities of type %s",
+  "crashutilities.chunks.line": "%s: %s loaded chunks",
+  "crashutilities.unstuck.done": "Sent %s to the world spawn",
+  "crashutilities.unstuck.failed": "Could not move %s",
+  "crashutilities.teleport.done": "Teleported %s to %s",
+  "crashutilities.inventory.header": "Inventory of %s:",
+  "crashutilities.inventory.line": "Slot %s: %s x %s",
+  "crashutilities.inventory.empty": "%s carries nothing",
+  "crashutilities.inventory.removed": "Removed slot %s from %s",
+  "crashutilities.inventory.failed": "Slot %s of %s could not be emptied",
+  "crashutilities.memory.used": "Memory in use by the server process: %s MB",
+  "crashutilities.memory.unavailable": "Memory use is not readable on this system",
+  "crashutilities.itemclear.cleared": "Removed %s items lying on the ground"
+}

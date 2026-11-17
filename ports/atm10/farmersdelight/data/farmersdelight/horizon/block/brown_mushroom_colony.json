@@ -1,0 +1,18 @@
+{
+  "template": "minecraft:brown_mushroom",
+  "item": true,
+  "state_properties": {
+    "age": {
+      "type": "enum",
+      "values": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ]
+    }
+  },
+  "properties": {
+    "random_ticks": true
+  }
+}
