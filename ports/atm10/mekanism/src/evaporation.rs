@@ -146,6 +146,7 @@ impl BlockEntityPart for Plant {
 }
 
 pub fn register(r: &mut dyn Registrar) {
+    let _ = r.declare_fluid("brine");
     let built = r.block_entity_type("thermal_evaporation_valve").blocks(&[VALVE]).build();
     let _ = r.block_entity_part(&built, Plant);
     r.block_entity_capability(&FLUIDS, &built, |_, at| Some(Box::new(Valve { at })));
