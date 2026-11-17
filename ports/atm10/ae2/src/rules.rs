@@ -61,15 +61,17 @@ pub enum Device {
     EnergyCell,
     DenseEnergyCell,
     Drive,
+    Terminal,
 }
 
 impl Device {
-    pub const ALL: [Device; 5] = [
+    pub const ALL: [Device; 6] = [
         Device::Controller,
         Device::EnergyAcceptor,
         Device::EnergyCell,
         Device::DenseEnergyCell,
         Device::Drive,
+        Device::Terminal,
     ];
 
     pub fn name(self) -> &'static str {
@@ -79,13 +81,14 @@ impl Device {
             Device::EnergyCell => "energy_cell",
             Device::DenseEnergyCell => "dense_energy_cell",
             Device::Drive => "drive",
+            Device::Terminal => "terminal",
         }
     }
 
     /// FE a block holds: cells 200k and 1.6M AE, the acceptor a small buffer to hand on.
     pub fn capacity_fe(self) -> i32 {
         match self {
-            Device::Controller | Device::Drive => 0,
+            Device::Controller | Device::Drive | Device::Terminal => 0,
             Device::EnergyAcceptor => 800,
             Device::EnergyCell => 200_000 * FE_PER_AE,
             Device::DenseEnergyCell => 1_600_000 * FE_PER_AE,
@@ -96,6 +99,8 @@ impl Device {
     pub fn idle_centi_fe(self) -> i64 {
         match self {
             Device::Controller => 6 * FE_PER_AE as i64 * 100,
+            // the terminal draws 0.5 AE per tick
+            Device::Terminal => 100,
             _ => 0,
         }
     }
@@ -151,6 +156,23 @@ pub fn connects(a: &str, b: &str) -> bool {
         };
     }
     true
+}
+
+/// Every block joined to `start` (up to `MAX_NODES`), sorted.
+pub fn flood<P: Copy + Ord>(start: P, neighbours: impl Fn(P) -> Vec<P>) -> Vec<P> {
+    let mut seen = std::collections::BTreeSet::from([start]);
+    let mut queue = std::collections::VecDeque::from([start]);
+    while let Some(p) = queue.pop_front() {
+        if seen.len() >= MAX_NODES {
+            break;
+        }
+        for n in neighbours(p) {
+            if seen.insert(n) {
+                queue.push_back(n);
+            }
+        }
+    }
+    seen.into_iter().collect()
 }
 
 /// The network `start` belongs to, if `start` is its lowest block: the sorted blocks (up to
@@ -257,6 +279,12 @@ mod tests {
     fn cables_lead_before_devices() {
         assert!(lead_class(Kind::Cable(Cable::Glass)) < lead_class(Kind::Device(Device::EnergyCell)));
         assert_eq!(lead_class(Kind::Device(Device::Controller)), 0);
+    }
+
+    #[test]
+    fn flood_finds_a_whole_network_from_any_block() {
+        assert_eq!(flood(2, row), vec![0, 1, 2]);
+        assert_eq!(flood(5, row), vec![4, 5]);
     }
 
     #[test]

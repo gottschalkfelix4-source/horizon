@@ -45,6 +45,7 @@ for p in ["calculation", "engineering", "logic"]:
 item("fluix_pearl", "minecraft:ender_pearl")
 
 block("drive", "minecraft:furnace", 2.2, 6.0)
+block("terminal", "minecraft:iron_block", 2.2, 6.0)
 for t in ["1k", "4k", "16k", "64k", "256k"]:
     with open(f"{base}/item/item_storage_cell_{t}.json", "w") as f:
         json.dump({"template": "minecraft:iron_ingot", "max_stack_size": 1}, f)
@@ -61,4 +62,35 @@ with open(f"{tag_dir}/mineable/pickaxe.json", "w") as f:
     f.write("\n")
 with open(f"{tag_dir}/needs_stone_tool.json", "w") as f:
     json.dump({"values": [f"ae2:{n}" for n in names if n.endswith("quartz_ore")]}, f, indent=2)
+    f.write("\n")
+
+# loot tables (26.3 keys): every block drops itself, certus ore drops crystals (itself with silk touch)
+loot = "data/ae2/loot_table/blocks"
+os.makedirs(loot, exist_ok=True)
+for n in names:
+    if n.endswith("quartz_ore"):
+        table = {"type": "minecraft:block", "pools": [{"rolls": 1.0, "entries": [{"type": "minecraft:alternatives", "children": [
+            {"type": "minecraft:item", "name": f"ae2:{n}", "conditions": [{"type": "minecraft:match_tool", "predicate": {"predicates": {"minecraft:enchantments": [{"enchantments": "minecraft:silk_touch", "levels": {"min": 1}}]}}}]},
+            {"type": "minecraft:item", "name": "ae2:certus_quartz_crystal", "functions": [{"type": "minecraft:apply_bonus", "enchantment": "minecraft:fortune", "formula": "minecraft:ore_drops"}, {"type": "minecraft:explosion_decay"}]}]}]}]}
+    else:
+        table = {"type": "minecraft:block", "pools": [{"rolls": 1.0, "conditions": [{"type": "minecraft:survives_explosion"}], "entries": [{"type": "minecraft:item", "name": f"ae2:{n}"}]}]}
+    with open(f"{loot}/{n}.json", "w") as f:
+        json.dump(table, f, indent=2)
+        f.write("\n")
+
+# English names
+lang = {}
+for n in names:
+    lang[f"block.ae2.{n}"] = " ".join(w.capitalize() for w in n.split("_"))
+for fn in os.listdir(f"{base}/item"):
+    n = fn[:-5]
+    lang[f"item.ae2.{n}"] = " ".join(w.capitalize() for w in n.split("_"))
+lang.update({"block.ae2.quartz_ore": "Certus Quartz Ore", "block.ae2.deepslate_quartz_ore": "Deepslate Certus Quartz Ore",
+             "block.ae2.quartz_block": "Certus Quartz Block", "block.ae2.drive": "ME Drive", "block.ae2.controller": "ME Controller",
+             "block.ae2.terminal": "ME Terminal", "block.ae2.energy_acceptor": "Energy Acceptor"})
+for t in ["1k", "4k", "16k", "64k", "256k"]:
+    lang[f"item.ae2.item_storage_cell_{t}"] = f"ME Item Storage Cell {t[:-1]}k".replace("k", "k")
+os.makedirs("assets/ae2/lang", exist_ok=True)
+with open("assets/ae2/lang/en_us.json", "w") as f:
+    json.dump(dict(sorted(lang.items())), f, indent=2)
     f.write("\n")

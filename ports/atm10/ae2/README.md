@@ -10,7 +10,7 @@ code. Stage 1 is the network and its power; the later stages sit on the network 
 |---|---|---|
 | 1 | Cables (glass, covered, smart, dense covered, dense smart; fluix and 16 colours), controller, energy acceptor, energy cell, dense energy cell, network scan and power model; crystals, dusts, processors as data | ported, numbers to check; not run in the game |
 | 2 | Drive (ten cell slots), item storage cells 1k to 256k with contents saved in the stack, `network_insert` / `network_extract` over a network's cells, storage summary on the leader | ported, not run in the game. Not yet: ME chest, fluid cells, cell workbench and partitioning, inscriber and presses, charger, certus growth |
-| 3 | ME terminal with search, crafting terminal, pattern terminal | not yet |
+| 3 | ME terminal (six-row view: 45 listed items by count, paging, take out and put in, search by item on the cursor); channels | ported, not run in the game. Not yet: text search (client hooks), crafting and pattern terminal, channels |
 | 4 | Import/export buses, storage bus, interface, annihilation and formation planes, p2p tunnels | not yet |
 | 5 | Autocrafting: patterns, pattern provider, molecular assembler, crafting CPU multiblock | not yet |
 | 6 | Spatial IO, wireless access points and terminals, quantum bridge, meteorites, world generation | not yet |
@@ -81,3 +81,13 @@ horizon-launcher native-build . --instance <instance> --trust-native-code
 - Block tags `mineable/pickaxe` and `needs_stone_tool` (ores) are written by gen_data.py.
 - Loot tables use 26.3's keys (`type` for conditions and functions, not 1.21.1's `condition`/`function`); the
   names of blocks and items are in `assets/ae2/lang/en_us.json`.
+
+## Stage 3 behaviour (ME terminal)
+
+- Right-click the terminal (it must be on a powered network, i.e. cells holding energy): a six-row view lists the
+  network's items, most first. Left click takes a stack, right click half; with a stack on the cursor a click puts it
+  in (right click one); shift-click on a listed item sends a stack to the inventory, on an inventory slot puts the
+  stack into the network. Only plain stacks (no components) go in. Arrow slots turn the page; the compass slot sets the
+  search to the item on the cursor (empty cursor clears it). A listed stack shows at most one stack's count.
+- Idle draw 0.5 AE/tick. Text search and AE2's counts in k/M need client hooks (`screen_char_typed_pre`, `screen_draw`);
+  stage 3b.
