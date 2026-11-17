@@ -9,7 +9,7 @@
 //! tick: energy acceptors hand FE to the cells, the idle draw of cables and the controller is taken
 //! from the cells, and the result (`powered`, `nodes`, `stored`) is saved in that block's data.
 use mod_api::{
-    BlockEntityEvent, BlockEntityPart, ItemStack, BlockEntityTickEvent, BlockEntityTickReply,
+    BlockEntityEvent, BlockEntityPart, ItemStack, MenuContainer, MenuPart, MenuSlotRulesEvent, BlockEntityTickEvent, BlockEntityTickReply,
     BlockEntityTicksEvent, BlockPart, Compound, Direction, ENERGY, Hooks, Host, LevelRef,
     LevelSide, HostTransaction, ModContainer, ModEnergyBuffer, Registrar, RegistrationContext, ServerHost, Tag,
 };
@@ -197,14 +197,19 @@ fn tick_network(
     pos: [i32; 3],
     carried: i64,
 ) -> Option<(usize, bool, i64, i64, [i32; 4])> {
-    let nodes = led_network(pos, |p| {
+    let class = |host: &dyn Host, p: [i32; 3]| {
+        id_at(host, level, p).as_deref().and_then(parse_block).map_or(2, lead_class)
+    };
+    let keyed = led_network((class(&*host, pos), pos), |(_, p)| {
         let Some(here) = id_at(&*host, level, p) else { return Vec::new() };
         Direction::ALL
             .into_iter()
             .map(|d| offset(p, d))
             .filter(|n| id_at(&*host, level, *n).is_some_and(|o| connects(&here, &o)))
+            .map(|n| (class(&*host, n), n))
             .collect()
     })?;
+    let nodes: Vec<[i32; 3]> = keyed.into_iter().map(|(_, p)| p).collect();
     let (mut cells, mut acceptors, mut drives, mut idle) = (Vec::new(), Vec::new(), Vec::new(), 0i64);
     for &n in &nodes {
         match id_at(&*host, level, n).as_deref().and_then(parse_block) {
@@ -215,6 +220,7 @@ fn tick_network(
             None => {}
         }
     }
+    // (a network that has a cell or acceptor as its leader skips that block's own reads)
     // what the acceptors took in goes into the cells
     for &a in &acceptors {
         for &c in &cells {
@@ -297,6 +303,26 @@ fn buffer_of(d: Device) -> Option<ModEnergyBuffer> {
     })
 }
 
+/// The drive takes only storage cells, in its first ten slots.
+struct DriveRules;
+
+#[mod_api::horizon_part]
+impl MenuPart for DriveRules {
+    fn menu_slot_rules(&self, host: &dyn Host, event: &mut MenuSlotRulesEvent<'_>) {
+        if event.container != MenuContainer::Main {
+            return;
+        }
+        let Some(pos) = event.context.pos else { return };
+        let Some(level) = host.level(host.dimension()) else { return };
+        if !level.block(host, pos).is_some_and(|b| b.id(host) == "ae2:drive") {
+            return;
+        }
+        if event.slot >= DRIVE_CELLS || parse_cell(&event.stack.item().id(host)).is_none() {
+            event.may_place = false;
+        }
+    }
+}
+
 /// The drive: ten cell slots. Vanilla's 9x2 menu has 18, so the drive keeps 18 and only the first
 /// ten count (until the mod's own menu with ten slots exists).
 fn drive_container() -> ModContainer {
@@ -336,6 +362,7 @@ impl Hooks for Mod {
             if entity_type == "drive" {
                 let key = r.block_key("ae2:drive");
                 r.block_container(&key, drive_container());
+                r.menu_part("minecraft:generic_9x2", DriveRules);
             }
             let built = r.block_entity_type(&entity_type).blocks(&names).build();
             let _ = r.block_entity_part(&built, Network);

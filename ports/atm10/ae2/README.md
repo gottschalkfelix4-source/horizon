@@ -66,3 +66,13 @@ cargo test
 python3 gen_data.py     # rewrites data/
 horizon-launcher native-build . --instance <instance> --trust-native-code
 ```
+
+## Fixes after test run 12
+
+- A network is led by a cable or the controller (a block's own energy and items cannot be read during its
+  own tick, which left cells and acceptors at 0 when one of them was the lowest block); only a network
+  with no cable or controller falls back to a device as leader.
+- Powered needs stored energy above 0 (an empty network is no longer powered).
+- Blocks drop themselves (`data/ae2/loot_table/blocks/`, written once, not by gen_data.py); certus quartz
+  ore drops crystals with fortune (`ore_drops`), itself with silk touch.
+- The drive takes only storage cells, in slots 0 to 9 (`menu_slot_rules` on `minecraft:generic_9x2`).

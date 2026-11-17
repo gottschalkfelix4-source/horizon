@@ -183,7 +183,16 @@ pub fn drain(total_centi_fe: i64, carried: i64) -> (i64, i64) {
 
 /// A network is powered when its cells hold the whole draw of this tick.
 pub fn powered(stored_fe: i64, draw_fe: i64) -> bool {
-    stored_fe >= draw_fe
+    stored_fe > 0 && stored_fe >= draw_fe
+}
+
+/// Which block leads a network: cables and the controller first (a block's own data cannot be read
+/// during its own tick, so a cell, acceptor or drive leads only a network without any of them).
+pub fn lead_class(kind: Kind) -> u8 {
+    match kind {
+        Kind::Cable(_) | Kind::Device(Device::Controller) => 0,
+        Kind::Device(_) => 1,
+    }
 }
 
 #[cfg(test)]
@@ -245,8 +254,15 @@ mod tests {
     }
 
     #[test]
+    fn cables_lead_before_devices() {
+        assert!(lead_class(Kind::Cable(Cable::Glass)) < lead_class(Kind::Device(Device::EnergyCell)));
+        assert_eq!(lead_class(Kind::Device(Device::Controller)), 0);
+    }
+
+    #[test]
     fn power_needs_the_whole_draw() {
         assert!(powered(12, 12));
+        assert!(!powered(0, 0));
         assert!(!powered(11, 12));
     }
 }
