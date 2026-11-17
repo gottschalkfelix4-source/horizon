@@ -97,7 +97,20 @@ impl Game<'_> {
         // range (`isNearPlayer`) or with the rule off: no level to build for it.
         let at = [key.0, key.1, key.2].map(|c| f64::from(c) + 0.5);
         let range = f64::from(spawner.required_player_range);
-        if !self.alive_player_near(at[0], at[1], at[2], range)
+        let near = self.alive_player_near(at[0], at[1], at[2], range);
+        // `spawner_tick`: a mod may stop this tick. A minecart spawner has no block to tell it of.
+        if cart.is_none() && mod_api::__private::listened(mod_api::HookId::SpawnerTick) {
+            let pos = [key.0, key.1, key.2];
+            let powered = self
+                .level(self.dim.id())
+                .is_some_and(|level| self.level_has_neighbor_signal(level, pos));
+            let mut cancel = false;
+            self.native_spawner_tick(self.dim.id(), pos, near, powered, &mut cancel);
+            if cancel {
+                return Ok(());
+            }
+        }
+        if !near
             || !self
                 .ui
                 .rules
