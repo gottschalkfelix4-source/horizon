@@ -936,6 +936,15 @@ struct Mod;
 
 #[mod_api::horizon_mod]
 impl Hooks for Mod {
+    fn break_block(&self, host: &mut dyn ServerHost, event: &mut mod_api::BreakBlockEvent<'_>) -> mod_api::Flow {
+        if !event.cancelled {
+            if let Some(player) = host.players().acting_player() {
+                meka::pay_for_mining(host, player);
+            }
+        }
+        mod_api::Flow::Continue
+    }
+
     fn component_types(&self, _: &RegistrationContext, event: &mut mod_api::ComponentTypesEvent<'_>) {
         meka::component_types(event);
     }
