@@ -18,6 +18,9 @@ impl Game<'_> {
         if screen.is_none() {
             self.native_screen(&block, &mut screen);
         }
+        if screen.is_none() {
+            screen = default_grid_screen(menu);
+        }
         let Some(screen) = screen else {
             return Vec::new();
         };
@@ -65,6 +68,9 @@ impl Game<'_> {
         if screen.is_none() {
             self.native_screen(&block, &mut screen);
         }
+        if screen.is_none() {
+            screen = default_grid_screen(menu);
+        }
         if let Some(screen) = screen {
             self.mod_screen = Some(OpenNativeScreen {
                 layout_revision: {
@@ -82,5 +88,53 @@ impl Game<'_> {
             self.begin_mod_book_placement();
             self.ensure_mod_book_catalog();
         }
+    }
+}
+
+/// The screen a content mod's menu type gets when its mod gives none: the container's slots
+/// in a grid under the title (nine columns up to 54 slots, then wider, never past nine rows),
+/// the player's inventory below, in vanilla's chest layout. None for a menu that is not a
+/// content mod's menu type.
+fn default_grid_screen(menu: &str) -> Option<mod_api::Screen> {
+    let slots = horizon_client::containers::mod_menu_type(menu)?.slots;
+    Some(grid_screen(slots))
+}
+
+fn grid_screen(slots: usize) -> mod_api::Screen {
+    let columns = if slots <= 54 { 9 } else { slots.div_ceil(9) };
+    let rows = slots.div_ceil(columns).max(1);
+    let width = (14 + 18 * columns).max(176) as f32;
+    let inventory_y = (rows * 18 + 32) as f32;
+    mod_api::Screen {
+        width,
+        height: inventory_y + 82.0,
+        slots: (0..slots)
+            .map(|i| Some([(8 + 18 * (i % columns)) as f32, (18 + 18 * (i / columns)) as f32]))
+            .collect(),
+        inventory_y,
+        inventory_x: 8.0 + (width - 176.0) / 2.0,
+        ..Default::default()
+    }
+}
+
+#[cfg(test)]
+mod grid_tests {
+    use super::grid_screen;
+
+    #[test]
+    fn a_default_grid_matches_vanillas_chest_layout() {
+        // Vanilla's 9x6 chest: slots from (8, 18), the inventory at y 140, 222 high, 176 wide.
+        let chest = grid_screen(54);
+        assert_eq!(chest.slots[0], Some([8.0, 18.0]));
+        assert_eq!(chest.slots[53], Some([152.0, 108.0]));
+        assert_eq!(
+            (chest.width, chest.height, chest.inventory_y, chest.inventory_x),
+            (176.0, 222.0, 140.0, 8.0)
+        );
+        // 256 slots stay within nine rows, wider than a chest.
+        let big = grid_screen(256);
+        assert_eq!(big.slots.len(), 256);
+        assert_eq!(big.slots[255], Some([8.0 + 18.0 * 23.0, 18.0 + 18.0 * 8.0]));
+        assert_eq!(big.width, 14.0 + 18.0 * 29.0);
     }
 }
