@@ -16,10 +16,11 @@ pub enum Kind {
     MechanicalPress,
     Basin,
     MechanicalMixer,
+    Belt,
 }
 
 impl Kind {
-    pub const ALL: [Kind; 12] = [
+    pub const ALL: [Kind; 13] = [
         Kind::Shaft,
         Kind::Cogwheel,
         Kind::LargeCogwheel,
@@ -32,6 +33,7 @@ impl Kind {
         Kind::MechanicalPress,
         Kind::Basin,
         Kind::MechanicalMixer,
+        Kind::Belt,
     ];
 
     pub fn name(self) -> &'static str {
@@ -48,6 +50,7 @@ impl Kind {
             Kind::MechanicalPress => "mechanical_press",
             Kind::Basin => "basin",
             Kind::MechanicalMixer => "mechanical_mixer",
+            Kind::Belt => "belt",
         }
     }
 }
@@ -140,6 +143,25 @@ pub fn mix(held: &[String]) -> Option<(Vec<&'static str>, &'static str, u32)> {
     None
 }
 
+/// Work (RPM summed over ticks) for a belt to move its item one block, and the stress a belt uses.
+pub const BELT_WORK: f64 = 256.0;
+pub const BELT_IMPACT: f64 = 0.0;
+
+/// The block offset a belt with the shaft axis `axis` moves items by at `speed`: along the other
+/// horizontal axis, towards +, or towards - when the speed is negative.
+pub fn belt_step(axis: crate::kinetics::Axis, speed: f64) -> Option<[i32; 3]> {
+    use crate::kinetics::Axis;
+    if speed == 0.0 {
+        return None;
+    }
+    let sign = if speed > 0.0 { 1 } else { -1 };
+    match axis {
+        Axis::X => Some([0, 0, sign]),
+        Axis::Z => Some([sign, 0, 0]),
+        Axis::Y => None,
+    }
+}
+
 /// One tick of work at `speed` RPM: the new progress and whether `work` is reached (then the
 /// progress starts over). A block that stands still loses no progress.
 pub fn advance(progress: f64, speed: f64, work: f64) -> (f64, bool) {
@@ -213,5 +235,14 @@ mod tests {
         assert!(mix(&one).is_none());
         let both = vec!["minecraft:andesite".to_string(), "minecraft:iron_nugget".to_string()];
         assert_eq!(mix(&both).map(|m| (m.1, m.2)), Some(("create:andesite_alloy", 1)));
+    }
+
+    #[test]
+    fn a_belt_moves_along_the_other_horizontal_axis() {
+        use crate::kinetics::Axis;
+        assert_eq!(belt_step(Axis::X, 16.0), Some([0, 0, 1]));
+        assert_eq!(belt_step(Axis::Z, -16.0), Some([-1, 0, 0]));
+        assert_eq!(belt_step(Axis::Y, 16.0), None);
+        assert_eq!(belt_step(Axis::X, 0.0), None);
     }
 }

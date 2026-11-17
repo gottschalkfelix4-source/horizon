@@ -69,6 +69,7 @@ fn node_at(host: &dyn Host, level: LevelRef, pos: Pos) -> Option<Node> {
         Kind::Millstone => Part::Consumer { impact: MILLSTONE_IMPACT },
         Kind::MechanicalPress => Part::Consumer { impact: PRESS_IMPACT },
         Kind::MechanicalMixer => Part::Consumer { impact: MIXER_IMPACT },
+        Kind::Belt => Part::Consumer { impact: BELT_IMPACT },
         Kind::Depot | Kind::Basin => return None,
         Kind::CreativeMotor => Part::Source { rpm: CREATIVE_MOTOR_RPM, capacity: CREATIVE_MOTOR_CAPACITY },
         Kind::WaterWheel => {
@@ -156,6 +157,7 @@ impl BlockEntityPart for Kinetic {
         match kind {
             Kind::Millstone => tick_millstone(host, speed, &mut nbt, &mut items),
             Kind::MechanicalPress => tick_press(host, level, pos, speed, &mut nbt),
+            Kind::Belt => tick_belt(host, level, pos, speed, &mut nbt, &mut items),
             Kind::MechanicalMixer => tick_mixer(host, level, pos, speed, &mut nbt),
             _ => {}
         }
@@ -262,6 +264,48 @@ fn tick_millstone(host: &mut dyn ServerHost, speed: f64, nbt: &mut Compound, ite
     } else {
         // the outputs are full: hold at the end
         set_progress(nbt, MILL_WORK - speed.abs());
+    }
+}
+
+/// Moves the belt's item one block on when the work is done: onto a belt or depot with a free slot.
+fn tick_belt(
+    host: &mut dyn ServerHost,
+    level: LevelRef,
+    pos: Pos,
+    speed: f64,
+    nbt: &mut Compound,
+    items: &mut Vec<Option<ItemStack>>,
+) {
+    items.resize(1, None);
+    let Some(held) = items[0].clone() else {
+        set_progress(nbt, 0.0);
+        return;
+    };
+    let axis = state_at(&*host, level, pos).and_then(|(_, a, ..)| a).unwrap_or(Axis::X);
+    let Some(d) = belt_step(axis, speed) else { return };
+    let (p, done) = advance(progress(nbt), speed, BELT_WORK);
+    if !done {
+        set_progress(nbt, p);
+        return;
+    }
+    let to = [pos[0] + d[0], pos[1] + d[1], pos[2] + d[2]];
+    let takes = state_at(&*host, level, to)
+        .is_some_and(|(id, ..)| matches!(parse_block(&id), Some(Kind::Belt | Kind::Depot)));
+    let Some(be) = host.block_entity(level, to).filter(|_| takes) else {
+        // nothing to take it: the item waits at the end
+        set_progress(nbt, BELT_WORK - speed.abs());
+        return;
+    };
+    if be.item_slot(&*host, 0).ok().flatten().is_some() {
+        set_progress(nbt, BELT_WORK - speed.abs());
+        return;
+    }
+    let moved = host
+        .transaction(|host, tx| be.set_item_slot(host, tx, 0, Some(held)).map_err(|_| ()).map(|_| ()))
+        .is_ok();
+    if moved {
+        items[0] = None;
+        set_progress(nbt, 0.0);
     }
 }
 
@@ -383,6 +427,18 @@ impl Hooks for Mod {
                 inputs: (0..BASIN_SLOTS).collect(),
                 outputs: (0..BASIN_SLOTS).collect(),
                 menu: Some("minecraft:generic_9x1".into()),
+            },
+        );
+        let key = r.block_key("create:belt");
+        // one item rides a belt; hoppers put onto it and take from it
+        r.block_container(
+            &key,
+            ModContainer {
+                slots: 1,
+                faces: std::array::from_fn(|_| vec![0]),
+                inputs: vec![0],
+                outputs: vec![0],
+                menu: None,
             },
         );
         let key = r.block_key("create:depot");

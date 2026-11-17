@@ -20,6 +20,7 @@ Stages: 1 rotation and stress (done), 2 millstone, press, basin, mixer (done), c
 | Depot | One slot a hopper fills and empties | stand-in: no belt, no putting an item on it by hand yet |
 | Mechanical press | 8 su per RPM; presses the stack on a depot below it in 1280 RPM-ticks: iron, gold, copper and brass ingots to sheets | ported, whole stack at once (to check) |
 | Basin, mechanical mixer | Basin: nine slots (hoppers work). Mixer (4 su per RPM) above it mixes in 2560 RPM-ticks; only recipe so far: iron nugget + andesite to andesite alloy | ported, recipe and time from memory; no heat (blaze burner), no fluids, no compacting |
+| Belt | One item per belt block, moved to the next belt or depot along the horizontal axis across its shaft axis (direction by the sign of the speed), 256 RPM-ticks per block (8 ticks at 32 RPM); hoppers feed and empty it | stand-in: single blocks not a stretched belt, one item each, no funnels, no items riding past a press, stress 0, numbers to check |
 | Crushing wheel | | not yet: needs item entities between the wheels |
 
 Consumers use the solver's `Part::Consumer`; a millstone or press takes its speed from the

@@ -9,6 +9,7 @@
     "create:windmill_bearing",
     "create:creative_motor",
     "create:millstone",
+    "create:belt",
     "create:depot",
     "create:basin",
     "create:mechanical_mixer",
