@@ -25,6 +25,7 @@ use chemical::{BlockTanks, CHEMICALS, Tank, TankSpec};
 pub mod evaporation;
 pub mod digital_miner;
 pub mod fission;
+pub mod gas_generator;
 pub mod fusion;
 pub mod meka;
 pub mod qio;
@@ -328,7 +329,7 @@ fn move_network<R: 'static>(
         matches!(kind_at(host, level, p), Some(Kind::Machine(_) | Kind::Factory(..)))
             || matches!(
                 mb::id_at(host, level, p).as_deref(),
-                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | evaporation::OUTLET | fusion::PORT | sps::PORT | digital_miner::BLOCK | qio::ARRAY)
+                Some(steam::BOILER_VALVE | steam::TURBINE_VALVE | fission::PORT | evaporation::VALVE | evaporation::OUTLET | fusion::PORT | sps::PORT | digital_miner::BLOCK | qio::ARRAY | gas_generator::BLOCK)
             )
     };
     for (i, &from) in ends.iter().enumerate() {
@@ -978,6 +979,7 @@ impl Hooks for Mod {
         digital_miner::register(r);
         teleporter::register(r);
         meka::register(r);
+        gas_generator::register(r);
         qio::register(r);
         for (entity_type, ids) in groups {
             for id in &ids {
