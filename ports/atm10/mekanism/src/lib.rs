@@ -99,6 +99,7 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
     }
     let mut rate = tier.cable_rate();
     let (mut sources, mut sinks) = (Vec::new(), Vec::new());
+    let (mut cubes, mut foreign) = (Vec::new(), Vec::new());
     for &c in &cables {
         if let Some(Kind::Cable(t)) = kind_at(&*host, level, c) {
             rate = rate.min(t.cable_rate());
@@ -107,17 +108,34 @@ fn tick_cable(host: &mut dyn ServerHost, level: LevelRef, pos: [i32; 3], tier: T
             let n = offset(c, dir);
             match kind_at(&*host, level, n) {
                 Some(Kind::Cable(_)) => {}
-                Some(Kind::Cube(_)) => sources.push((n, dir.opposite())),
+                Some(Kind::Cube(_)) => {
+                    sources.push((n, dir.opposite()));
+                    cubes.push((n, dir.opposite()));
+                }
                 Some(Kind::Machine(_)) => sinks.push((n, dir.opposite())),
-                None => {}
+                // another mod's block with energy (a generator, a cell): it gives and takes
+                None => {
+                    let side = dir.opposite();
+                    if level.capability(host, &ENERGY, n, Some(side)).is_some() {
+                        sources.push((n, side));
+                        foreign.push((n, side));
+                    }
+                }
             }
         }
     }
+    let cubes_in = cubes.clone();
+    // machines first, then cubes and the foreign blocks: they take what is left
+    sinks.extend(cubes);
+    sinks.extend(foreign);
     let mut budget = rate.max(0) as u32;
     for &sink in &sinks {
         for &source in &sources {
             if budget == 0 {
                 return;
+            }
+            if source.0 == sink.0 || (cubes_in.contains(&source) && cubes_in.contains(&sink)) {
+                continue;
             }
             budget -= route(host, level, source, sink, budget);
         }

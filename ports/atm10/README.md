@@ -68,6 +68,7 @@ All of these were built and unit-tested only (`cargo test`, clippy, fmt); none h
 | [Farmer's Delight](farmersdelight/) | 1.3.4 | MIT | machines | Cooking Pot, heat sources, Stove, Skillet, Cutting Board, Rich Soil ported (vanilla 3x3 menu as stand-in); not yet checked against the original |
 | [Powah](powah/) | 6.2.10 | LGPL-3.0-only | machines | Energy cells and cables, Furnator, Magmator, Thermo, Solar and Reactor ported; not yet checked against the original |
 | [Mekanism](mekanism/) | 10.7.0 | MIT | machines | First slice: ore and metal items, energy cubes, universal cables, enrichment chamber, crusher, energized smelter, `mekanism:chemicals` capability; generators, tools, additions, factories, multiblocks to do; not yet checked against the original |
+| [Mekanism Generators](mekanismgenerators/) | 10.7.0 | MIT | machines | Solar, advanced solar, wind, bio and heat (items only) generators ported; gas generator and multiblock generators to do; not yet checked against the original |
 | [Modern Dynamics](moderndynamics/) | 0.9.6 | LGPL-3.0-only | machines | Item and fluid pipes with servos, energy cables ported; visible item travel, shapes and other attachments to do |
 | [Modular Routers](modularrouters/) | 13.2.7 | MIT | machines | Router run cycle, speed/stack/range upgrades and the sender modules ported; remaining modules to do |
 | [Transfer Labels](transfer_labels/) | 0.1.9 | MIT | machines | Extract/insert labels with named channels transfer items; filters, fluid/energy labels to do |
